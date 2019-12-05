@@ -1,4 +1,3 @@
-// ConnectionConfig.java
 package jmri.jmrix.srcp.networkdriver;
 
 /**
@@ -6,29 +5,37 @@ package jmri.jmrix.srcp.networkdriver;
  * a NetworkDriverAdapter object.
  *
  * @author Bob Jacobsen Copyright (C) 2001, 2003
- * @version	$Revision$
  */
 public class ConnectionConfig extends jmri.jmrix.AbstractNetworkConnectionConfig {
 
     /**
-     * Ctor for an object being created during load process; Swing init is
-     * deferred.
+     * Create a connection configuration with a preexisting adapter. This is
+     * used principally when loading a configuration that defines this
+     * connection.
+     *
+     * @param p the adapter to create a connection configuration for
      */
     public ConnectionConfig(jmri.jmrix.NetworkPortAdapter p) {
         super(p);
     }
 
     /**
-     * Ctor for a functional Swing object with no prexisting adapter
+     * Ctor for a connection configuration with no preexisting adapter.
+     * {@link #setInstance()} will fill the adapter member.
      */
     public ConnectionConfig() {
         super();
     }
 
+    @Override
     public String name() {
         return "SRCP Network Connection";
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     protected void setInstance() {
         if (adapter == null) {
             adapter = new NetworkDriverAdapter();
@@ -36,6 +43,7 @@ public class ConnectionConfig extends jmri.jmrix.AbstractNetworkConnectionConfig
         }
     }
 
+    @Override
     public boolean isPortAdvanced() {
         return false;
     }

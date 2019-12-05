@@ -1,4 +1,3 @@
-// ConnectionConfig.java
 package jmri.jmrix.can.adapters.gridconnect.net;
 
 import java.util.ResourceBundle;
@@ -8,31 +7,39 @@ import java.util.ResourceBundle;
  * NetworkDriverAdapter object.
  *
  * @author Bob Jacobsen Copyright (C) 2010
- * @version	$Revision: 21889 $
  */
 public class MergConnectionConfig extends ConnectionConfig {
 
     public final static String NAME = "CAN via MERG Network Interface";
 
     /**
-     * Ctor for an object being created during load process; Swing init is
-     * deferred.
+     * Create a connection configuration with a preexisting adapter. This is
+     * used principally when loading a configuration that defines this
+     * connection.
+     *
+     * @param p the adapter to create a connection configuration for
      */
     public MergConnectionConfig(jmri.jmrix.NetworkPortAdapter p) {
         super(p);
     }
 
+    @Override
     public String name() {
         return NAME;
     }
 
     /**
-     * Ctor for a functional Swing object with no prexisting adapter
+     * Ctor for a connection configuration with no preexisting adapter.
+     * {@link #setInstance()} will fill the adapter member.
      */
     public MergConnectionConfig() {
         super();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     protected void setInstance() {
         if (adapter == null) {
             adapter = new MergNetworkDriverAdapter();
@@ -40,7 +47,9 @@ public class MergConnectionConfig extends ConnectionConfig {
         }
     }
 
+    @Override
     protected ResourceBundle getActionModelResourceBundle() {
         return ResourceBundle.getBundle("jmri.jmrix.can.CanActionListBundle");
     }
+
 }

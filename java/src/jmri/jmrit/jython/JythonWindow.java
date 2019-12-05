@@ -24,7 +24,7 @@ import jmri.util.JmriJFrame;
  * This Action creates a JmriJFrame displaying the thread output log from the
  * {@link RunJythonScript} class.
  *
- * @author	Bob Jacobsen Copyright (C) 2004
+ * @author Bob Jacobsen Copyright (C) 2004
  * @author Matthew Harris Copyright (C) 2010
  */
 public class JythonWindow extends AbstractAction {
@@ -38,11 +38,6 @@ public class JythonWindow extends AbstractAction {
     public static final String alwaysOnTopCheck = JythonWindow.class.getName() + ".alwaysOnTop";
     public static final String alwaysScrollCheck = JythonWindow.class.getName() + ".alwaysScroll";
     protected JCheckBox alwaysOnTopCheckBox = new JCheckBox();
-
-    /**
-     *
-     */
-    private static final long serialVersionUID = 2991411495753279905L;
 
     /**
      * Constructor just initializes parent class.
@@ -60,7 +55,6 @@ public class JythonWindow extends AbstractAction {
     /**
      * Invoking this action via an event triggers display of a file dialog. If a
      * file is selected, it's then invoked as a script.
-     *
      */
     @Override
     public void actionPerformed(ActionEvent e) {
@@ -162,5 +156,3 @@ public class JythonWindow extends AbstractAction {
     }
 
 }
-
-/* @(#)JythonWindow.java */

@@ -2,18 +2,19 @@ package jmri.jmrix.dcc4pc;
 
 import java.beans.PropertyChangeListener;
 import java.util.List;
+import javax.annotation.Nonnull;
+import jmri.RailCom;
 import jmri.AddressedProgrammer;
+import jmri.AddressedProgrammerManager;
 import jmri.ProgListener;
 import jmri.Programmer;
 import jmri.ProgrammerException;
 import jmri.ProgrammingMode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * Provides an Ops mode proxy programing interface for a RailCom Reader. This
+ * Provides an Ops mode proxy programming interface for a RailCom Reader. This
  * forwards the read request to the command station to forward on and handles
- * sending back the CV reading results from the Rail Com message
+ * sending back the CV reading results from the RailCom message
  *
  * @see jmri.Programmer
  * @author Kevin Dickerson Copyright (C) 2012
@@ -23,43 +24,50 @@ public class Dcc4PcOpsModeProgrammer extends jmri.jmrix.AbstractProgrammer imple
     int pAddress = 0;
     boolean pLongAddress;
     int progState = 0;
-    jmri.RailCom rcTag;
+    RailCom rcTag;
     int value;
     int cv;
     jmri.ProgListener progListener = null;
 
-    static protected final int Dcc4PCProgrammerTimeout = 2000;
+    static protected final int DCC4PC_PROGRAMMER_TIMEOUT = 2000;
 
-    jmri.ProgrammerManager defaultManager;
+    AddressedProgrammerManager defaultManager;
     Programmer defaultProgrammer;
 
-    public Dcc4PcOpsModeProgrammer(boolean pLongAddress, int pAddress, jmri.ProgrammerManager dp) {
+    public Dcc4PcOpsModeProgrammer(boolean pLongAddress, int pAddress, AddressedProgrammerManager dp) {
         defaultManager = dp;
         defaultProgrammer = defaultManager.getAddressedProgrammer(pLongAddress, pAddress);
         this.pAddress = pAddress;
         this.pLongAddress = pLongAddress;
-        rcTag = jmri.InstanceManager.getDefault(jmri.RailComManager.class).provideIdTag("" + pAddress);
+        rcTag = (RailCom) jmri.InstanceManager.getDefault(jmri.RailComManager.class).provideIdTag("" + pAddress);
     }
 
-    /**
+    /** 
+     * {@inheritDoc}
+     *
      * Send an ops-mode write request to the XPressnet.
      */
     @Override
-    synchronized public void writeCV(int CV, int val, ProgListener p) throws ProgrammerException {
-        rcTag.setExpectedCv(cv);
+    synchronized public void writeCV(String CVname, int val, ProgListener p) throws ProgrammerException {
+        final int CV = Integer.parseInt(CVname);
+        rcTag.setExpectedCv(CV);
         progListener = p;
-        defaultProgrammer.writeCV(CV, val, new ProxyProgList());
+        defaultProgrammer.writeCV(CVname, val, new ProxyProgList());
     }
 
+    /** 
+     * {@inheritDoc}
+     */
     @Override
-    synchronized public void readCV(int cv, ProgListener p) throws ProgrammerException {
+    synchronized public void readCV(String CVname, ProgListener p) throws ProgrammerException {
+        final int CV = Integer.parseInt(CVname);
         rcTag.addPropertyChangeListener(this);
-        rcTag.setExpectedCv(cv);
+        rcTag.setExpectedCv(CV);
         progListener = p;
-        this.cv = cv;
+        this.cv = CV;
         startLongTimer();
-        defaultProgrammer.readCV(cv, new ProxyProgList());
-        progListener.programmingOpReply(cv, jmri.ProgListener.OK);
+        defaultProgrammer.readCV(CVname, new ProxyProgList());
+        notifyProgListenerEnd(progListener, CV, jmri.ProgListener.OK);  // this call seems seriously misplaced; is it an error?
     }
 
     static class ProxyProgList implements jmri.ProgListener {
@@ -67,73 +75,100 @@ public class Dcc4PcOpsModeProgrammer extends jmri.jmrix.AbstractProgrammer imple
         ProxyProgList() {
         }
 
+        @Override
         public void programmingOpReply(int value, int status) {
             /*if(status!=NotImplemented){
-             progListener.programmingOpReply(0, status);
+                notifyProgListenerEnd(progListener, 0, status);
              }
              log.debug("Actual Command station returned " + status + " " + value);*/
         }
     }
 
+    /** 
+     * {@inheritDoc}
+     */
     @Override
     public void confirmCV(String cvName, int val, ProgListener p) throws ProgrammerException {
-        int cv = Integer.parseInt(cvName);
+        int cvValue = Integer.parseInt(cvName);
         rcTag.addPropertyChangeListener(this);
-        rcTag.setExpectedCv(cv);
+        rcTag.setExpectedCv(cvValue);
         synchronized (this) {
             progListener = p;
         }
-        this.cv = cv;
+        this.cv = cvValue;
         defaultProgrammer.confirmCV(cvName, val, new ProxyProgList());
     }
 
-    /**
+    /** 
+     * {@inheritDoc}
+     *
      * Types implemented here.
      */
     @Override
+    @Nonnull
     public List<ProgrammingMode> getSupportedModes() {
         return defaultProgrammer.getSupportedModes();
     }
 
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
     synchronized protected void timeout() {
         rcTag.removePropertyChangeListener(this);
         rcTag.setExpectedCv(-1);
-        progListener.programmingOpReply(0, jmri.ProgListener.FailedTimeout);
+        notifyProgListenerEnd(progListener, 0, ProgListener.FailedTimeout);
     }
 
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
     public void propertyChange(java.beans.PropertyChangeEvent e) {
         if (e.getSource() != rcTag) {
             log.error("Unexpected source");
         }
         if (e.getPropertyName().equals("cvvalue")) {
             int repliedCv = (Integer) e.getOldValue();
-            log.info(e.getOldValue() + " " + e.getNewValue());
+            log.info("{} {}", e.getOldValue(), e.getNewValue());
             if (repliedCv == cv) {
-                int value = (Integer) e.getNewValue();
+                int newValue = (Integer) e.getNewValue();
                 stopTimer();
                 rcTag.removePropertyChangeListener(this);
                 synchronized (this) {
-                    progListener.programmingOpReply(value, ProgListener.OK);
+                    notifyProgListenerEnd(progListener, newValue, ProgListener.OK);
                 }
             } else {
-                log.error("Unexpected cv " + repliedCv + " returned, was expecting CV " + cv);
+                log.error("Unexpected cv {} returned, was expecting CV {}", repliedCv, cv);
             }
         }
     }
 
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
     public boolean getLongAddress() {
         return pLongAddress;
     }
 
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
     public int getAddressNumber() {
         return pAddress;
     }
 
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
     public String getAddress() {
         return "" + getAddressNumber() + " " + getLongAddress();
     }
 
     // initialize logging
-    private final static Logger log = LoggerFactory.getLogger(Dcc4PcOpsModeProgrammer.class.getName());
+    private final static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(Dcc4PcOpsModeProgrammer.class);
 
 }

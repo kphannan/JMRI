@@ -1,9 +1,11 @@
 package jmri.jmrit.operations;
 
+import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.FontMetrics;
 import java.awt.GridBagConstraints;
 import java.awt.event.ActionEvent;
+import java.util.Optional;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -16,18 +18,16 @@ import javax.swing.JSpinner;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.ScrollPaneConstants;
-import javax.swing.event.AncestorEvent;
-import javax.swing.event.AncestorListener;
 import javax.swing.event.ChangeEvent;
+import javax.swing.table.TableModel;
+import javax.swing.table.TableRowSorter;
 import jmri.InstanceManager;
-import jmri.UserPreferencesManager;
 import jmri.implementation.swing.SwingShutDownTask;
 import jmri.jmrit.operations.rollingstock.cars.CarTypes;
 import jmri.jmrit.operations.setup.Control;
 import jmri.jmrit.operations.setup.Setup;
+import jmri.swing.JTablePersistenceManager;
 import jmri.util.JmriJFrame;
-import jmri.util.com.sun.TableSorter;
-import jmri.util.swing.XTableColumnModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Dan Boudreau Copyright (C) 2008, 2012
  */
-public class OperationsPanel extends JPanel implements AncestorListener {
+public class OperationsPanel extends JPanel {
 
     public static final String NEW_LINE = "\n"; // NOI18N
     public static final String NONE = ""; // NOI18N
@@ -66,25 +66,25 @@ public class OperationsPanel extends JPanel implements AncestorListener {
         this.add(c, gc);
     }
 
-    protected void addItemLeft(JComponent c, int x, int y) {
-        GridBagConstraints gc = new GridBagConstraints();
-        gc.gridx = x;
-        gc.gridy = y;
-        gc.weightx = 100.0;
-        gc.weighty = 100.0;
-        gc.anchor = GridBagConstraints.WEST;
-        this.add(c, gc);
-    }
+//    protected void addItemLeft(JComponent c, int x, int y) {
+//        GridBagConstraints gc = new GridBagConstraints();
+//        gc.gridx = x;
+//        gc.gridy = y;
+//        gc.weightx = 100.0;
+//        gc.weighty = 100.0;
+//        gc.anchor = GridBagConstraints.WEST;
+//        this.add(c, gc);
+//    }
 
-    protected void addItemWidth(JComponent c, int width, int x, int y) {
-        GridBagConstraints gc = new GridBagConstraints();
-        gc.gridx = x;
-        gc.gridy = y;
-        gc.gridwidth = width;
-        gc.weightx = 100.0;
-        gc.weighty = 100.0;
-        this.add(c, gc);
-    }
+//    protected void addItemWidth(JComponent c, int width, int x, int y) {
+//        GridBagConstraints gc = new GridBagConstraints();
+//        gc.gridx = x;
+//        gc.gridy = y;
+//        gc.gridwidth = width;
+//        gc.weightx = 100.0;
+//        gc.weighty = 100.0;
+//        this.add(c, gc);
+//    }
 
     protected void addItem(JPanel p, JComponent c, int x, int y) {
         GridBagConstraints gc = new GridBagConstraints();
@@ -144,7 +144,7 @@ public class OperationsPanel extends JPanel implements AncestorListener {
             return MIN_CHECKBOXES; // default is 6 checkboxes per row
         }
         StringBuilder padding = new StringBuilder("X");
-        for (int i = 0; i < CarTypes.instance().getMaxFullNameLength(); i++) {
+        for (int i = 0; i < InstanceManager.getDefault(CarTypes.class).getMaxFullNameLength(); i++) {
             padding.append("X");
         }
 
@@ -220,6 +220,8 @@ public class OperationsPanel extends JPanel implements AncestorListener {
      * Will modify the character column width of a TextArea box to 90% of a
      * panels width. ScrollPane is set to 95% of panel width.
      *
+     * @param scrollPane the pane containing the textArea
+     * @param textArea   the textArea to adjust
      */
     protected void adjustTextAreaColumnWidth(JScrollPane scrollPane, JTextArea textArea) {
         this.adjustTextAreaColumnWidth(scrollPane, textArea, this.getPreferredSize());
@@ -238,144 +240,55 @@ public class OperationsPanel extends JPanel implements AncestorListener {
     }
 
     /**
-     * Saves the table's width, position, and sorting status in the user
-     * preferences file
-     *
-     * @param table Table to be saved.
-     */
-    protected void saveTableDetails(JTable table) {
-        UserPreferencesManager p = InstanceManager.getOptionalDefault(UserPreferencesManager.class);
-        if (p == null) {
-            return;
-        }
-        TableSorter sorter = null;
-        String tableref = getWindowFrameRef() + ":table"; // NOI18N
-        try {
-            sorter = (TableSorter) table.getModel();
-        } catch (Exception e) {
-            log.debug("table " + tableref + " doesn't use sorter");
-        }
-
-        // is the table using XTableColumnModel?
-        if (sorter != null && sorter.getColumnCount() != table.getColumnCount()) {
-            log.debug("Sort column count: {} table column count: {} XTableColumnModel in use", sorter.getColumnCount(),
-                    table.getColumnCount());
-            XTableColumnModel tcm = (XTableColumnModel) table.getColumnModel();
-            // need to have all columns visible so we can get the proper column order
-            boolean[] columnVisible = new boolean[sorter.getColumnCount()];
-            for (int i = 0; i < sorter.getColumnCount(); i++) {
-                columnVisible[i] = tcm.isColumnVisible(tcm.getColumnByModelIndex(i));
-                tcm.setColumnVisible(tcm.getColumnByModelIndex(i), true);
-            }
-            // now save with the correct column order
-            for (int i = 0; i < sorter.getColumnCount(); i++) {
-                int sortStatus = sorter.getSortingStatus(i);
-                int width = tcm.getColumnByModelIndex(i).getPreferredWidth();
-                int order = table.convertColumnIndexToView(i);
-                // must save with column not hidden
-                p.setTableColumnPreferences(tableref, sorter.getColumnName(i), order, width, TableSorter.getSortOrder(sortStatus), false);
-            }
-            // now restore
-            for (int i = 0; i < sorter.getColumnCount(); i++) {
-                tcm.setColumnVisible(tcm.getColumnByModelIndex(i), columnVisible[i]);
-            }
-
-        } // standard table
-        else {
-            for (int i = 0; i < table.getColumnCount(); i++) {
-                int sortStatus = 0;
-                if (sorter != null) {
-                    sortStatus = sorter.getSortingStatus(i);
-                }
-                p.setTableColumnPreferences(tableref, table.getColumnName(i), i, table.getColumnModel().getColumn(i)
-                        .getPreferredWidth(), TableSorter.getSortOrder(sortStatus), false);
-            }
-        }
-    }
-
-    /**
-     * Loads the table's width, position, and sorting status from the user
+     * Load the table width, position, and sorting status from the user
      * preferences file.
      *
      * @param table The table to be adjusted.
-     * @return true if table has been adjusted by saved xml file.
+     * @return true if a default instance of the
+     *         {@link jmri.swing.JTablePersistenceManager} is available; false
+     *         otherwise
      */
     public boolean loadTableDetails(JTable table) {
-        UserPreferencesManager p = InstanceManager.getOptionalDefault(UserPreferencesManager.class);
-        TableSorter sorter = null;
-        String tableref = getWindowFrameRef() + ":table"; // NOI18N
-        if (p == null || p.getTablesColumnList(tableref).isEmpty()) {
-            return false;
-        }
-        try {
-            sorter = (TableSorter) table.getModel();
-        } catch (Exception e) {
-            log.debug("table " + tableref + " doesn't use sorter");
-        }
-        // bubble sort
-        int count = 0;
-        while (!sortTable(table, p, tableref) && count < 10) {
-            count++;
-            log.debug("bubble sort pass {}:", count);
-        }
-        // Some tables have more than one name, so use the current one for size
-        for (int i = 0; i < table.getColumnCount(); i++) {
-            String columnName = table.getColumnName(i);
-            int sort = TableSorter.getSortStatus(p.getTableColumnSort(tableref, columnName));
-            if (sorter != null) {
-                sorter.setSortingStatus(i, sort);
-            }
-            int width = p.getTableColumnWidth(tableref, columnName);
-            if (width != -1) {
-                table.getColumnModel().getColumn(i).setPreferredWidth(width);
-            } else {
-                // name not found so use one that exists
-                String name = p.getTableColumnAtNum(tableref, i);
-                if (name != null) {
-                    width = p.getTableColumnWidth(tableref, name);
-                    table.getColumnModel().getColumn(i).setPreferredWidth(width);
+        if (table.getRowSorter() == null) {
+            TableRowSorter<? extends TableModel> sorter = new TableRowSorter<>(table.getModel());
+            table.setRowSorter(sorter);
+            // only sort on columns that are String, Integer or Boolean (check boxes)
+            for (int i = 0; i < table.getColumnCount(); i++) {
+                if (table.getColumnClass(i) == String.class ||
+                        table.getColumnClass(i) == Integer.class ||
+                        table.getColumnClass(i) == Boolean.class) {
+                    continue; // allow sorting
                 }
+                sorter.setSortable(i, false);
             }
         }
-        return true;
-    }
-
-    private boolean sortTable(JTable table, UserPreferencesManager p, String tableref) {
-        boolean sortDone = true;
-        for (int i = 0; i < table.getColumnCount(); i++) {
-            String columnName = table.getColumnName(i);
-            int order = p.getTableColumnOrder(tableref, columnName);
-            if (order == -1) {
-                log.debug("Column name {} not found in user preference file", columnName);
-                break; // table structure has changed quit sort
-            }
-            if (i != order && order < table.getColumnCount()) {
-                table.moveColumn(i, order);
-                log.debug("Move column number: {} name: {} to: {}", i, columnName, order);
-                sortDone = false;
-            }
+        // set row height
+        table.setRowHeight(new JComboBox<>().getPreferredSize().height);
+        // have to shut off autoResizeMode to get horizontal scroll to work (JavaSwing p 541)
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        // give each cell a bit of space between the vertical lines and text
+        table.setIntercellSpacing(new Dimension(3, 1));
+        // table must have a name
+        table.setName(getWindowFrameRef() + ":table"); // NOI18N
+        Optional<JTablePersistenceManager> manager = InstanceManager.getOptionalDefault(JTablePersistenceManager.class);
+        if (manager.isPresent()) {
+            manager.get().resetState(table);
+            manager.get().persist(table);
+            return true;
         }
-        return sortDone;
+        return false;
     }
 
     protected void clearTableSort(JTable table) {
-        TableSorter sorter = null;
-        try {
-            sorter = (TableSorter) table.getModel();
-        } catch (Exception e) {
-            log.debug("table doesn't use sorter");
-        }
-        if (sorter == null) {
-            return;
-        }
-        for (int i = 0; i < table.getColumnCount(); i++) {
-            sorter.setSortingStatus(i, TableSorter.NOT_SORTED);
+        if (table.getRowSorter() != null) {
+            table.getRowSorter().setSortKeys(null);
         }
     }
 
     protected synchronized void createShutDownTask() {
-        OperationsManager.getInstance().setShutDownTask(new SwingShutDownTask("Operations Train Window Check", // NOI18N
-                Bundle.getMessage("PromptQuitWindowNotWritten"), Bundle.getMessage("PromptSaveQuit"), this) {
+        InstanceManager.getDefault(OperationsManager.class)
+                .setShutDownTask(new SwingShutDownTask("Operations Train Window Check", // NOI18N
+                        Bundle.getMessage("PromptQuitWindowNotWritten"), Bundle.getMessage("PromptSaveQuit"), this) {
                     @Override
                     public boolean checkPromptNeeded() {
                         if (Setup.isAutoSaveEnabled()) {
@@ -403,39 +316,40 @@ public class OperationsPanel extends JPanel implements AncestorListener {
         OperationsXml.save();
     }
 
-    protected String lineWrap(String s) {
-        return this.lineWrap(s, this.getPreferredSize());
-    }
+//    protected String lineWrap(String s) {
+//        return this.lineWrap(s, this.getPreferredSize());
+//    }
 
-    protected String lineWrap(String s, Dimension size) {
-        int numberChar = 80;
-        if (size != null) {
-            JLabel X = new JLabel("X");
-            numberChar = size.width / X.getPreferredSize().width;
-        }
+//    protected String lineWrap(String s, Dimension size) {
+//        int numberChar = 80;
+//        if (size != null) {
+//            JLabel X = new JLabel("X");
+//            numberChar = size.width / X.getPreferredSize().width;
+//        }
+//
+//        String[] sa = s.split(NEW_LINE);
+//        StringBuilder so = new StringBuilder();
+//
+//        for (int i = 0; i < sa.length; i++) {
+//            if (i > 0) {
+//                so.append(NEW_LINE);
+//            }
+//            StringBuilder sb = new StringBuilder(sa[i]);
+//            int j = 0;
+//            while (j + numberChar < sb.length() && (j = sb.lastIndexOf(" ", j + numberChar)) != -1) {
+//                sb.replace(j, j + 1, NEW_LINE);
+//            }
+//            so.append(sb);
+//        }
+//        return so.toString();
+//    }
 
-        String[] sa = s.split(NEW_LINE);
-        StringBuilder so = new StringBuilder();
+    
+//    protected JPanel pad; // used to pad out lower part of window to fix horizontal scrollbar issue
 
-        for (int i = 0; i < sa.length; i++) {
-            if (i > 0) {
-                so.append(NEW_LINE);
-            }
-            StringBuilder sb = new StringBuilder(sa[i]);
-            int j = 0;
-            while (j + numberChar < sb.length() && (j = sb.lastIndexOf(" ", j + numberChar)) != -1) {
-                sb.replace(j, j + 1, NEW_LINE);
-            }
-            so.append(sb);
-        }
-        return so.toString();
-    }
-
-    // Kludge fix for horizontal scrollbar encroaching buttons at bottom of a scrollable window.
-    protected JPanel pad; // used to pad out lower part of window to fix horizontal scrollbar issue
-
+ // Kludge fix for horizontal scrollbar encroaching buttons at bottom of a scrollable window.
     protected void addHorizontalScrollBarKludgeFix(JScrollPane pane, JPanel panel) {
-        pad = new JPanel();	// kludge fix for horizontal scrollbar
+        JPanel pad = new JPanel(); // kludge fix for horizontal scrollbar
         pad.add(new JLabel(" "));
         panel.add(pad);
 
@@ -444,38 +358,38 @@ public class OperationsPanel extends JPanel implements AncestorListener {
         pane.setMaximumSize(new Dimension(2000, 170));
         pane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
 
-        pane.addAncestorListener(this); // used to determine if scrollbar is showing
+//        pane.addAncestorListener(this); // used to determine if scrollbar is showing
     }
 
-    @Override
-    public void ancestorAdded(AncestorEvent event) {
-//		log.debug("Ancestor Added");
-        // do nothing
-    }
+//    @Override
+//    public void ancestorAdded(AncestorEvent event) {
+////  log.debug("Ancestor Added");
+//        // do nothing
+//    }
+//
+//    @Override
+//    public void ancestorRemoved(AncestorEvent event) {
+////  log.debug("Ancestor Removed");
+//        // do nothing
+//    }
+//
+//    @Override
+//    public void ancestorMoved(AncestorEvent event) {
+//        if (pad != null) {
+//            if (pad.isVisible() ^ ((JScrollPane) event.getSource()).getHorizontalScrollBar().isShowing()) {
+//                pad.setVisible(((JScrollPane) event.getSource()).getHorizontalScrollBar().isShowing());
+//    log.debug("Scrollbar visible: {}", pad.isVisible());
+//            }
+//        }
+//    }
 
-    @Override
-    public void ancestorRemoved(AncestorEvent event) {
-//		log.debug("Ancestor Removed");	
-        // do nothing
-    }
-
-    @Override
-    public void ancestorMoved(AncestorEvent event) {
-        if (pad != null) {
-            if (pad.isVisible() ^ ((JScrollPane) event.getSource()).getHorizontalScrollBar().isShowing()) {
-                pad.setVisible(((JScrollPane) event.getSource()).getHorizontalScrollBar().isShowing());
-//				log.debug("Scrollbar visible: {}", pad.isVisible());
-            }
-        }
-    }
-
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE", justification = "Checks for instance")
     protected String getWindowFrameRef() {
-        if (this.getTopLevelAncestor() instanceof JmriJFrame) {
-            return ((JmriJFrame) this.getTopLevelAncestor()).getWindowFrameRef();
+        Container c = this.getTopLevelAncestor();
+        if (c instanceof JmriJFrame) {
+            return ((JmriJFrame) c).getWindowFrameRef();
         }
         return null;
     }
 
-    private final static Logger log = LoggerFactory.getLogger(OperationsPanel.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(OperationsPanel.class);
 }

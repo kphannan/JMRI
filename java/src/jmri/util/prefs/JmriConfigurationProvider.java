@@ -11,7 +11,7 @@ import jmri.profile.Profile;
  * Provides a general purpose XML element storage mechanism for the storage of
  * configuration and preferences too complex to be handled by
  * {@link jmri.util.prefs.JmriPreferencesProvider}.
- *
+ * <p>
  * There are two configuration files per {@link jmri.profile.Profile} and
  * {@link jmri.util.node.NodeIdentity}, both stored in the directory
  * <code>profile:profile</code>:
@@ -21,9 +21,12 @@ import jmri.profile.Profile;
  * Railroad Name preference.</li>
  * <li><code>&lt;node-identity&gt;/profile.xml</code> preferences that are
  * specific to the profile running on a specific host (&lt;node-identity&gt; is
- * the identity returned by {@link jmri.util.node.NodeIdentity#identity()}). An
+ * the identity returned by {@link jmri.util.node.NodeIdentity#storageIdentity()}). An
  * example of such a preference would be a file location.</li>
  * </ul>
+ * <p>
+ * Non-profile specific configuration that applies to all profiles is stored in
+ * the file <code>settings:preferences/preferences.xml</code>.
  *
  * @author Randall Wood 2015
  */
@@ -41,7 +44,7 @@ public final class JmriConfigurationProvider extends AbstractConfigurationProvid
         }
     }
 
-    private static final HashMap<Profile, JmriConfigurationProvider> providers = new HashMap<>();
+    private static final HashMap<Profile, JmriConfigurationProvider> PROVIDERS = new HashMap<>();
 
     /**
      * Get the JmriPrefererncesProvider for the specified profile.
@@ -53,10 +56,10 @@ public final class JmriConfigurationProvider extends AbstractConfigurationProvid
      * @return The shared or private JmriPreferencesProvider for the project.
      */
     static synchronized JmriConfigurationProvider findProvider(Profile project) {
-        if (providers.get(project) == null) {
-            providers.put(project, new JmriConfigurationProvider(project));
+        if (PROVIDERS.get(project) == null) {
+            PROVIDERS.put(project, new JmriConfigurationProvider(project));
         }
-        return providers.get(project);
+        return PROVIDERS.get(project);
     }
 
     /**

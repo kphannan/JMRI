@@ -1,42 +1,55 @@
 package jmri.jmrix.openlcb;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import jmri.util.JUnitUtil;
+import jmri.util.junit.annotations.*;
+import org.junit.*;
+import jmri.jmrix.can.TestTrafficController;
 
 /**
  * Tests for the jmri.jmrix.openlcb.OlcbThrottleManager class.
  *
  * @author	Bob Jacobsen Copyright 2008, 2010, 2011
+ * @author      Paul Bender Copyright (C) 2016
  */
-public class OlcbThrottleManagerTest extends TestCase {
+public class OlcbThrottleManagerTest extends jmri.managers.AbstractThrottleManagerTestBase {
 
-    public void testCtor() {
-    }
+    private static OlcbSystemConnectionMemo m;
 
-    // from here down is testing infrastructure
-    public OlcbThrottleManagerTest(String s) {
-        super(s);
-    }
-
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {OlcbThrottleManagerTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(OlcbThrottleManagerTest.class);
-        return suite;
+    @Test
+    @Override
+    @Ignore("test requires further setup")
+    @ToDo("finish test setup and remove this overriden test so that the parent class test can run")
+    public void testGetThrottleInfo() {
     }
 
     // The minimal setup for log4J
-    protected void setUp() {
-        apps.tests.Log4JFixture.setUp();
+    @Override
+    @Before
+    public void setUp() {
+        tm = new OlcbThrottleManager(m);
     }
 
-    protected void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
+    @After
+    public void tearDown() {
+       tm = null;
+    }
+
+    @BeforeClass
+    public static void preClassInit() {
+        JUnitUtil.setUp();
+        m = new jmri.jmrix.openlcb.OlcbSystemConnectionMemo();
+        TestTrafficController tc = new TestTrafficController();
+        m.setTrafficController(tc);
+    }
+
+    @AfterClass
+    public static void postClassTearDown() {
+        if(m != null && m.getInterface() !=null ) {
+           m.getInterface().dispose();
+        }
+        m = null;
+        JUnitUtil.clearShutDownManager(); // put in place because AbstractMRTrafficController implementing subclass was not terminated properly
+        JUnitUtil.tearDown();
+
     }
 }

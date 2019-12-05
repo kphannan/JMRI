@@ -1,4 +1,3 @@
-// ShowCarsInTrainAction.java
 package jmri.jmrit.operations.trains.tools;
 
 import java.awt.Frame;
@@ -11,7 +10,6 @@ import jmri.jmrit.operations.trains.Train;
  *
  * @author Bob Jacobsen Copyright (C) 2001
  * @author Daniel Boudreau Copyright (C) 2012
- * @version $Revision: 17977 $
  */
 public class ShowCarsInTrainAction extends AbstractAction {
 
@@ -26,15 +24,14 @@ public class ShowCarsInTrainAction extends AbstractAction {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        // create a copy train frame
         if (f == null || !f.isVisible()) {
             f = new ShowCarsInTrainFrame();
             f.initComponents(_train);
         } else {
             f.setExtendedState(Frame.NORMAL);
-            f.setVisible(true);	// this also brings the frame into focus
+            f.setVisible(true); // this also brings the frame into focus
         }
     }
 }
 
-/* @(#)ShowCarsInTrainAction.java */
+

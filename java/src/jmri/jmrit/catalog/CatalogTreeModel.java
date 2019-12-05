@@ -3,37 +3,39 @@ package jmri.jmrit.catalog;
 import java.io.File;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
+import jmri.InstanceManager;
+import jmri.InstanceManagerAutoDefault;
 import jmri.util.FileUtil;
 
 /**
  * TreeModel used by CatalogPane to create a tree of resources.
- * <P>
+ * <p>
  * Accessed via the instance() member, as we expect to have only one of these
  * models.
- * <P>
+ * <p>
  * The tree has two top-level visible nodes. One, "icons", represents the
  * contents of the icons directory in the resources tree in the .jar file. The
  * other, "files", is all files found in the "resources" filetree in the
  * preferences directory. Note that this means that files in the distribution
  * directory are _not_ included.
- * <P>
+ * <p>
  * As a special case "simplification", the catalog tree will not contain CVS
  * directories, or files whose name starts with a "."
  *
- * @author	Bob Jacobsen Copyright 2002
+ * @author Bob Jacobsen Copyright 2002
  */
-public class CatalogTreeModel extends DefaultTreeModel {
+public class CatalogTreeModel extends DefaultTreeModel implements InstanceManagerAutoDefault {
 
     public CatalogTreeModel() {
 
         super(new DefaultMutableTreeNode("Root"));
-        dRoot = (DefaultMutableTreeNode) getRoot();  // this is used because we can't store the DMTN we just made during the super() call
+        dRoot = (DefaultMutableTreeNode) super.getRoot();  // this is used because we can't store the DMTN we just made during the super() call
 
         // we manually create the first node, rather than use
         // the routine, so we can name it.
-        insertResourceNodes("resources", resourceRoot, dRoot);
+        CatalogTreeModel.this.insertResourceNodes("resources", resourceRoot, dRoot);
         FileUtil.createDirectory(FileUtil.getUserFilesPath() + "resources");
-        insertFileNodes("files", fileRoot, dRoot);
+        CatalogTreeModel.this.insertFileNodes("files", fileRoot, dRoot);
 
     }
 
@@ -68,9 +70,15 @@ public class CatalogTreeModel extends DefaultTreeModel {
         if (fp.isDirectory()) {
             // work on the kids
             String[] sp = fp.list();
-            for (int i = 0; i < sp.length; i++) {
-                //if (log.isDebugEnabled()) log.debug("Descend into resource: "+sp[i]);
-                insertResourceNodes(sp[i], pPath + "/" + sp[i], newElement);
+
+            if (sp == null) {
+                log.warn("unexpected null list() in insertResourceNodes from \"{}\"", pPath);
+                return;
+            }
+
+            for (String item : sp) {
+                log.trace("Descend into resource: {}", item);
+                insertResourceNodes(item, pPath + "/" + item, newElement);
             }
         }
     }
@@ -79,6 +87,7 @@ public class CatalogTreeModel extends DefaultTreeModel {
      * Recursively add a representation of the files below a particular file
      *
      * @param name   Name of the file to be scanned
+     * @param path   the path to the file
      * @param parent Node for the parent of the file to be scanned
      */
     void insertFileNodes(String name, String path, DefaultMutableTreeNode parent) {
@@ -103,27 +112,21 @@ public class CatalogTreeModel extends DefaultTreeModel {
         if (fp.isDirectory()) {
             // work on the kids
             String[] sp = fp.list();
-            for (int i = 0; i < sp.length; i++) {
+            for (String sp1 : sp) {
                 //if (log.isDebugEnabled()) log.debug("Descend into file: "+sp[i]);
-                insertFileNodes(sp[i], path + "/" + sp[i], newElement);
+                insertFileNodes(sp1, path + "/" + sp1, newElement);
             }
         }
     }
 
     DefaultMutableTreeNode dRoot;
 
-    static public CatalogTreeModel instance() {
-        if (instanceValue == null) {
-            instanceValue = new CatalogTreeModel();
-        }
-        return instanceValue;
-    }
-
-    static private CatalogTreeModel instanceValue = null;
-
     /**
      * Starting point in the .jar file for the "icons" part of the tree
      */
     static final String resourceRoot = "resources";
     static final String fileRoot = FileUtil.getUserFilesPath() + "resources";
+
+    private final static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(CatalogTreeModel.class);
+
 }

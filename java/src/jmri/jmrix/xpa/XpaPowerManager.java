@@ -1,16 +1,16 @@
-// XpaPowerManager.java
 package jmri.jmrix.xpa;
+
+import java.beans.PropertyChangeListener;
 
 import jmri.JmriException;
 import jmri.PowerManager;
 
 /**
  * PowerManager implementation for controlling layout power from an XPA+modem
- * connected to an XPressNet based system.
+ * connected to an XpressNet based system.
  *
  * @author	Paul Bender Copyright (C) 2004
- * @version	$Revision$
- *
+  *
  */
 public class XpaPowerManager implements PowerManager, XpaListener {
 
@@ -20,6 +20,7 @@ public class XpaPowerManager implements PowerManager, XpaListener {
         tc.addXpaListener(this);
     }
 
+    @Override
     public String getUserName() {
         return "XPA";
     }
@@ -29,6 +30,7 @@ public class XpaPowerManager implements PowerManager, XpaListener {
     boolean waiting = false;
     int onReply = UNKNOWN;
 
+    @Override
     public void setPower(int v) throws JmriException {
         power = UNKNOWN; // while waiting for reply
         checkTC();
@@ -48,11 +50,13 @@ public class XpaPowerManager implements PowerManager, XpaListener {
         firePropertyChange("Power", null, null);
     }
 
+    @Override
     public int getPower() {
         return power;
     }
 
     // to free resources when no longer used
+    @Override
     public void dispose() throws JmriException {
         tc.removeXpaListener(this);
         tc = null;
@@ -67,6 +71,31 @@ public class XpaPowerManager implements PowerManager, XpaListener {
     // to hear of changes
     java.beans.PropertyChangeSupport pcs = new java.beans.PropertyChangeSupport(this);
 
+    /** {@inheritDoc} */
+    @Override
+    public void addPropertyChangeListener(String propertyName, PropertyChangeListener listener) {
+        pcs.addPropertyChangeListener(propertyName, listener);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public PropertyChangeListener[] getPropertyChangeListeners() {
+        return pcs.getPropertyChangeListeners();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public PropertyChangeListener[] getPropertyChangeListeners(String propertyName) {
+        return pcs.getPropertyChangeListeners(propertyName);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void removePropertyChangeListener(String propertyName, PropertyChangeListener listener) {
+        pcs.removePropertyChangeListener(propertyName, listener);
+    }
+
+    @Override
     public synchronized void addPropertyChangeListener(java.beans.PropertyChangeListener l) {
         pcs.addPropertyChangeListener(l);
     }
@@ -75,6 +104,7 @@ public class XpaPowerManager implements PowerManager, XpaListener {
         pcs.firePropertyChange(p, old, n);
     }
 
+    @Override
     public synchronized void removePropertyChangeListener(java.beans.PropertyChangeListener l) {
         pcs.removePropertyChangeListener(l);
     }
@@ -82,6 +112,7 @@ public class XpaPowerManager implements PowerManager, XpaListener {
     XpaTrafficController tc = null;
 
     // to listen for status changes from Xpa system
+    @Override
     public void reply(XpaMessage m) {
         if (waiting) {
             power = onReply;
@@ -90,9 +121,8 @@ public class XpaPowerManager implements PowerManager, XpaListener {
         waiting = false;
     }
 
+    @Override
     public void message(XpaMessage m) {
     }
 
 }
-
-/* @(#)XpaPowerManager.java */

@@ -1,5 +1,6 @@
 package jmri.jmrix.mrc;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Date;
 import jmri.DccLocoAddress;
 import jmri.LocoAddress;
@@ -10,26 +11,28 @@ import org.slf4j.LoggerFactory;
 
 /**
  * An implementation of DccThrottle with code specific to an MRC connection.
- * <P>
+ * <p>
  * Addresses of 99 and below are considered short addresses, and over 100 are
  * considered long addresses. This is not the MRC system standard, but is used
  * as an expedient here.
- * <P>
+ * <p>
  * Based on Glen Oberhauser's original LnThrottleManager implementation
  *
- * @author	Bob Jacobsen Copyright (C) 2001
+ * @author Bob Jacobsen Copyright (C) 2001
  */
 public class MrcThrottle extends AbstractThrottle implements MrcTrafficListener {
 
     private MrcTrafficController tc = null;
 
     /**
-     * Constructor.
+     * Throttle Constructor.
+     * @param memo system connection memo
+     * @param address DCC loco address for throttle
      */
     public MrcThrottle(MrcSystemConnectionMemo memo, DccLocoAddress address) {
         super(memo);
         this.tc = memo.getMrcTrafficController();
-        super.speedStepMode = SpeedStepMode128;
+        super.speedStepMode = jmri.SpeedStepMode.NMRA_DCC_128;
 
         // cache settings. It would be better to read the
         // actual state, but I don't know how to do this
@@ -80,10 +83,12 @@ public class MrcThrottle extends AbstractThrottle implements MrcTrafficListener 
     int addressLo = 0x00;
     int addressHi = 0x00;
 
+    @Override
     public LocoAddress getLocoAddress() {
         return address;
     }
 
+    @Override
     protected void sendFunctionGroup1() {
 
         int data = 0x00
@@ -103,6 +108,7 @@ public class MrcThrottle extends AbstractThrottle implements MrcTrafficListener 
     /**
      * Send the message to set the state of functions F5, F6, F7, F8.
      */
+    @Override
     protected void sendFunctionGroup2() {
         int data = 0x00
                 | (f8 ? 0x08 : 0)
@@ -171,6 +177,7 @@ public class MrcThrottle extends AbstractThrottle implements MrcTrafficListener 
     /**
      * Send the message to set the state of functions F21 to F28. MRC Group 6
      */
+    @Override
     protected void sendFunctionGroup5() {
         int data = 0x00
                 | (f28 ? 0x80 : 0)
@@ -190,17 +197,18 @@ public class MrcThrottle extends AbstractThrottle implements MrcTrafficListener 
 
     /**
      * Set the speed {@literal &} direction.
-     * <P>
+     * <p>
      *
      * @param speed Number from 0 to 1, or less than zero for emergency stop
      */
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "FE_FLOATING_POINT_EQUALITY") // OK to compare floating point, notify on any change
+    @SuppressFBWarnings(value = "FE_FLOATING_POINT_EQUALITY") // OK to compare floating point, notify on any change
+    @Override
     public void setSpeedSetting(float speed) {
         float oldSpeed = this.speedSetting;
         this.speedSetting = speed;
         MrcMessage m;
         int value;
-        if (super.speedStepMode == SpeedStepMode128) {
+        if (super.speedStepMode == jmri.SpeedStepMode.NMRA_DCC_128) {
             log.debug("setSpeedSetting= {}", speed); //IN18N
             //MRC use a value between 0-127 no matter what the controller is set to
             value = (int) ((127 - 1) * speed);     // -1 for rescale to avoid estop
@@ -233,27 +241,35 @@ public class MrcThrottle extends AbstractThrottle implements MrcTrafficListener 
         tc.sendMrcMessage(m);
 
         if (oldSpeed != this.speedSetting) {
-            notifyPropertyChangeListener("SpeedSetting", oldSpeed, this.speedSetting); //IN18N
+            notifyPropertyChangeListener(SPEEDSETTING, oldSpeed, this.speedSetting); //IN18N
         }
         record(speed);
     }
 
+    @Override
     public void setIsForward(boolean forward) {
         boolean old = isForward;
         isForward = forward;
         setSpeedSetting(speedSetting);  // send the command
         log.debug("setIsForward= {}", forward);
         if (old != isForward) {
-            notifyPropertyChangeListener("IsForward", old, isForward); //IN18N
+            notifyPropertyChangeListener(ISFORWARD, old, isForward); //IN18N
         }
     }
 
+    @Override
     protected void throttleDispose() {
         finishRecord();
     }
 
+    @Override
+    public String toString() {
+        return getLocoAddress().toString();
+    }
+
     //Might need to look at other packets from handsets to see if they also have control of our loco and adjust from that.
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "FE_FLOATING_POINT_EQUALITY", justification = "fixed number of possible values")
+    @SuppressFBWarnings(value = "FE_FLOATING_POINT_EQUALITY", justification = "fixed number of possible values")
+    @Override
     public void notifyRcv(Date timestamp, MrcMessage m) {
         if (m.getMessageClass() != MrcInterface.THROTTLEINFO
                 || (m.getMessageClass() == MrcInterface.THROTTLEINFO && (m.getElement(0) == MrcPackets.LOCOSOLECONTROLCODE
@@ -270,13 +286,13 @@ public class MrcThrottle extends AbstractThrottle implements MrcTrafficListener 
                         //Forward
                         if (!this.isForward) {
                             this.isForward = true;
-                            notifyPropertyChangeListener("IsForward", !isForward, isForward); //IN18N
+                            notifyPropertyChangeListener(ISFORWARD, !isForward, isForward); //IN18N
                         }
                         //speed = m.getElement(8);
                     } else if (this.isForward) {
                         //reverse
                         this.isForward = false;
-                        notifyPropertyChangeListener("IsForward", !isForward, isForward); //IN18N
+                        notifyPropertyChangeListener(ISFORWARD, !isForward, isForward); //IN18N
                         //speed = m.getElement(8);
                     }
                     speed = (speed & 0x7f) - 1;
@@ -287,7 +303,7 @@ public class MrcThrottle extends AbstractThrottle implements MrcTrafficListener 
                     
                     // next line is the FE_FLOATING_POINT_EQUALITY annotated above
                     if (val != this.speedSetting) {
-                        notifyPropertyChangeListener("SpeedSetting", this.speedSetting, val); //IN18N
+                        notifyPropertyChangeListener(SPEEDSETTING, this.speedSetting, val); //IN18N
                         this.speedSetting = val;
                         record(val);
                     }
@@ -316,7 +332,7 @@ public class MrcThrottle extends AbstractThrottle implements MrcTrafficListener 
                     }
 
                     if (val != this.speedSetting) {
-                        notifyPropertyChangeListener("SpeedSetting", this.speedSetting, val); //IN18N
+                        notifyPropertyChangeListener(SPEEDSETTING, this.speedSetting, val); //IN18N
                         this.speedSetting = val;
                         record(val);
                     }
@@ -603,13 +619,15 @@ public class MrcThrottle extends AbstractThrottle implements MrcTrafficListener 
         }
     }
 
+    @Override
     public void notifyXmit(Date timestamp, MrcMessage m) {/* message(m); */
 
     }
 
+    @Override
     public void notifyFailedXmit(Date timestamp, MrcMessage m) { /*message(m);*/ }
 
     // initialize logging
-    private final static Logger log = LoggerFactory.getLogger(MrcThrottle.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(MrcThrottle.class);
 
 }

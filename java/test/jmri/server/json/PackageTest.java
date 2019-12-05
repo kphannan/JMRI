@@ -1,55 +1,54 @@
 package jmri.server.json;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
+import org.junit.runners.Suite.SuiteClasses;
 
 /**
+ * Test for the JSON server.
+ * <p>
+ * <strong>Note:</strong> Creating unit tests for the constructors of classes in
+ * this package and subpackages that are
+ * <em>not</em> tested as part of
+ * {@link jmri.server.json.schema.JsonSchemaServiceCacheTest} or
+ * {@link jmri.spi.JsonServiceFactoryTest} will mask the fact that the
+ * {@link jmri.spi.JsonServiceFactory} registered as a
+ * {@link org.openide.util.lookup.ServiceProvider} is not registered correctly,
+ * such that the masked class is not used within a JMRI application.
  *
- * @author	Paul Bender Copyright 2010
- * @author Randall Wood (C) 2016
+ * @author Randall Wood (C) 2016, 2018
  */
-public class PackageTest extends TestCase {
-
-    // from here down is testing infrastructure
-    public PackageTest(String s) {
-        super(s);
-    }
-
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {PackageTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite("jmri.server.JsonTest");
-        suite.addTest(BundleTest.suite());
-        suite.addTest(jmri.server.json.light.PackageTest.suite());
-        suite.addTest(jmri.server.json.memory.PackageTest.suite());
-        suite.addTest(jmri.server.json.power.PackageTest.suite());
-        suite.addTest(jmri.server.json.roster.PackageTest.suite());
-        suite.addTest(jmri.server.json.route.PackageTest.suite());
-        suite.addTest(jmri.server.json.sensor.PackageTest.suite());
-        suite.addTest(jmri.server.json.turnout.PackageTest.suite());
-
-        if (!System.getProperty("jmri.headlesstest", "false").equals("true")) {
-            // put any tests that require a UI here.
-        }
-
-        return suite;
-    }
-
-    // The minimal setup for log4J
-    @Override
-    protected void setUp() {
-        apps.tests.Log4JFixture.setUp();
-    }
-
-    @Override
-    protected void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
-    }
-
+@RunWith(Suite.class)
+@SuiteClasses({
+    BundleTest.class,
+    jmri.server.json.block.PackageTest.class,
+    jmri.server.json.consist.PackageTest.class,
+    jmri.server.json.idtag.PackageTest.class,
+    jmri.server.json.layoutblock.PackageTest.class,
+    jmri.server.json.light.PackageTest.class,
+    jmri.server.json.memory.PackageTest.class,
+    jmri.server.json.message.PackageTest.class,
+    jmri.server.json.operations.PackageTest.class,
+    jmri.server.json.power.PackageTest.class,
+    jmri.server.json.reporter.PackageTest.class,
+    jmri.server.json.route.PackageTest.class,
+    jmri.server.json.roster.PackageTest.class,
+    jmri.server.json.sensor.PackageTest.class,
+    jmri.server.json.schema.PackageTest.class,
+    jmri.server.json.signalhead.PackageTest.class,
+    jmri.server.json.signalmast.PackageTest.class,
+    jmri.server.json.time.PackageTest.class,
+    jmri.server.json.turnout.PackageTest.class,
+    jmri.server.json.throttle.PackageTest.class,
+    jmri.server.json.util.PackageTest.class,
+    JSONTest.class,
+    JsonClientHandlerTest.class,
+    JsonConnectionTest.class,
+    JsonExceptionTest.class,
+    JsonHttpServiceTest.class,
+    JsonNamedBeanHttpServiceTest.class,
+    JsonSocketServiceTest.class,
+    JsonWebSocketTest.class
+})
+public class PackageTest {
 }

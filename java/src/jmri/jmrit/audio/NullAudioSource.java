@@ -6,70 +6,59 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Null audio system implementation of the Audio Source sub-class.
- * <P>
+ * <p>
  * For now, no system-specific implementations are forseen - this will remain
  * internal-only
- *
  * <hr>
  * This file is part of JMRI.
- * <P>
+ * <p>
  * JMRI is free software; you can redistribute it and/or modify it under the
  * terms of version 2 of the GNU General Public License as published by the Free
  * Software Foundation. See the "COPYING" file for a copy of this license.
- * <P>
+ * <p>
  * JMRI is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
  * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- * <P>
  *
  * @author Matthew Harris copyright (c) 2009
  */
 public class NullAudioSource extends AbstractAudioSource {
 
     /**
-     * True if we've been initialised
+     * True if we've been initialised.
      */
     private boolean initialised = false;
 
     /**
-     * Constructor for new NullAudioSource with system name
+     * Constructor for new NullAudioSource with system name.
      *
      * @param systemName AudioSource object system name (e.g. IAS1)
      */
     public NullAudioSource(String systemName) {
-        super(systemName);
-        if (log.isDebugEnabled()) {
-            log.debug("New NullAudioSource: " + systemName);
-        }
-        initialised = init();
+       this(systemName,null);
     }
 
     /**
-     * Constructor for new NullAudioSource with system name and user name
+     * Constructor for new NullAudioSource with system name and user name.
      *
      * @param systemName AudioSource object system name (e.g. IAS1)
      * @param userName   AudioSource object user name
      */
     public NullAudioSource(String systemName, String userName) {
         super(systemName, userName);
-        if (log.isDebugEnabled()) {
-            log.debug("New NullAudioSource: " + userName + " (" + systemName + ")");
-        }
+        log.debug("New NullAudioSource: {} ({})", userName, systemName);
         initialised = init();
     }
 
     @Override
     boolean bindAudioBuffer(AudioBuffer audioBuffer) {
         // Don't actually need to do anything specific here
-        if (log.isDebugEnabled()) {
-            log.debug("Bind NullAudioSource (" + this.getSystemName()
-                    + ") to NullAudioBuffer (" + audioBuffer.getSystemName() + ")");
-        }
+        log.debug("Bind NullAudioSource ({}) to NullAudioBuffer ({})", this.getSystemName(), audioBuffer.getSystemName());
         return true;
     }
 
     /**
-     * Initialise this AudioSource
+     * Initialise this AudioSource.
      *
      * @return True if initialised
      */
@@ -84,9 +73,7 @@ public class NullAudioSource extends AbstractAudioSource {
 
     @Override
     protected void doPlay() {
-        if (log.isDebugEnabled()) {
-            log.debug("Play NullAudioSource (" + this.getSystemName() + ")");
-        }
+        log.debug("Play NullAudioSource ({})", this.getSystemName());
         if (initialised && isBound()) {
             doRewind();
             doResume();
@@ -95,53 +82,33 @@ public class NullAudioSource extends AbstractAudioSource {
 
     @Override
     protected void doStop() {
-        if (log.isDebugEnabled()) {
-            log.debug("Stop NullAudioSource (" + this.getSystemName() + ")");
-        }
+        log.debug("Stop NullAudioSource ({})", this.getSystemName());
         if (initialised && isBound()) {
-            // do nothing
             doRewind();
         }
     }
 
     @Override
     protected void doPause() {
-        if (log.isDebugEnabled()) {
-            log.debug("Pause NullAudioSource (" + this.getSystemName() + ")");
-        }
-        if (initialised && isBound()) {
-            // do nothing
-        }
+        log.debug("Pause NullAudioSource ({})", this.getSystemName());
         this.setState(STATE_STOPPED);
     }
 
     @Override
     protected void doResume() {
-        if (log.isDebugEnabled()) {
-            log.debug("Resume NullAudioSource (" + this.getSystemName() + ")");
-        }
-        if (initialised && isBound()) {
-            // do nothing
-        }
+        log.debug("Resume NullAudioSource ({})", this.getSystemName());
         this.setState(STATE_PLAYING);
     }
 
     @Override
     protected void doRewind() {
-        if (log.isDebugEnabled()) {
-            log.debug("Rewind NullAudioSource (" + this.getSystemName() + ")");
-        }
-        if (initialised && isBound()) {
-            // do nothing
-        }
+        log.debug("Rewind NullAudioSource ({})", this.getSystemName());
         this.setState(STATE_STOPPED);
     }
 
     @Override
     protected void doFadeIn() {
-        if (log.isDebugEnabled()) {
-            log.debug("Fade-in JoalAudioSource (" + this.getSystemName() + ")");
-        }
+        log.debug("Fade-in JoalAudioSource ({})", this.getSystemName());
         if (initialised && isBound()) {
             doPlay();
         }
@@ -149,19 +116,15 @@ public class NullAudioSource extends AbstractAudioSource {
 
     @Override
     protected void doFadeOut() {
-        if (log.isDebugEnabled()) {
-            log.debug("Fade-out JoalAudioSource (" + this.getSystemName() + ")");
-        }
+        log.debug("Fade-out JoalAudioSource ({})", this.getSystemName());
         if (initialised && isBound()) {
             doStop();
         }
     }
 
     @Override
-    protected void cleanUp() {
-        if (log.isDebugEnabled()) {
-            log.debug("Cleanup NullAudioSource (" + this.getSystemName() + ")");
-        }
+    protected void cleanup() {
+        log.debug("Cleanup NullAudioSource ({})", this.getSystemName());
         this.dispose();
     }
 
@@ -170,6 +133,6 @@ public class NullAudioSource extends AbstractAudioSource {
         // do nothing
     }
 
-    private static final Logger log = LoggerFactory.getLogger(NullAudioSource.class.getName());
+    private static final Logger log = LoggerFactory.getLogger(NullAudioSource.class);
 
 }

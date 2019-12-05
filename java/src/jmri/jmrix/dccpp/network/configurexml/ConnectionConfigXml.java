@@ -8,7 +8,7 @@ import jmri.jmrix.dccpp.network.DCCppEthernetAdapter;
  * Handle XML persistence of layout connections by persisting the DCC++ Server
  * (and connections). Note this is named as the XML version of a
  * ConnectionConfig object, but it's actually persisting the DCC++ Server.
- * <P>
+ * <p>
  * NOTE: The DCC++ Server currently has no options, so this class does not store
  * any.
  * <p>
@@ -18,7 +18,6 @@ import jmri.jmrix.dccpp.network.DCCppEthernetAdapter;
  *
  * @author Paul Bender Copyright (C) 2011
  * @author Mark Underwood Copyright (C) 2015
- * @version $Revision$
  */
 public class ConnectionConfigXml extends AbstractNetworkConnectionConfigXml {
 

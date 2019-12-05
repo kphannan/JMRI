@@ -17,16 +17,16 @@ import org.slf4j.LoggerFactory;
  *
  * <hr>
  * This file is part of JMRI.
- * <P>
+ * <p>
  * JMRI is free software; you can redistribute it and/or modify it under the
  * terms of version 2 of the GNU General Public License as published by the Free
  * Software Foundation. See the "COPYING" file for a copy of this license.
- * <P>
+ * <p>
  * JMRI is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
  * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- * <P>
- * @author	Kevin Dickerson Copyright (C) 2009
+ *
+ * @author Kevin Dickerson Copyright (C) 2009
  */
 public class RosterEntryToGroupAction extends AbstractAction {
 
@@ -46,9 +46,10 @@ public class RosterEntryToGroupAction extends AbstractAction {
     Roster roster;
     String lastGroupSelect = null;
 
+    @Override
     public void actionPerformed(ActionEvent event) {
 
-        roster = Roster.instance();
+        roster = Roster.getDefault();
 
         selections = new RosterGroupComboBox();
         selections.setAllEntriesEnabled(false);
@@ -58,14 +59,15 @@ public class RosterEntryToGroupAction extends AbstractAction {
 
         rosterEntryUpdate();
         selections.addActionListener(new ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 rosterEntryUpdate();
             }
         });
         int retval = JOptionPane.showOptionDialog(_who,
-                "Select the roster entry and the group to assign it to\nA Roster Entry can belong to multiple groups. ", "Add Roster Entry to Group",
+                Bundle.getMessage("AddEntryToGroupDialog"), Bundle.getMessage("AddEntryToGroupTitle"),
                 0, JOptionPane.INFORMATION_MESSAGE, null,
-                new Object[]{"Cancel", "OK", selections, rosterEntry}, null);
+                new Object[]{Bundle.getMessage("ButtonDone"), Bundle.getMessage("ButtonOK"), selections, rosterEntry}, null);
         log.debug("Dialog value " + retval + " selected " + selections.getSelectedIndex() + ":"
                 + selections.getSelectedItem() + ", " + rosterEntry.getSelectedIndex() + ":" + rosterEntry.getSelectedItem());
         if (retval != 1) {
@@ -73,11 +75,11 @@ public class RosterEntryToGroupAction extends AbstractAction {
         }
 
         String selEntry = (String) rosterEntry.getSelectedItem();
-        lastGroupSelect = (String) selections.getSelectedItem();
+        lastGroupSelect = selections.getSelectedItem();
         RosterEntry re = roster.entryFromTitle(selEntry);
-        String selGroup = Roster.getRosterGroupProperty((String) selections.getSelectedItem());
+        String selGroup = Roster.getRosterGroupProperty(selections.getSelectedItem());
         re.putAttribute(selGroup, "yes");
-        Roster.writeRosterFile();
+        Roster.getDefault().writeRoster();
         re.updateFile();
         actionPerformed(event);
     }
@@ -86,15 +88,12 @@ public class RosterEntryToGroupAction extends AbstractAction {
         if (rosterEntry != null) {
             rosterEntry.removeAllItems();
         }
-        String group = roster.getRosterGroupPrefix() + selections.getSelectedItem();
-        for (int i = 0; i < roster.numEntries(); i++) {
-            RosterEntry r = roster.getEntry(i);
-            if (r.getAttribute(group) == null) {
-                rosterEntry.addItem(r.titleString());
-            }
-        }
+        String group = Roster.ROSTER_GROUP_PREFIX + selections.getSelectedItem();
+        roster.getAllEntries().stream().filter((r) -> (r.getAttribute(group) == null)).forEachOrdered((r) -> {
+            rosterEntry.addItem(r.titleString());
+        });
     }
 
     // initialize logging
-    private final static Logger log = LoggerFactory.getLogger(RosterEntryToGroupAction.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(RosterEntryToGroupAction.class);
 }

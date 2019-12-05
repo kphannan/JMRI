@@ -1,11 +1,9 @@
-// Constants.java
 package jmri.jmrix.powerline.cm11;
 
 /**
- * Constants and functions specific to the CM11 interface
+ * Constants and functions specific to the CM11 interface.
  *
- * @author	Bob Jacobsen Copyright (C) 2008
- * @version	$Revision$
+ * @author Bob Jacobsen Copyright (C) 2008
  */
 public class Constants {
 
@@ -23,7 +21,10 @@ public class Constants {
     public static final int TIMER_DOWNLOAD = 0x9B;
 
     /**
-     * Pretty-print a header code
+     * Pretty-print a header code.
+     *
+     * @param b header byte
+     * @return  formated as text of header byte
      */
     public static String formatHeaderByte(int b) {
         return "Dim: " + ((b >> 3) & 0x1F)
@@ -32,6 +33,3 @@ public class Constants {
     }
 
 }
-
-
-/* @(#)Constants.java */

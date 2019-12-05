@@ -7,9 +7,11 @@ import jmri.managers.DefaultProgrammerManager;
 /**
  * Extend DefaultProgrammerManager to provide node variable programmer for CBUS
  *
- * @see jmri.ProgrammerManager
- * @author	Bob Jacobsen Copyright (C) 2008
+ * @see jmri.managers.DefaultProgrammerManager
+ * @author Bob Jacobsen Copyright (C) 2008
+ * @deprecated since 4.17.1; use {@link jmri.jmrix.can.cbus.node.CbusNode} instead
  */
+@Deprecated
 public class CbusProgrammerManager extends DefaultProgrammerManager {
 
     public CbusProgrammerManager(TrafficController tc) {

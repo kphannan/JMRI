@@ -1,128 +1,90 @@
 package jmri.jmrit.operations;
 
-import java.io.File;
-import java.util.Locale;
-import jmri.jmrit.operations.automation.AutomationManager;
-import jmri.jmrit.operations.locations.LocationManager;
-import jmri.jmrit.operations.locations.LocationManagerXml;
-import jmri.jmrit.operations.locations.ScheduleManager;
-import jmri.jmrit.operations.rollingstock.RollingStockLogger;
-import jmri.jmrit.operations.rollingstock.cars.CarColors;
-import jmri.jmrit.operations.rollingstock.cars.CarLengths;
-import jmri.jmrit.operations.rollingstock.cars.CarLoads;
-import jmri.jmrit.operations.rollingstock.cars.CarManager;
-import jmri.jmrit.operations.rollingstock.cars.CarManagerXml;
-import jmri.jmrit.operations.rollingstock.cars.CarRoads;
-import jmri.jmrit.operations.rollingstock.cars.CarTypes;
-import jmri.jmrit.operations.rollingstock.engines.EngineLengths;
-import jmri.jmrit.operations.rollingstock.engines.EngineManager;
-import jmri.jmrit.operations.rollingstock.engines.EngineManagerXml;
-import jmri.jmrit.operations.rollingstock.engines.EngineModels;
-import jmri.jmrit.operations.routes.RouteManager;
-import jmri.jmrit.operations.routes.RouteManagerXml;
-import jmri.jmrit.operations.setup.OperationsSetupXml;
-import jmri.jmrit.operations.trains.TrainManager;
-import jmri.jmrit.operations.trains.TrainManagerXml;
-import jmri.util.FileUtil;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.netbeans.jemmy.QueueTool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import jmri.util.JUnitOperationsUtil;
 import jmri.util.JUnitUtil;
-import junit.framework.TestCase;
 
 /**
  * Common setup and tear down for operation tests.
  *
  * @author Dan Boudreau Copyright (C) 2015
- * @version $Revision: 28746 $
+ * @author Paul Bender Copyright (C) 2016
+ *
  */
-public class OperationsTestCase extends TestCase {
+public class OperationsTestCase {
 
-    public OperationsTestCase(String s) {
-        super(s);
+    @Before
+    public void setUp() {
+        JUnitUtil.setUp();
+        reset();
+        JUnitOperationsUtil.setupOperationsTests();
     }
 
-    // Ensure minimal setup for log4J
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        apps.tests.Log4JFixture.setUp();
-
-        // set the locale to US English
-        Locale.setDefault(Locale.ENGLISH);
-
-        // Set things up outside of operations
+    // Set things up outside of operations
+    public void reset() {
         JUnitUtil.resetInstanceManager();
+        JUnitUtil.resetProfileManager();
+        JUnitUtil.initRosterConfigManager();
         JUnitUtil.initInternalTurnoutManager();
         JUnitUtil.initInternalLightManager();
         JUnitUtil.initInternalSensorManager();
         JUnitUtil.initDebugThrottleManager();
         JUnitUtil.initIdTagManager();
-        JUnitUtil.initShutDownManager();
+    }
 
-        // set the file location to temp (in the root of the build directory).
-        OperationsSetupXml.setFileLocation("temp" + File.separator);
+    private final boolean waitOnEventQueueNotEmpty = false;
+    private final boolean checkEventQueueEmpty = false;
 
-        // Repoint OperationsSetupXml to JUnitTest subdirectory
-        String tempstring = OperationsSetupXml.getOperationsDirectoryName();
-        if (!tempstring.contains(File.separator + "JUnitTest")) {
-            OperationsSetupXml.setOperationsDirectoryName("operations" + File.separator + "JUnitTest");
+    @After
+    public void tearDown() {
+        if (waitOnEventQueueNotEmpty) {
+            Thread AWT_EventQueue = JUnitUtil.getThreadStartsWithName("AWT-EventQueue");
+            if (AWT_EventQueue != null) {
+                if (AWT_EventQueue.isAlive()) {
+                    log.debug("event queue running");
+                }
+                try {
+                    AWT_EventQueue.join();
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+            }
         }
-        // Change file names to ...Test.xml
-        OperationsSetupXml.instance().setOperationsFileName("OperationsJUnitTest.xml");
-        RouteManagerXml.instance().setOperationsFileName("OperationsJUnitTestRouteRoster.xml");
-        EngineManagerXml.instance().setOperationsFileName("OperationsJUnitTestEngineRoster.xml");
-        CarManagerXml.instance().setOperationsFileName("OperationsJUnitTestCarRoster.xml");
-        LocationManagerXml.instance().setOperationsFileName("OperationsJUnitTestLocationRoster.xml");
-        TrainManagerXml.instance().setOperationsFileName("OperationsJUnitTestTrainRoster.xml");
 
-        FileUtil.createDirectory(OperationsXml.getFileLocation() + OperationsSetupXml.getOperationsDirectoryName());
+        if (checkEventQueueEmpty) {
+            final Semaphore sem = new Semaphore(0);
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    new QueueTool().waitEmpty(250);
+                    sem.release();
+                }
+            }).start();
+            try {
+                if (!sem.tryAcquire(2000, TimeUnit.MILLISECONDS)) {
+                    System.err.println("Check event queue empty failed for test " + this.getClass().getName());
+                    Assert.fail("Event queue is not empty after this test");
+                }
+            } catch (InterruptedException e) {
+                // ignore.
+            }
+        }
+        
+        JUnitUtil.clearShutDownManager();
 
-        // delete files
-        File file = new File(RouteManagerXml.instance().getDefaultOperationsFilename());
-        file.delete();
-        file = new File(EngineManagerXml.instance().getDefaultOperationsFilename());
-        file.delete();
-        file = new File(CarManagerXml.instance().getDefaultOperationsFilename());
-        file.delete();
-        file = new File(LocationManagerXml.instance().getDefaultOperationsFilename());
-        file.delete();
-        file = new File(TrainManagerXml.instance().getDefaultOperationsFilename());
-        file.delete();
-        file = new File(OperationsSetupXml.instance().getDefaultOperationsFilename());
-        file.delete();
-
-        TrainManager.instance().dispose();
-        LocationManager.instance().dispose();
-        RouteManager.instance().dispose();
-        ScheduleManager.instance().dispose();
-        CarTypes.instance().dispose();
-        CarColors.instance().dispose();
-        CarLengths.instance().dispose();
-        CarLoads.instance().dispose();
-        CarRoads.instance().dispose();
-        CarManager.instance().dispose();
-        AutomationManager.instance().dispose();
-
-        // delete file and log directory before testing
-        file = new File(RollingStockLogger.instance().getFullLoggerFileName());
-        file.delete();
-        File dir = new File(RollingStockLogger.instance().getDirectoryName());
-        dir.delete();
-
-        RollingStockLogger.instance().dispose();
-
-        // dispose of the manager first, because otherwise
-        // the models go away.
-        EngineManager.instance().dispose();
-        EngineModels.instance().dispose();
-        EngineLengths.instance().dispose();
+        JUnitUtil.resetWindows(false,false);
+        JUnitUtil.tearDown();
     }
 
-    // The minimal setup for log4J
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
-        // restore locale
-        Locale.setDefault(Locale.getDefault());
-        JUnitUtil.resetInstanceManager();
-        apps.tests.Log4JFixture.tearDown();
-    }
+    private final static Logger log = LoggerFactory.getLogger(OperationsTestCase.class);
 }

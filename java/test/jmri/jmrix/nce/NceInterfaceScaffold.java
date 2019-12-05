@@ -8,14 +8,17 @@ import org.slf4j.LoggerFactory;
  * Stands in for the NceTrafficController class
  *
  * @author	Bob Jacobsen
- * @version	$Revision$
  */
-class NceInterfaceScaffold extends NceTrafficController {
+public class NceInterfaceScaffold extends NceTrafficController {
 
     public NceInterfaceScaffold() {
+        NceSystemConnectionMemo memo = new NceSystemConnectionMemo();
+        super.setAdapterMemo(memo);
+        memo.setNceTrafficController(this);
     }
 
     // override some NceInterfaceController methods for test purposes
+    @Override
     public boolean status() {
         return true;
     }
@@ -25,6 +28,7 @@ class NceInterfaceScaffold extends NceTrafficController {
      */
     public Vector<NceMessage> outbound = new Vector<NceMessage>();  // public OK here, so long as this is a test class
 
+    @Override
     public void sendNceMessage(NceMessage m, jmri.jmrix.nce.NceListener l) {
         if (log.isDebugEnabled()) {
             log.debug("sendNceMessage [" + m + "]");
@@ -63,6 +67,6 @@ class NceInterfaceScaffold extends NceTrafficController {
         return cmdListeners.size();
     }
 
-    private final static Logger log = LoggerFactory.getLogger(NceInterfaceScaffold.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(NceInterfaceScaffold.class);
 
 }

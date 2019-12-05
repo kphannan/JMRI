@@ -2,15 +2,16 @@
 package jmri.jmrit.audio;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.util.Locale;
 import javax.annotation.CheckReturnValue;
-import javax.annotation.Nullable;
+import javax.annotation.CheckForNull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 @ParametersAreNonnullByDefault
 @CheckReturnValue
 @SuppressFBWarnings(value = "NM_SAME_SIMPLE_NAME_AS_SUPERCLASS",justification="Desired pattern is repeated class names with package-level access to members")
 
-@net.jcip.annotations.Immutable
+@javax.annotation.concurrent.Immutable
 
 /**
  * Provides standard access for resource bundles in a package.
@@ -23,7 +24,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
  */
 public class Bundle extends jmri.jmrit.Bundle {
 
-    @Nullable private static final String name = null; // No local resources
+    @CheckForNull private static final String name = null; // No local resources
 
     //
     // below here is boilerplate to be copied exactly
@@ -33,7 +34,7 @@ public class Bundle extends jmri.jmrit.Bundle {
      * Provides a translated string for a given 
      * key from the package resource bundle or 
      * parent.
-     *<p>
+     * <p>
      * Note that this is intentionally package-local
      * access.
      * 
@@ -41,16 +42,16 @@ public class Bundle extends jmri.jmrit.Bundle {
      * @return Internationalized text
      */
     static String getMessage(String key) {
-        return b.handleGetMessage(key);
+        return getBundle().handleGetMessage(key);
     }
     /**
      * Merges user data with a translated string for a given 
      * key from the package resource bundle or 
      * parent.
-     *<p>
+     * <p>
      * Uses the transformation conventions of 
      * the Java MessageFormat utility.
-     *<p>
+     * <p>
      * Note that this is intentionally package-local
      * access.
      *
@@ -60,12 +61,34 @@ public class Bundle extends jmri.jmrit.Bundle {
      * @return Internationalized text
      */
     static String getMessage(String key, Object ... subs) {
-        return b.handleGetMessage(key, subs);
+        return getBundle().handleGetMessage(key, subs);
+    }
+
+    /**
+     * Merges user data with a translated string for a given key in a given
+     * locale from the package resource bundle or parent.
+     * <p>
+     * Uses the transformation conventions of the Java MessageFormat utility.
+     * <p>
+     * Note that this is intentionally package-local access.
+     *
+     * @see java.text.MessageFormat
+     * @param locale The locale to be used
+     * @param key    Bundle key to be translated
+     * @param subs   One or more objects to be inserted into the message
+     * @return Internationalized text
+     */
+    static String getMessage(Locale locale, String key, Object... subs) {
+        return getBundle().handleGetMessage(locale, key, subs);
     }
    
     private final static Bundle b = new Bundle();
-    @Override @Nullable protected String bundleName() {return name; }
-    @Override protected jmri.Bundle getBundle() { return b; }
-    @Override protected String retry(String key) { return super.getBundle().handleGetMessage(key); }
+    @Override @CheckForNull protected String bundleName() {return name; }
+    protected static jmri.Bundle getBundle() { return b; }
+
+    @Override 
+    protected String retry(Locale locale,String key) { 
+        return super.getBundle().handleGetMessage(locale,key); 
+    }
 
 }

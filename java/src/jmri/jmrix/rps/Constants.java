@@ -1,11 +1,9 @@
-// Constants.java
 package jmri.jmrix.rps;
 
 /**
- * Basic constants for the RPS package and subpackages
+ * Basic constants for the RPS package and subpackages.
  *
  * @author	Bob Jacobsen Copyright (C) 2006
- * @version	$Revision$
  */
 public interface Constants {
 
@@ -14,5 +12,3 @@ public interface Constants {
     static final int MAXTIME = 40000;
 
 }
-
-/* @(#)Constants.java */

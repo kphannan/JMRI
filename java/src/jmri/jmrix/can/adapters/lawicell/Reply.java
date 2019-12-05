@@ -1,4 +1,3 @@
-// Reply.java
 package jmri.jmrix.can.adapters.lawicell;
 
 import jmri.jmrix.AbstractMRReply;
@@ -8,11 +7,10 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Class for replies in a LAWICELL message/reply protocol.
- * <P>
+ * <p>
  *
  * @author Andrew Crosland Copyright (C) 2008
  * @author Bob Jacobsen Copyright (C) 2008
- * @version	$Revision$
  */
 public class Reply extends AbstractMRReply {
 
@@ -56,6 +54,7 @@ public class Reply extends AbstractMRReply {
         return ret;
     }
 
+    @Override
     protected int skipPrefix(int index) {
         while (_dataChars[index] == ':') {
             index++;
@@ -109,7 +108,7 @@ public class Reply extends AbstractMRReply {
 
     /**
      * Get a hex data byte from the message
-     * <P>
+     * <p>
      * Data bytes are encoded as two ASCII hex digits. The starting position is
      * byte 10 or byte 5, depending on whether this is an extended or standard
      * message
@@ -145,7 +144,7 @@ public class Reply extends AbstractMRReply {
         return (byte) b;
     }
 
-    private final static Logger log = LoggerFactory.getLogger(Reply.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(Reply.class);
 }
 
-/* @(#)Reply.java */
+

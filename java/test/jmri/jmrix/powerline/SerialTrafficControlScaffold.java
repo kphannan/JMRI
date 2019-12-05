@@ -5,23 +5,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Stands in for the SerialTrafficController class
+ * Stands in for the SerialTrafficController class.
  *
  * @author	Bob Jacobsen Copyright 2004, 2007, 2008 Converted to multiple
  * connection
  * @author kcameron Copyright (C) 2011
- * @version	$Revision$
  */
 public class SerialTrafficControlScaffold extends SerialTrafficController {
 
     public SerialTrafficControlScaffold() {
-        if (log.isDebugEnabled()) {
-            log.debug("setting instance: " + this);
-        }
+        log.debug("setting instance: {}", this);
         self = this;
     }
 
     // override some SerialTrafficController methods for test purposes
+    @Override
     public boolean status() {
         return true;
     }
@@ -31,10 +29,9 @@ public class SerialTrafficControlScaffold extends SerialTrafficController {
      */
     public Vector<SerialMessage> outbound = new Vector<SerialMessage>();  // public OK here, so long as this is a test class
 
+    @Override
     public void sendSerialMessage(SerialMessage m, SerialListener reply) {
-        if (log.isDebugEnabled()) {
-            log.debug("sendSerialMessage [" + m + "]");
-        }
+        log.debug("sendSerialMessage [{}]", m);
         // save a copy
         outbound.addElement(m);
         // we don't return an echo so that the processing before the echo can be
@@ -47,9 +44,7 @@ public class SerialTrafficControlScaffold extends SerialTrafficController {
      */
     protected void sendTestMessage(SerialMessage m, SerialListener l) {
         // forward a test message to NceListeners
-        if (log.isDebugEnabled()) {
-            log.debug("sendTestMessage    [" + m + "]");
-        }
+        log.debug("sendTestMessage    [{}]", m);
         notifyMessage(m, l);
         return;
     }
@@ -61,6 +56,6 @@ public class SerialTrafficControlScaffold extends SerialTrafficController {
         return cmdListeners.size();
     }
 
-    private final static Logger log = LoggerFactory.getLogger(SerialTrafficControlScaffold.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(SerialTrafficControlScaffold.class);
 
 }

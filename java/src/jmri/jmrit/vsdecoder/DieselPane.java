@@ -3,20 +3,18 @@ package jmri.jmrit.vsdecoder;
 /*
  * <hr>
  * This file is part of JMRI.
- * <P>
+ * <p>
  * JMRI is free software; you can redistribute it and/or modify it under 
  * the terms of version 2 of the GNU General Public License as published 
  * by the Free Software Foundation. See the "COPYING" file for a copy
  * of this license.
- * <P>
+ * <p>
  * JMRI is distributed in the hope that it will be useful, but WITHOUT 
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License 
  * for more details.
- * <P>
  *
- * @author			Mark Underwood Copyright (C) 2011
- * @version			$Revision$
+ * @author   Mark Underwood Copyright (C) 2011
  */
 import java.awt.Dimension;
 import java.awt.GridLayout;
@@ -29,7 +27,6 @@ import javax.swing.JToggleButton;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-@SuppressWarnings("serial")
 class DieselPane extends EnginePane {
 
     static final int THROTTLE_MIN = 1;
@@ -55,10 +52,12 @@ class DieselPane extends EnginePane {
         this(null);
     }
 
+    @Override
     public void initContext(Object context) {
         initComponents();
     }
 
+    @Override
     public void initComponents() {
         listenerList = new javax.swing.event.EventListenerList();
 
@@ -72,6 +71,7 @@ class DieselPane extends EnginePane {
         throttle_slider.setMinimumSize(new Dimension(400, 0));
         throttle_slider.setSnapToTicks(true);
         throttle_slider.addChangeListener(new ChangeListener() {
+            @Override
             public void stateChanged(ChangeEvent e) {
                 throttleChange(e);
             }
@@ -82,6 +82,7 @@ class DieselPane extends EnginePane {
         start_button = new JToggleButton();
         start_button.setText("Engine Start");
         start_button.addActionListener(new ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 startButtonChange(e);
             }
@@ -115,6 +116,7 @@ class DieselPane extends EnginePane {
         return (throttle_slider.getValue());
     }
 
+    @Override
     public void setThrottle(int t) {
         throttle_slider.setValue(t);
     }

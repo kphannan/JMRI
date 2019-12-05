@@ -8,6 +8,7 @@ import java.util.Locale;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.plaf.FontUIResource;
+import jmri.ConfigureManager;
 import jmri.InstanceManager;
 import org.jdom2.Attribute;
 import org.jdom2.Element;
@@ -16,7 +17,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Handle XML persistance of SwingGuiLaf default values.
- * <P>
+ * <p>
  * This class is named as being the persistant form of the GuiLafConfigPane
  * class, but there's no object of that form created when this is read back.
  * Instead, this interacts directly with Swing and the default Locale.
@@ -54,9 +55,10 @@ public class GuiLafConfigPaneXml extends jmri.configurexml.AbstractXmlAdapter {
         if (manager.getFontSize() != manager.getDefaultFontSize()) {
             e.setAttribute("fontsize", Integer.toString(manager.getFontSize()));
         }
-
         e.setAttribute("nonStandardMouseEvent",
                 (g.mouseEvent.isSelected() ? "yes" : "no"));
+        e.setAttribute("graphicTableState",
+                (g.graphicStateDisplay.isSelected() ? "yes" : "no"));
         return e;
     }
 
@@ -91,18 +93,30 @@ public class GuiLafConfigPaneXml extends jmri.configurexml.AbstractXmlAdapter {
         Attribute varAttr = shared.getAttribute("LocaleVariant");
         if (countryAttr != null && langAttr != null && varAttr != null) {
             Locale locale = new Locale(langAttr.getValue(), countryAttr.getValue(), varAttr.getValue());
+            
+            log.debug("About to setDefault Locale", new Exception(""));
             Locale.setDefault(locale);
+            javax.swing.JComponent.setDefaultLocale(locale);
+            javax.swing.JOptionPane.setDefaultLocale(locale);
+            
             InstanceManager.getDefault(GuiLafPreferencesManager.class).setLocale(locale);
         }
-
         Attribute clickAttr = shared.getAttribute("nonStandardMouseEvent");
         if (clickAttr != null) {
             boolean nonStandardMouseEvent = clickAttr.getValue().equals("yes");
             jmri.util.swing.SwingSettings.setNonStandardMouseEvent(nonStandardMouseEvent);
             InstanceManager.getDefault(GuiLafPreferencesManager.class).setNonStandardMouseEvent(nonStandardMouseEvent);
         }
+        Attribute graphicAttr = shared.getAttribute("graphicTableState");
+        if (graphicAttr != null) {
+            boolean graphicTableState = graphicAttr.getValue().equals("yes");
+            InstanceManager.getDefault(GuiLafPreferencesManager.class).setGraphicTableState(graphicTableState);
+        }
         GuiLafConfigPane g = new GuiLafConfigPane();
-        jmri.InstanceManager.getOptionalDefault(jmri.ConfigureManager.class).registerPref(g);
+        ConfigureManager cm = jmri.InstanceManager.getNullableDefault(jmri.ConfigureManager.class);
+        if (cm != null) {
+            cm.registerPref(g);
+        }
 
         Attribute fontsize = shared.getAttribute("fontsize");
         if (fontsize != null) {
@@ -150,7 +164,7 @@ public class GuiLafConfigPaneXml extends jmri.configurexml.AbstractXmlAdapter {
         log.error("Unexpected call of load(Element, Object)");
     }
     // initialize logging
-    private final static Logger log = LoggerFactory.getLogger(GuiLafConfigPaneXml.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(GuiLafConfigPaneXml.class);
 
     public void setUIFontSize(float size) {
         Enumeration<Object> keys = UIManager.getDefaults().keys();

@@ -1,4 +1,3 @@
-// JmriSRCPServer.java
 package jmri.jmris.srcp;
 
 import java.io.BufferedReader;
@@ -21,22 +20,11 @@ import org.slf4j.LoggerFactory;
  * This is an implementation of SRCP for JMRI.
  *
  * @author Paul Bender Copyright (C) 2009
- * @version $Revision$
  *
  */
 public class JmriSRCPServer extends JmriServer {
 
-    private static JmriServer _instance = null;
-
     static ResourceBundle rb = ResourceBundle.getBundle("jmri.jmris.srcp.JmriSRCPServerBundle");
-
-    synchronized public static JmriServer instance() {
-        if (_instance == null) {
-            int port = java.lang.Integer.parseInt(rb.getString("JMRISRCPServerPort"));
-            _instance = new JmriSRCPServer(port);
-        }
-        return _instance;
-    }
 
     // Create a new server using the default port
     public JmriSRCPServer() {
@@ -55,7 +43,6 @@ public class JmriSRCPServer extends JmriServer {
     }
 
     // Handle communication to a client through inStream and outStream
-    @SuppressWarnings("deprecation")
     @Override
     public void handleClient(DataInputStream inStream, DataOutputStream outStream) throws IOException {
         // Listen for commands from the client until the connection closes
@@ -179,5 +166,5 @@ public class JmriSRCPServer extends JmriServer {
         }
     }
 
-    private final static Logger log = LoggerFactory.getLogger(JmriSRCPServer.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(JmriSRCPServer.class);
 }

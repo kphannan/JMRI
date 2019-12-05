@@ -13,24 +13,26 @@ import org.slf4j.LoggerFactory;
  * <p>
  * If no programmer is provided, the programmer parts of the GUI are suppressed.
  *
- * @author	Bob Jacobsen Copyright (C) 2002, 2008
+ * @author Bob Jacobsen Copyright (C) 2002, 2008
  */
-public class PaneServiceProgFrame extends PaneProgFrame
-        implements java.beans.PropertyChangeListener {
+public class PaneServiceProgFrame extends PaneProgFrame {
 
     jmri.jmrit.progsupport.ProgModeSelector modePane;
 
     /**
      * Provide the programming mode selection pane for inclusion
      */
+    @Override
     protected JPanel getModePane() {
         // ensure initialization, even if invoked in ctor
         if (modePane == null) {
             modePane = new jmri.jmrit.progsupport.ProgServiceModeComboBox() {
+                @Override
                 protected java.util.List<GlobalProgrammerManager> getMgrList() {
                     return new java.util.ArrayList<GlobalProgrammerManager>();
                 }
 
+                @Override
                 public Programmer getProgrammer() {
                     return mProgrammer;
                 }
@@ -61,6 +63,6 @@ public class PaneServiceProgFrame extends PaneProgFrame
         }
     }
 
-    private final static Logger log = LoggerFactory.getLogger(PaneServiceProgFrame.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(PaneServiceProgFrame.class);
 
 }

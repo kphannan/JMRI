@@ -25,6 +25,7 @@ public class FirstTimeStartUpWizardAction extends jmri.util.swing.JmriAbstractAc
     }
 
     // never invoked, because we overrode actionPerformed above
+    @Override
     public JmriPanel makePanel() {
         throw new IllegalArgumentException("Should not be invoked");
     }
@@ -41,7 +42,7 @@ public class FirstTimeStartUpWizardAction extends jmri.util.swing.JmriAbstractAc
         // create the JTable model, with changes for specific NamedBean
         // create the frame
         if (f == null) {
-            f = new jmri.util.JmriJFrame("Decoder Pro Wizard", false, false);
+            f = new jmri.util.JmriJFrame("DecoderPro Wizard", false, false);
             // Update the GUI Look and Feel
             // This is needed as certain controls are instantiated
             // prior to the setup of the Look and Feel

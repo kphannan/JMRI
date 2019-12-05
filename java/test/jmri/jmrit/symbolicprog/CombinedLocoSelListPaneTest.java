@@ -4,41 +4,61 @@ import javax.swing.JLabel;
 import jmri.Programmer;
 import jmri.jmrit.progsupport.ProgModeSelector;
 import jmri.util.JUnitUtil;
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
 
-// Revision: $Revision$
-public class CombinedLocoSelListPaneTest extends TestCase {
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
-    public CombinedLocoSelListPaneTest(String s) {
-        super(s);
-    }
+public class CombinedLocoSelListPaneTest {
 
+    @Test
     public void testIsDecoderSelected() {
         ProgModeSelector sel = new ProgModeSelector() {
             Programmer programmer = new jmri.progdebugger.ProgDebugger();
-            public Programmer getProgrammer() { return programmer; }
-            public boolean isSelected() { return true; }
-            public void dispose() {}
+
+            @Override
+            public Programmer getProgrammer() {
+                return programmer;
+            }
+
+            @Override
+            public boolean isSelected() {
+                return true;
+            }
+
+            @Override
+            public void dispose() {
+            }
         };
-        
+
         JLabel val1 = new JLabel();
         // ensure a valid DecoderIndexFile
         jmri.jmrit.decoderdefn.DecoderIndexFile.resetInstance();
-        CombinedLocoSelListPane combinedlocosellistpane = new CombinedLocoSelListPane(val1,sel);
+        CombinedLocoSelListPane combinedlocosellistpane = new CombinedLocoSelListPane(val1, sel);
         Assert.assertEquals("initial state", false, combinedlocosellistpane.isDecoderSelected());
         combinedlocosellistpane.mDecoderList.setSelectedIndex(1);
         Assert.assertEquals("after update", true, combinedlocosellistpane.isDecoderSelected());
     }
 
+    @Test
     public void testSelectedDecoderType() {
         ProgModeSelector sel = new ProgModeSelector() {
             Programmer programmer = new jmri.progdebugger.ProgDebugger();
-            public Programmer getProgrammer() { return programmer; }
-            public boolean isSelected() { return true; }
-            public void dispose() {}
+
+            @Override
+            public Programmer getProgrammer() {
+                return programmer;
+            }
+
+            @Override
+            public boolean isSelected() {
+                return true;
+            }
+
+            @Override
+            public void dispose() {
+            }
         };
 
         JLabel val1 = new JLabel();
@@ -53,28 +73,16 @@ public class CombinedLocoSelListPaneTest extends TestCase {
                 stringRet);
     }
 
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading", CombinedLocoSelListPaneTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(CombinedLocoSelListPaneTest.class);
-        return suite;
-    }
-
-    // The minimal setup for log4J
-    protected void setUp() throws Exception {
-        super.setUp();
-        apps.tests.Log4JFixture.setUp();
-        JUnitUtil.resetInstanceManager();
+    @Before
+    public void setUp() throws Exception {
+        JUnitUtil.setUp();
+        JUnitUtil.resetProfileManager();
         JUnitUtil.initConfigureManager();
     }
 
-    protected void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
+    @After
+    public void tearDown() {
+        JUnitUtil.tearDown();
     }
 
 }

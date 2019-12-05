@@ -7,13 +7,12 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Provides load and store functionality for configuring DCCppSensorManagers.
- * <P>
+ * <p>
  * Uses the store method from the abstract base class, but provides a load
  * method here.
  *
  * @author Paul Bender Copyright (c) 2003
  * @author Mark Underwood Copyright (c) 2015
- * @version $Revision$
  */
 public class DCCppSensorManagerXml extends jmri.managers.configurexml.AbstractSensorManagerConfigXML {
 
@@ -21,20 +20,23 @@ public class DCCppSensorManagerXml extends jmri.managers.configurexml.AbstractSe
         super();
     }
 
+    @Override
     public void setStoreElementClass(Element sensors) {
         sensors.setAttribute("class", "jmri.jmrix.dccpp.configurexml.DCCppSensorManagerXml");
     }
 
+    @Override
     public void load(Element element, Object o) {
         log.error("Invalid method called");
     }
 
+    @Override
     public boolean load(Element sensors) throws jmri.configurexml.JmriConfigureXmlException {
         // load individual sensors
         return loadSensors(sensors);
     }
 
-    private final static Logger log = LoggerFactory.getLogger(DCCppTurnoutManagerXml.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(DCCppTurnoutManagerXml.class);
 
     @Override
     public boolean load(Element sharedSensors, Element perNodeSensors) throws JmriConfigureXmlException {

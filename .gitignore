@@ -9,7 +9,17 @@ junit-results.xml
 junit*.properties
 findbugs.xml
 findbugs.html
+spotbugs.xml
+spotbugs-check.xml
+spotbugs.html
+spotbugs-check.html
 jacoco.exec
+jmri-fb.html
+coveragereport
+tests.log
+cucumber-results.xml
+cucumber-results.json
+failed_files.txt
 
 # runtime artifacts
 messages.log*
@@ -18,8 +28,10 @@ session.log
 # transient artifacts
 .ant-targets-build.xml
 /java/classes
+/java/test-classes
 /java/tmp
 /java/doc
+/java/test-classes/
 *.class
 /temp
 .pydevproject
@@ -29,14 +41,26 @@ session.log
 /xml/XSLT/properties
 /xml/XSLT/xml
 /xml/XSLT/pages
+.run.sh
+hs_err_pid*.log
+nohup.out
 
 # private / per-user configuration files
 /nbproject/private
+/nbproject/nbjdk.properties
+/web/app/nbproject/private
+/scripts/config-portable/nbproject/private
 /.idea/workspace.xml
 local.properties
+/test
+/test/jmri.conf
 *.original~
 .metadata
 RemoteSystemsTempFiles
+.idea/libraries/**
+
+# user-installed components
+/web/TrainCrew
 
 # CATS source, sometimes present for test
 /java/src/cats
@@ -44,4 +68,3 @@ RemoteSystemsTempFiles
 # OS junk files
 [Tt]humbs.db
 *.DS_Store
-/jmri-fb.html

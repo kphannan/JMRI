@@ -1,16 +1,17 @@
-// Region.java
 package jmri.jmrix.rps;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.awt.Shape;
 import java.awt.geom.GeneralPath;
+import java.util.Arrays;
 import javax.vecmath.Point3d;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Represent a region in space for the RPS system.
- * <P>
- * The region is specfied by a <em>right-handed</em>
+ * <p>
+ * The region is specified by a <em>right-handed</em>
  * set of points.
  * <p>
  * Regions are immutable once created.
@@ -20,12 +21,10 @@ import org.slf4j.LoggerFactory;
  * Java2D GeneralPath to handle the inside/outside calculations.
  *
  * @author	Bob Jacobsen Copyright (C) 2007, 2008
- * @version	$Revision$
  */
-@net.jcip.annotations.Immutable
+@javax.annotation.concurrent.Immutable
 public class Region {
 
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "EI_EXPOSE_REP2") // OK until Java 1.6 allows cheap array copy
     public Region(Point3d[] points) {
         super();
 
@@ -35,11 +34,34 @@ public class Region {
         if (points.length < 3) {
             log.error("Not enough points to define region");
         }
-        this.points = points;
+        this.points = Arrays.copyOf(points, points.length);
     }
 
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "JCIP_FIELD_ISNT_FINAL_IN_IMMUTABLE_CLASS", justification = "internal state, not changeable from outside")
+    @SuppressFBWarnings(value = "JCIP_FIELD_ISNT_FINAL_IN_IMMUTABLE_CLASS", justification = "internal state, not changeable from outside")
     GeneralPath path;
+
+    /**
+     * Ctor from a string like "(0,0,0);(1,0,0);(1,1,0);(0,1,0)"
+     */
+    public Region(String s) {
+        String[] pStrings = s.split(";");
+        points = new Point3d[pStrings.length];
+
+        // load each point
+        for (int i = 0; i < points.length; i++) {
+            // remove leading ( and trailing )
+            String coords = pStrings[i].substring(1, pStrings[i].length() - 1);
+            String[] coord = coords.split(",");
+            if (coord.length != 3) {
+                log.error("need to have three coordinates in {}", pStrings[i]);
+            }
+            double x = Double.valueOf(coord[0]);
+            double y = Double.valueOf(coord[1]);
+            double z = Double.valueOf(coord[2]);
+            points[i] = new Point3d(x, y, z);
+        }
+        initPath(points);
+    }
 
     /**
      * Provide Java2D access to the shape of this region.
@@ -66,49 +88,25 @@ public class Region {
         path.lineTo((float) points[0].x, (float) points[0].y);
     }
 
-    /**
-     * Ctor from a string like "(0,0,0);(1,0,0);(1,1,0);(0,1,0)"
-     */
-    public Region(String s) {
-        String[] pStrings = s.split(";");
-        points = new Point3d[pStrings.length];
-
-        // load each point
-        for (int i = 0; i < points.length; i++) {
-            // remove leading ( and trailing )
-            String coords = pStrings[i].substring(1, pStrings[i].length() - 1);
-            String[] coord = coords.split(",");
-            if (coord.length != 3) {
-                log.error("need to have three coordinates in " + pStrings[i]);
-            }
-            double x = Double.valueOf(coord[0]).doubleValue();
-            double y = Double.valueOf(coord[1]).doubleValue();
-            double z = Double.valueOf(coord[2]).doubleValue();
-            points[i] = new Point3d(x, y, z);
-        }
-        initPath(points);
-    }
-
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "SBSC_USE_STRINGBUFFER_CONCATENATION")
-    // Only used occasionally, so inefficient String processing not really a problem
-    // though it would be good to fix it if you're working in this area
+    @Override
     public String toString() {
-        String retval = "";
+        StringBuilder retval = new StringBuilder("");
         for (int i = 0; i < points.length; i++) {
-            retval += "(" + points[i].x + "," + points[i].y + "," + points[i].z + ")";
+            retval.append(String.format("(%f,%f,%f)", points[i].x, points[i].y, points[i].z));
             if (i != points.length - 1) {
-                retval += ";";
+                retval.append(";");
             }
         }
-        return retval;
+        return retval.toString();
     }
 
     public boolean isInside(Point3d p) {
         return path.contains(p.x, p.y);
     }
 
+    @Override
     public boolean equals(Object ro) {
-        if (ro == null) {
+        if (ro == null || !(ro instanceof Region)) {
             return false;
         }
         try {
@@ -127,6 +125,7 @@ public class Region {
         }
     }
 
+    @Override
     public int hashCode() {
         int code = 0;
         if (points.length >= 1) {
@@ -140,7 +139,6 @@ public class Region {
 
     final Point3d[] points;
 
-    private final static Logger log = LoggerFactory.getLogger(Region.class.getName());
-}
+    private final static Logger log = LoggerFactory.getLogger(Region.class);
 
-/* @(#)Region.java */
+}

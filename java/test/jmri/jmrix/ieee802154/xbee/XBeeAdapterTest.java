@@ -1,14 +1,14 @@
 package jmri.jmrix.ieee802154.xbee;
 
+import jmri.util.JUnitUtil;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 /**
- * <P>
- * Tests for XBeeAdapter
- * </P>
+ * Tests for XBeeAdapter.
+ *
  * @author Paul Bender Copyright (C) 2016
  */
 public class XBeeAdapterTest {
@@ -22,13 +22,12 @@ public class XBeeAdapterTest {
     // The minimal setup for log4J
     @Before
     public void setUp() {
-        apps.tests.Log4JFixture.setUp();
+        JUnitUtil.setUp();
     }
 
     @After
     public void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
+        JUnitUtil.tearDown();
     }
-
 
 }

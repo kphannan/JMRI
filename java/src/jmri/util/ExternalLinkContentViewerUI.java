@@ -17,10 +17,9 @@ import org.slf4j.LoggerFactory;
 /**
  * A UI subclass that will open external links (website or mail links) in an
  * external browser
- * <P>
+ * <p>
  * To use:
  * SwingHelpUtilities.setContentViewerUI("jmri.util.ExternalLinkContentViewerUI");
- * <P>
  *
  * @since JMRI 2.5.3 (or perhaps later, please check CVS)
  */
@@ -42,7 +41,7 @@ public class ExternalLinkContentViewerUI extends BasicContentViewerUI {
                 log.debug("event has URL {}", he.getURL());
                 URL u = he.getURL();
                 activateURL(u);
-            } catch (Throwable t) {
+            } catch (IOException | URISyntaxException t) {
                 log.error("Error processing request", t);
             }
         }
@@ -84,5 +83,5 @@ public class ExternalLinkContentViewerUI extends BasicContentViewerUI {
             }
         }
     }
-    static private Logger log = LoggerFactory.getLogger(ExternalLinkContentViewerUI.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(ExternalLinkContentViewerUI.class);
 }

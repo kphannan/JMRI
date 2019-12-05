@@ -1,17 +1,16 @@
-// Bundle.java
 package jmri.server.json.memory;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Locale;
 import javax.annotation.CheckReturnValue;
-import javax.annotation.Nullable;
+import javax.annotation.CheckForNull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 @ParametersAreNonnullByDefault
 @CheckReturnValue
 @SuppressFBWarnings(value = "NM_SAME_SIMPLE_NAME_AS_SUPERCLASS", justification = "Desired pattern is repeated class names with package-level access to members")
 
-@net.jcip.annotations.Immutable
+@javax.annotation.concurrent.Immutable
 
 /**
  * Provides standard access for resource bundles in a package.
@@ -20,12 +19,12 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * the local resource bundle name.
  *
  * @author Bob Jacobsen Copyright (C) 2012
- * @version $Revision: 17977 $
  * @since 3.3.1
  */
 public class Bundle extends jmri.server.json.Bundle {
 
-    private final static String name = null; // no local resources
+    @CheckForNull
+    private static final String name = null; // no local resources
 
     //
     // below here is boilerplate to be copied exactly
@@ -40,7 +39,7 @@ public class Bundle extends jmri.server.json.Bundle {
      * @return Internationalized text
      */
     static String getMessage(String key) {
-        return b.handleGetMessage(key);
+        return getBundle().handleGetMessage(key);
     }
 
     /**
@@ -54,7 +53,7 @@ public class Bundle extends jmri.server.json.Bundle {
      * @return Internationalized text
      */
     static String getMessage(Locale locale, String key) {
-        return b.handleGetMessage(locale, key);
+        return getBundle().handleGetMessage(locale, key);
     }
 
     /**
@@ -71,7 +70,7 @@ public class Bundle extends jmri.server.json.Bundle {
      * @return Internationalized text
      */
     static String getMessage(String key, Object... subs) {
-        return b.handleGetMessage(key, subs);
+        return getBundle().handleGetMessage(key, subs);
     }
 
     /**
@@ -89,27 +88,24 @@ public class Bundle extends jmri.server.json.Bundle {
      * @return Internationalized text
      */
     static String getMessage(Locale locale, String key, Object... subs) {
-        return b.handleGetMessage(locale, key, subs);
+        return getBundle().handleGetMessage(locale, key, subs);
     }
 
     private final static Bundle b = new Bundle();
 
     @Override
-    @Nullable
+    @CheckForNull
     protected String bundleName() {
         return name;
     }
 
-    @Override
-    protected jmri.Bundle getBundle() {
+    protected static jmri.Bundle getBundle() {
         return b;
     }
 
     @Override
-    protected String retry(String key) {
-        return super.getBundle().handleGetMessage(key);
+    protected String retry(Locale locale, String key) {
+        return super.getBundle().handleGetMessage(locale,key);
     }
 
 }
-
-/* @(#)Bundle.java */

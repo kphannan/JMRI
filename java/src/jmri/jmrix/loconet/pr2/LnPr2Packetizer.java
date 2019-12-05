@@ -1,34 +1,39 @@
-// LnPr2Packetizer.java
 package jmri.jmrix.loconet.pr2;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import jmri.jmrix.loconet.LnPacketizer;
+import jmri.jmrix.loconet.LocoNetSystemConnectionMemo;
 
 /**
  * Special LnPr2Packetizer implementation for PR2.
+ * Differs only in handling PR2's non-echo.
  *
- * Differs only in handling PR2's non-echo
- *
- * @author	Bob Jacobsen Copyright (C) 2006
- * @version $Revision$
- *
+ * @author Bob Jacobsen Copyright (C) 2006
  */
-public class LnPr2Packetizer extends jmri.jmrix.loconet.LnPacketizer {
+public class LnPr2Packetizer extends LnPacketizer {
 
-    final static boolean fulldebug = false;
-
-    boolean debug = false;
-
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD",
-            justification = "Only used during system initialization")
+    @SuppressFBWarnings(value = "ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD", // NOI18N
+            justification = "Only used during system initialization") // NOI18N
     public LnPr2Packetizer() {
-        super();
-        self = this;
+        super(new LocoNetSystemConnectionMemo());
         echo = true;
-        debug = log.isDebugEnabled();
+    }
+    
+    // 
+    /**
+     * Create a Packetizer against an existing LocoNetSystemConnectionMemo.
+     * <p>
+     * This allows for re-configuring an existing LocoNetSystemConnectionMemo, 
+     * which was created during PR3Adapter initialization, for use in the PR3's 
+     * "PR2 Mode" (i.e. "Standalone Programmer Mode".)
+     *
+     * @param memo pre-existing LocoNetSystemConnectionMemo
+     */    
+    public LnPr2Packetizer(LocoNetSystemConnectionMemo memo) {
+        super(memo);
+        echo = true;
     }
 
-    private final static Logger log = LoggerFactory.getLogger(LnPr2Packetizer.class.getName());
-}
+//    private final static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(LnPr2Packetizer.class);
 
-/* @(#)LnPr2Packetizer.java */
+}

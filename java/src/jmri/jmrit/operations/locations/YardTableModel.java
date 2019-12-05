@@ -1,18 +1,19 @@
-// YardTableModel.java
 package jmri.jmrit.operations.locations;
 
 import java.beans.PropertyChangeEvent;
+
 import javax.swing.JTable;
 import javax.swing.SwingUtilities;
-import jmri.jmrit.operations.setup.Control;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import jmri.jmrit.operations.setup.Control;
 
 /**
  * Table Model for edit of yards used by operations
  *
  * @author Daniel Boudreau Copyright (C) 2008
- * @version $Revision$
  */
 public class YardTableModel extends TrackTableModel {
 
@@ -29,6 +30,9 @@ public class YardTableModel extends TrackTableModel {
         switch (col) {
             case NAME_COLUMN:
                 return Bundle.getMessage("YardName");
+            default:
+                // fall out
+                break;
         }
         return super.getColumnName(col);
     }
@@ -40,18 +44,15 @@ public class YardTableModel extends TrackTableModel {
             tef.dispose();
         }
         // use invokeLater so new window appears on top
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                tef = new YardEditFrame();
-                Track yard = tracksList.get(row);
-                tef.initComponents(_location, yard);
-                tef.setTitle(Bundle.getMessage("EditYard"));
-            }
+        SwingUtilities.invokeLater(() -> {
+            tef = new YardEditFrame();
+            Track yard = tracksList.get(row);
+            tef.initComponents(_location, yard);
+            tef.setTitle(Bundle.getMessage("EditYard"));
         });
     }
 
-    // this table listens for changes to a location and it's yards
+    // this table listens for changes to a location and its yards
     @Override
     public void propertyChange(PropertyChangeEvent e) {
         if (Control.SHOW_PROPERTY) {
@@ -61,7 +62,7 @@ public class YardTableModel extends TrackTableModel {
         super.propertyChange(e);
         if (e.getSource().getClass().equals(Track.class)) {
             Track track = ((Track) e.getSource());
-            if (track.getTrackType().equals(Track.YARD)) {
+            if (track.isYard()) {
                 int row = tracksList.indexOf(track);
                 if (Control.SHOW_PROPERTY) {
                     log.debug("Update yard table row: {} track: ({})", row, track.getName());
@@ -73,5 +74,5 @@ public class YardTableModel extends TrackTableModel {
         }
     }
 
-    private final static Logger log = LoggerFactory.getLogger(YardTableModel.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(YardTableModel.class);
 }

@@ -14,7 +14,7 @@ import javax.swing.tree.TreePath;
 
 /**
  * JTree subclass that supports a popup menu.
- * <P>
+ * <p>
  * From the
  * <A HREF="http://www.java-tips.org/java-se-tips/javax.swing/have-a-popup-attached-to-a-jtree.html">Java
  * Tips</a> web site.
@@ -41,6 +41,7 @@ class JTreeWithPopup extends JTree implements ActionListener {
 
         addMouseListener(
                 new MouseAdapter() {
+                    @Override
                     public void mouseReleased(MouseEvent e) {
                         if (e.isPopupTrigger()) {
                             popup.show((JComponent) e.getSource(), e.getX(), e.getY());
@@ -51,6 +52,7 @@ class JTreeWithPopup extends JTree implements ActionListener {
 
     }
 
+    @Override
     public void actionPerformed(ActionEvent ae) {
         DefaultMutableTreeNode dmtn, node;
 

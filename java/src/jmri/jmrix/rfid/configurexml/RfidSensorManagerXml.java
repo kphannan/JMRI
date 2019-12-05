@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Provides load and store functionality for configuring RfidSensorManagers.
- * <P>
+ * <p>
  * Uses the store method from the abstract base class, but provides a load
  * method here.
  *
@@ -37,5 +37,5 @@ public class RfidSensorManagerXml extends jmri.managers.configurexml.AbstractSen
         return loadSensors(shared);
     }
 
-    private static final Logger log = LoggerFactory.getLogger(RfidSensorManagerXml.class.getName());
+    private static final Logger log = LoggerFactory.getLogger(RfidSensorManagerXml.class);
 }

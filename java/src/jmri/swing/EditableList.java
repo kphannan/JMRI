@@ -1,6 +1,5 @@
 package jmri.swing;
 
-import java.applet.Applet;
 import java.awt.Component;
 import java.awt.KeyboardFocusManager;
 import java.awt.Point;
@@ -35,7 +34,7 @@ public class EditableList<E> extends JList<E> implements CellEditorListener {
     private PropertyChangeListener editorRemover = null;
 
     public EditableList() {
-        super(new DefaultEditableListModel<E>());
+        super(new DefaultEditableListModel<>());
         init();
     }
 
@@ -62,7 +61,7 @@ public class EditableList<E> extends JList<E> implements CellEditorListener {
     }
 
     public boolean isEditing() {
-        return (editorComp == null) ? false : true;
+        return (editorComp != null);
     }
 
     public Component getEditorComponent() {
@@ -73,6 +72,8 @@ public class EditableList<E> extends JList<E> implements CellEditorListener {
         return editingIndex;
     }
 
+     //This uses the deprecated {@link JComponent#setNextFocusableComponent} method.
+    @SuppressWarnings( "deprecation" )
     public Component prepareEditor(int index) {
         E value = getModel().getElementAt(index);
         boolean isSelected = isSelectedIndex(index);
@@ -174,8 +175,7 @@ public class EditableList<E> extends JList<E> implements CellEditorListener {
                 if (c == EditableList.this) {
                     // focus remains inside the table
                     return;
-                } else if ((c instanceof Window)
-                        || (c instanceof Applet && c.getParent() == null)) {
+                } else if (c instanceof Window) {
                     if (c == SwingUtilities.getRoot(EditableList.this)) {
                         if (!getListCellEditor().stopCellEditing()) {
                             getListCellEditor().cancelCellEditing();
@@ -224,11 +224,6 @@ public class EditableList<E> extends JList<E> implements CellEditorListener {
      */
     private class StartEditingAction extends AbstractAction {
 
-        /**
-         *
-         */
-        private static final long serialVersionUID = 2759348317251714909L;
-
         @Override
         @SuppressWarnings("unchecked") // have to cast CellEditor to ListCellEditor to access methods
         public void actionPerformed(ActionEvent e) {
@@ -252,11 +247,6 @@ public class EditableList<E> extends JList<E> implements CellEditorListener {
     }
 
     private class CancelEditingAction extends AbstractAction {
-
-        /**
-         *
-         */
-        private static final long serialVersionUID = -8222730187928540505L;
 
         @SuppressWarnings("unchecked")
         @Override

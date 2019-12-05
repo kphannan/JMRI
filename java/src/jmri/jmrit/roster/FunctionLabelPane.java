@@ -18,7 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Display and edit the function labels in a RosterEntry
+ * Display and edit the function labels in a RosterEntry.
  *
  * @author Bob Jacobsen Copyright (C) 2008
  * @author Randall Wood Copyright (C) 2014
@@ -34,10 +34,7 @@ public class FunctionLabelPane extends javax.swing.JPanel {
     EditableResizableImagePanel[] _imageFilePath;
     EditableResizableImagePanel[] _imagePressedFilePath;
 
-    // we're doing a manual allocation of position for
-    // now, based on 28 labels
-    // The references to maxfunction + 1 are due to F0
-    private final int maxfunction = 28;
+    private int maxfunction = 28; // default value
 
     /**
      * This constructor allows the panel to be used in visual bean editors, but
@@ -51,6 +48,7 @@ public class FunctionLabelPane extends javax.swing.JPanel {
         super();
         re = r;
 
+        maxfunction = re.getMAXFNNUM();
         GridBagLayout gbLayout = new GridBagLayout();
         GridBagConstraints cL = new GridBagConstraints();
         setLayout(gbLayout);
@@ -121,7 +119,7 @@ public class FunctionLabelPane extends javax.swing.JPanel {
 
             // add the function buttons
             _imageFilePath[i] = new EditableResizableImagePanel(r.getFunctionImage(i), 20, 20);
-            _imageFilePath[i].setDropFolder(LocoFile.getFileLocation());
+            _imageFilePath[i].setDropFolder(Roster.getDefault().getRosterFilesLocation());
             _imageFilePath[i].setBackground(new Color(0, 0, 0, 0));
             _imageFilePath[i].setToolTipText(Bundle.getMessage("FunctionButtonRosterImageToolTip"));
             _imageFilePath[i].setBorder(BorderFactory.createLineBorder(java.awt.Color.blue));
@@ -129,7 +127,7 @@ public class FunctionLabelPane extends javax.swing.JPanel {
             cL.gridx++;
 
             _imagePressedFilePath[i] = new EditableResizableImagePanel(r.getFunctionSelectedImage(i), 20, 20);
-            _imagePressedFilePath[i].setDropFolder(LocoFile.getFileLocation());
+            _imagePressedFilePath[i].setDropFolder(Roster.getDefault().getRosterFilesLocation());
             _imagePressedFilePath[i].setBackground(new Color(0, 0, 0, 0));
             _imagePressedFilePath[i].setToolTipText(Bundle.getMessage("FunctionButtonPressedRosterImageToolTip"));
             _imagePressedFilePath[i].setBorder(BorderFactory.createLineBorder(java.awt.Color.blue));
@@ -146,7 +144,7 @@ public class FunctionLabelPane extends javax.swing.JPanel {
 
             // advance position
             cL.gridy++;
-            if (cL.gridy - 1 == ((maxfunction + 1) / 2) + 1) {
+            if (cL.gridy == ((maxfunction + 2) / 2) + 1) {
                 cL.gridy = 1;  // skip titles
                 nextx = nextx + 6;
             }
@@ -155,9 +153,10 @@ public class FunctionLabelPane extends javax.swing.JPanel {
     }
 
     /**
-     * Do the GUI contents agree with a RosterEntry?
+     * Check if panel contents differ with a RosterEntry.
      *
-     * @return true if GUI differs from RosterEntry
+     * @param r the roster entry to check
+     * @return true if panel contents differ; false otherwise
      */
     public boolean guiChanged(RosterEntry r) {
         if (labels != null) {
@@ -223,9 +222,10 @@ public class FunctionLabelPane extends javax.swing.JPanel {
     }
 
     /**
-     * Fill a RosterEntry object from GUI contents
+     * Update a RosterEntry object from panel contents.
      *
      *
+     * @param r the roster entry to update
      */
     public void update(RosterEntry r) {
         if (labels != null) {
@@ -266,9 +266,6 @@ public class FunctionLabelPane extends javax.swing.JPanel {
     }
     boolean print = false;
 
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "SBSC_USE_STRINGBUFFER_CONCATENATION")
-    // Only used occasionally, so inefficient String processing not really a problem
-    // though it would be good to fix it if you're working in this area
     public void printPane(HardcopyWriter w) {
         // if pane is empty, don't print anything
         //if (varList.size() == 0 && cvList.size() == 0) return;
@@ -282,18 +279,18 @@ public class FunctionLabelPane extends javax.swing.JPanel {
 
         try {
             //Create a string of spaces the width of the first column
-            String spaces = "";
+            StringBuilder spaces = new StringBuilder();
             for (int i = 0; i < col1Width; i++) {
-                spaces = spaces + " ";
+                spaces.append(" ");
             }
             // start with pane name in bold
-            String heading1 = "Function";
-            String heading2 = "Description";
+            String heading1 = Bundle.getMessage("ColumnHeadingFunction");
+            String heading2 = Bundle.getMessage("ColumnHeadingDescription");
             String s;
             int interval = spaces.length() - heading1.length();
             w.setFontStyle(Font.BOLD);
             // write the section name and dividing line
-            s = "FUNCTION LABELS";
+            s = Bundle.getMessage("HeadingFunctionLabels");
             w.write(s, 0, s.length());
             w.writeBorders();
             //Draw horizontal dividing line for each Pane section
@@ -391,6 +388,6 @@ public class FunctionLabelPane extends javax.swing.JPanel {
 
     }
 
-    private final static Logger log = LoggerFactory.getLogger(FunctionLabelPane.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(FunctionLabelPane.class);
 
 }

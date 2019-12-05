@@ -1,22 +1,19 @@
-// ExportTrainss.java
 package jmri.jmrit.operations.trains.tools;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
+import java.io.*;
 import java.text.MessageFormat;
+
 import javax.swing.JOptionPane;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import jmri.InstanceManager;
 import jmri.jmrit.XmlFile;
-import jmri.jmrit.operations.rollingstock.cars.ExportCars;
 import jmri.jmrit.operations.routes.RouteLocation;
 import jmri.jmrit.operations.setup.OperationsSetupXml;
 import jmri.jmrit.operations.trains.Train;
 import jmri.jmrit.operations.trains.TrainManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Exports the train roster into a comma delimited file (CSV). Only trains that
@@ -24,7 +21,6 @@ import org.slf4j.LoggerFactory;
  * summary of the train's route and work is provided.
  *
  * @author Daniel Boudreau Copyright (C) 2010, 2011
- * @version $Revision: 29118 $
  *
  */
 public class ExportTrains extends XmlFile {
@@ -40,11 +36,7 @@ public class ExportTrains extends XmlFile {
         del = delimiter;
     }
 
-    /**
-     * Store the all of the operation car objects in the default place,
-     * including making a backup if needed
-     */
-    public void writeOperationsCarFile() {
+    public void writeOperationsTrainsFile() {
         makeBackupFile(defaultOperationsFilename());
         try {
             if (!checkFile(defaultOperationsFilename())) {
@@ -67,9 +59,7 @@ public class ExportTrains extends XmlFile {
     }
 
     public void writeFile(String name) {
-        if (log.isDebugEnabled()) {
-            log.debug("writeFile {}", name);
-        }
+        log.debug("writeFile {}", name);
         // This is taken in large part from "Java and XML" page 368
         File file = findFile(name);
         if (file == null) {
@@ -82,7 +72,12 @@ public class ExportTrains extends XmlFile {
             fileOut = new PrintWriter(new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), "UTF-8")), // NOI18N
                     true); // NOI18N
         } catch (IOException e) {
-            log.error("Can not open export cars CSV file: " + file.getName());
+            log.error("Can not open export trains CSV file: " + file.getName());
+            JOptionPane.showMessageDialog(null,
+                    MessageFormat.format(Bundle.getMessage("ExportedTrainsToFile"), new Object[]{
+                            0, defaultOperationsFilename()}),
+                    Bundle.getMessage("ExportFailed"),
+                    JOptionPane.ERROR_MESSAGE);
             return;
         }
 
@@ -106,7 +101,7 @@ public class ExportTrains extends XmlFile {
 
         int count = 0;
 
-        for (Train train : TrainManager.instance().getTrainsByTimeList()) {
+        for (Train train : InstanceManager.getDefault(TrainManager.class).getTrainsByTimeList()) {
             if (!train.isBuildEnabled())
                 continue;
             count++;
@@ -156,18 +151,18 @@ public class ExportTrains extends XmlFile {
                 Bundle.getMessage("Attributes");
         fileOut.println(header);
 
-        for (Train train : TrainManager.instance().getTrainsByTimeList()) {
+        for (Train train : InstanceManager.getDefault(TrainManager.class).getTrainsByTimeList()) {
             if (!train.isBuildEnabled())
                 continue;
 
             if (train.isBuilt() && train.getRoute() != null) {
-                StringBuffer line = new StringBuffer (ESC + train.getName() + ESC + del + Bundle.getMessage("Route"));
+                StringBuffer line = new StringBuffer(ESC + train.getName() + ESC + del + Bundle.getMessage("Route"));
                 for (RouteLocation rl : train.getRoute().getLocationsBySequenceList()) {
                     line.append(del + ESC + rl.getName() + ESC);
                 }
                 fileOut.println(line);
 
-                line = new StringBuffer (ESC + train.getName() + ESC + del + Bundle.getMessage("csvArrivalTime"));
+                line = new StringBuffer(ESC + train.getName() + ESC + del + Bundle.getMessage("csvArrivalTime"));
                 for (RouteLocation rl : train.getRoute().getLocationsBySequenceList()) {
                     line.append(del + ESC + train.getExpectedArrivalTime(rl) + ESC);
                 }
@@ -231,15 +226,15 @@ public class ExportTrains extends XmlFile {
     }
 
     public static void setOperationsFileName(String name) {
-        OperationsFileName = name;
+        operationsFileName = name;
     }
 
     public static String getOperationsFileName() {
-        return OperationsFileName;
+        return operationsFileName;
     }
 
-    private static String OperationsFileName = "ExportOperationsTrainRoster.csv"; // NOI18N
+    private static String operationsFileName = "ExportOperationsTrainRoster.csv"; // NOI18N
 
-    private final static Logger log = LoggerFactory.getLogger(ExportCars.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(ExportTrains.class);
 
 }

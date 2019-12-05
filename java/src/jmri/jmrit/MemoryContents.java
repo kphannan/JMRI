@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
  * agents to access the data in the internal data structures for the purpose of
  * sending the data to the device to be updated. Supports the Intel "I8HEX" file
  * format and a derivative ".dmf" file format created by Digitrax.
- * <P>
+ * <p>
  * Support for the Intel "I8HEX" format includes support for record types "00"
  * and "01". The "I8HEX" format implements records with a LOAD OFFSET field of
  * 16 bits. To support the full 24-bit addressing range provided by the LocoNet
@@ -69,13 +69,13 @@ import org.slf4j.LoggerFactory;
  * Similarly, when writing the contents of data storage to a file, the
  * instantiating method will create a {@link File} and an associated
  * {@link Writer} and pass the {@link Writer} object to
- * {@link writeHex}. The mechanisms implemented within this class do not
+ * {@link #writeHex}. The mechanisms implemented within this class do not
  * know about or care about the filename or its extension and do not use that
  * information as part of its file interpretation or file creation.
  * <p>
  * The class is implemented with a maximum of 24 bits of address space, with up
  * to 256 pages of up to 65536 bytes per page. A "sparse" implementation of
- * memory is modeled, where only occupied pages are allocated within the JAVA
+ * memory is modeled, where only occupied pages are allocated within the Java
  * system's memory.
  * <hr>
  * The Intel "Hexadecimal Object File Format File Format Specification"
@@ -116,7 +116,7 @@ import org.slf4j.LoggerFactory;
  * Specification", Revision A, January 6, 1988.
  * <p>
  * Mnemonically, a properly formatted record would appear as:
- * </p><pre>
+ * <pre>
  *     :lloooott{dd}cc
  * where:
  *      ':'     is the RECORD MARK
@@ -126,16 +126,17 @@ import org.slf4j.LoggerFactory;
  *      "{dd}"  is the INFO or DATA field, containing zero or more pairs of 
  *                  characters of Info or Data associated with the record
  *      "cc"    is the CHKSUM
- * </pre><p>
- * and a few examples of complaint record would be:
- * </p><ul>
+ * </pre>
+ * <p>
+ * and a few examples of complaint records would be:
+ * <ul>
  *     <li>:02041000FADE07
  *     <li>:020000024010AC
  *     <li>:00000001FF
  * </ul>
  *
- * @author	Bob Jacobsen Copyright (C) 2005, 2008
- * @author B. Milhaupt Copyright (C) 2014
+ * @author Bob Jacobsen Copyright (C) 2005, 2008
+ * @author B. Milhaupt Copyright (C) 2014, 2017
  */
 public class MemoryContents {
 
@@ -210,6 +211,7 @@ public class MemoryContents {
         hasData = false;
         curExtLinAddr = 0;
         curExtSegAddr = 0;
+        keyValComments = new ArrayList<String>(1);
     }
 
     private boolean isPageInitialized(int page) {
@@ -246,7 +248,7 @@ public class MemoryContents {
      * comments for use by the invoking method.
      * <p>
      * Integrity checks include:
-     * </p><ul>
+     * <ul>
      * <li>Identification of LOAD OFFSET field type from first record
      * <li>Verification that all subsequent records use the same LOAD OFFSET
      * field type
@@ -258,7 +260,8 @@ public class MemoryContents {
      * <li>Identification of a file without any data record
      * <li>Identification of any records which have extra characters after the
      * checksum
-     * </ul><p>
+     * </ul>
+     * <p>
      * When reading the file, {@link #readHex} infers the addressing format
      * from the first record found in the file, and future records are
      * interpreted using that addressing format. It is not necessary to
@@ -274,7 +277,7 @@ public class MemoryContents {
      * information. Such Key/Value pair information is used within the .DMF
      * format to provide configuration information for firmware update
      * mechanism. This class also extracts key/value pair comments "I8HEX"
-     * format files. After successful completion of this {@link readHex},
+     * format files. After successful completion of the {@link #readHex} call,
      * then the {@link #extractValueOfKey(String keyName)} method may be used to inspect individual key values.
      * <p>
      * Key/Value pair definition comment lines are of the format:
@@ -394,6 +397,9 @@ public class MemoryContents {
         } catch (IOException ex) {
             throw new FileNotFoundException(ex.toString());
         }
+        
+        this.clear();   // Ensure that the information storage is clear of any 
+                        // previous contents
         currentPage = 0;
         loadOffsetFieldType = LoadOffsetFieldType.UNDEFINED;
         boolean foundDataRecords = false;
@@ -482,7 +488,7 @@ public class MemoryContents {
                         throw new MemoryFileRecordLengthException(message);
                     }
 
-                    // verify the checksum now that we know the the RECTYP.
+                    // verify the checksum now that we know the RECTYP.
                     // Do this by calculating the checksum of all characters on 
                     //line (except the ':' record mark), which should result in 
                     // a computed checksum value of 0
@@ -666,7 +672,7 @@ public class MemoryContents {
                     } else if (recordType == RECTYP_EOF_RECORD) {
                         if ((extractRecLen(line) != 0)
                                 || (extractLoadOffset(line) != 0)) {
-                            String message = "Illegal EOF record form in line "
+                            String message = "Illegal EOF record form in line " // NOI18N
                                     + lineNum;
                             log.error(message);
                             throw new MemoryFileRecordContentException(message);
@@ -777,7 +783,7 @@ public class MemoryContents {
      * any comment lines in its output.
      *
      * @param writer    Writer to which the character stream is sent
-     * @param blocksize is the maximum number of bytes defined in a data record
+     * @param blockSize is the maximum number of bytes defined in a data record
      * @throws IOException                         upon file access problem
      * @throws MemoryFileAddressingFormatException if unsupported addressing
      *                                             format
@@ -1301,7 +1307,7 @@ public class MemoryContents {
                 line.substring(CHARS_IN_RECORD_MARK + CHARS_IN_RECORD_LENGTH,
                         CHARS_IN_RECORD_MARK + CHARS_IN_RECORD_LENGTH + charsInAddress()), 16);
     }
-
+    
     /**
      * Generalized class from which detailed exceptions are derived.
      */
@@ -1453,8 +1459,9 @@ public class MemoryContents {
     /**
      * Summarize contents
      */
+    @Override
     public String toString() {
-        StringBuffer retval = new StringBuffer("Pages occupied: ");
+        StringBuffer retval = new StringBuffer("Pages occupied: "); // NOI18N
         for (int page=0; page<PAGES; page++) {
             if (isPageInitialized(page)) {
                 retval.append(page);
@@ -1464,5 +1471,27 @@ public class MemoryContents {
         return new String(retval);
     }
 
-    private final static Logger log = LoggerFactory.getLogger(MemoryContents.class.getName());
+    /**
+     * Clear out an imported Firmware File.
+     * 
+     * This may be used, when the instantiating object has evaluated the contents of 
+     * a firmware file and found it to be inappropriate for updating to a device, 
+     * to clear out the firmware image so that there is no chance that it can be
+     * updated to the device.
+     * 
+     */
+    public void clear() {
+        log.info("Clearing a MemoryContents object by program request.");
+        currentPage = -1;
+        hasData = false;
+        curExtLinAddr = 0;
+        curExtSegAddr = 0;
+        keyValComments = new ArrayList<String>(1);
+        for (int i = 0 ; i < pageArray.length; ++i) {
+            pageArray[i] = null;
+        }
+        
+    }
+
+    private final static Logger log = LoggerFactory.getLogger(MemoryContents.class);
 }

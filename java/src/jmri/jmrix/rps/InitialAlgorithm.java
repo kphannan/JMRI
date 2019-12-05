@@ -1,4 +1,3 @@
-// InitialAlgorithm.java
 package jmri.jmrix.rps;
 
 import javax.vecmath.Point3d;
@@ -6,18 +5,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Implementation of 1st algorithm for reducing Readings
- * <P>
+ * Implementation of 1st algorithm for reducing Readings.
+ * <p>
  * This algorithm was provided by Robert Ashenfelter based in part on the work
  * of Ralph Bucher in his paper "Exact Solution for Three Dimensional Hyperbolic
  * Positioning Algorithm and Synthesizable VHDL Model for Hardware
  * Implementation".
- * <P>
+ * <p>
  * Neither Ashenfelter nor Bucher provide any guarantee as to the intellectual
  * property status of this algorithm. Use it at your own risk.
  *
  * @author	Bob Jacobsen Copyright (C) 2006
- * @version	$Revision$
  */
 public class InitialAlgorithm implements Calculator {
 
@@ -65,6 +63,7 @@ public class InitialAlgorithm implements Calculator {
 
     double vsound;
 
+    @Override
     public Measurement convert(Reading r) {
         ngps = r.getNValues();
         ri = r.getValue(1) * vsound;
@@ -85,6 +84,7 @@ public class InitialAlgorithm implements Calculator {
     /**
      * Seed the conversion using an estimated position
      */
+    @Override
     public Measurement convert(Reading r, Point3d guess) {
         this.x = guess.x;
         this.y = guess.y;
@@ -96,6 +96,7 @@ public class InitialAlgorithm implements Calculator {
     /**
      * Seed the conversion using a last measurement
      */
+    @Override
     public Measurement convert(Reading r, Measurement last) {
         if (last != null) {
             this.x = last.getX();
@@ -354,8 +355,6 @@ public class InitialAlgorithm implements Calculator {
         return true;//     r0 = range offset (rel)
     }
 
-    private final static Logger log = LoggerFactory.getLogger(InitialAlgorithm.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(InitialAlgorithm.class);
 
 }
-
-/* @(#)InitialAlgorithm.java */

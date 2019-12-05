@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import jmri.DccLocoAddress;
 import jmri.InstanceManager;
+import jmri.InstanceManagerAutoDefault;
 import jmri.ThrottleListener;
 import jmri.ThrottleManager;
 
@@ -15,9 +16,9 @@ import jmri.ThrottleManager;
  * is needed since multiple JsonThrottle objects may be controlling the same
  * {@link jmri.DccLocoAddress}.
  *
- * @author Randall Wood (C) 2016
+ * @author Randall Wood Copyright 2016, 2018
  */
-public class JsonThrottleManager {
+public class JsonThrottleManager implements InstanceManagerAutoDefault {
 
     private final HashMap<DccLocoAddress, JsonThrottle> throttles = new HashMap<>();
     private final HashMap<JsonThrottle, ArrayList<JsonThrottleSocketService>> services = new HashMap<>();
@@ -27,10 +28,15 @@ public class JsonThrottleManager {
         // do nothing
     }
 
+    /**
+     *
+     * @return the default JsonThrottleManager
+     * @deprecated since 4.11.4; use
+     * {@link InstanceManager#getDefault(java.lang.Class)} directly
+     */
+    @Deprecated
     public static JsonThrottleManager getDefault() {
-        if (InstanceManager.getOptionalDefault(JsonThrottleManager.class) == null) {
-            InstanceManager.setDefault(JsonThrottleManager.class, new JsonThrottleManager());
-        }
+        jmri.util.Log4JUtil.deprecationWarning(log, "getDefault");        
         return InstanceManager.getDefault(JsonThrottleManager.class);
     }
 
@@ -43,10 +49,7 @@ public class JsonThrottleManager {
     }
 
     public void put(JsonThrottle throttle, JsonThrottleSocketService service) {
-        if (this.services.get(throttle) == null) {
-            this.services.put(throttle, new ArrayList<>());
-        }
-        this.services.get(throttle).add(service);
+        this.services.computeIfAbsent(throttle, v -> new ArrayList<>()).add(service);
     }
 
     public boolean containsKey(DccLocoAddress address) {
@@ -62,10 +65,7 @@ public class JsonThrottleManager {
     }
 
     public List<JsonThrottleSocketService> getServers(JsonThrottle throttle) {
-        if (this.services.get(throttle) == null) {
-            this.services.put(throttle, new ArrayList<>());
-        }
-        return this.services.get(throttle);
+        return this.services.computeIfAbsent(throttle, v -> new ArrayList<>());
     }
 
     public void remove(JsonThrottle throttle, JsonThrottleSocketService server) {
@@ -75,7 +75,7 @@ public class JsonThrottleManager {
     public ObjectMapper getObjectMapper() {
         return this.mapper;
     }
-    
+
     public boolean canBeLongAddress(int asInt) {
         return InstanceManager.getDefault(ThrottleManager.class).canBeLongAddress(asInt);
     }
@@ -85,10 +85,11 @@ public class JsonThrottleManager {
     }
 
     public boolean requestThrottle(DccLocoAddress address, ThrottleListener listener) {
-        return InstanceManager.getDefault(ThrottleManager.class).requestThrottle(address, listener);
+        return InstanceManager.getDefault(ThrottleManager.class).requestThrottle(address, listener, false);
     }
 
     public void attachListener(DccLocoAddress address, JsonThrottle throttle) {
         InstanceManager.getDefault(ThrottleManager.class).attachListener(address, throttle);
     }
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(JsonThrottleManager.class);
 }

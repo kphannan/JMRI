@@ -1,7 +1,10 @@
 package jmri.jmrix.lenz;
 
-import junit.framework.Assert;
-import junit.framework.TestCase;
+import jmri.util.JUnitUtil;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * <p>
@@ -13,24 +16,24 @@ import junit.framework.TestCase;
  *
  * @author Bob Jacobsen
  */
-public class XNetTrafficRouterTest extends TestCase {
+public class XNetTrafficRouterTest {
 
-    public XNetTrafficRouterTest(String s) {
-        super(s);
-    }
-
+    @Test
     public void testConnectAndSend() {
         // scaffold for upstream
         XNetInterfaceScaffold upstream = new XNetInterfaceScaffold(new LenzCommandStation());
 
         // create object
         XNetTrafficRouter router = new XNetTrafficRouter(new LenzCommandStation()) {
+            @Override
             protected void connectionWarn() {
             }
 
+            @Override
             public void receiveLoop() {
             }
 
+            @Override
             protected void portWarn(Exception e) {
             }
         };
@@ -62,15 +65,19 @@ public class XNetTrafficRouterTest extends TestCase {
         count++;
     }
 
+    @Test
     public void testReceiveAndForward() {
         // create object
         XNetTrafficRouter router = new XNetTrafficRouter(new LenzCommandStation()) {
+            @Override
             protected void connectionWarn() {
             }
 
+            @Override
             public void receiveLoop() {
             }
 
+            @Override
             protected void portWarn(Exception e) {
             }
         };
@@ -79,13 +86,16 @@ public class XNetTrafficRouterTest extends TestCase {
         resetCount();
         // register a listener
         XNetListener l = new XNetListener() {
+            @Override
             public void message(XNetReply m) {
                 incrementCount();
             }
 
+            @Override
             public void message(XNetMessage m) {
             }
 
+            @Override
             public void notifyTimeout(XNetMessage m) {
             }
         };
@@ -101,15 +111,19 @@ public class XNetTrafficRouterTest extends TestCase {
         Assert.assertEquals("one message sent", 1, count);
     }
 
+    @Test
     public void testConnectAndDisconnect() {
         // scaffold for upstream
         XNetInterfaceScaffold upstream = new XNetInterfaceScaffold(new LenzCommandStation()) {
+            @Override
             protected void connectionWarn() {
             }
 
+            @Override
             public void receiveLoop() {
             }
 
+            @Override
             protected void portWarn(Exception e) {
             }
         };
@@ -127,19 +141,15 @@ public class XNetTrafficRouterTest extends TestCase {
         Assert.assertTrue("not connected", !router.status());
     }
 
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading", XNetTrafficRouterTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
+    @Before
+    public void setUp() {
+        JUnitUtil.setUp();
     }
 
-    // The minimal setup for log4J
-    protected void setUp() {
-        apps.tests.Log4JFixture.setUp();
-    }
-
-    protected void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
+    @After
+    public void tearDown() {
+	    JUnitUtil.clearShutDownManager(); // put in place because AbstractMRTrafficController implementing subclass was not terminated properly
+        JUnitUtil.tearDown();
     }
 
 }

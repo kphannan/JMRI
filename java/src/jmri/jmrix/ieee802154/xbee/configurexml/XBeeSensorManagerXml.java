@@ -7,12 +7,11 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Provides load and store functionality for configuring XBeeSensorManagers.
- * <P>
+ * <p>
  * Uses the store method from the abstract base class, but provides a load
  * method here.
  *
  * @author Ken Cameron Copyright: Copyright (c) 2014
- * @version $Revision$
  */
 public class XBeeSensorManagerXml extends jmri.managers.configurexml.AbstractSensorManagerConfigXML {
 
@@ -20,10 +19,12 @@ public class XBeeSensorManagerXml extends jmri.managers.configurexml.AbstractSen
         super();
     }
 
+    @Override
     public void setStoreElementClass(Element sensors) {
         sensors.setAttribute("class", this.getClass().getName());
     }
 
+    @Override
     public void load(Element element, Object o) {
         log.error("Invalid method called");
     }
@@ -34,5 +35,5 @@ public class XBeeSensorManagerXml extends jmri.managers.configurexml.AbstractSen
         return loadSensors(shared);
     }
 
-    private final static Logger log = LoggerFactory.getLogger(XBeeSensorManagerXml.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(XBeeSensorManagerXml.class);
 }

@@ -1,12 +1,15 @@
 package jmri.jmrix.srcp;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import jmri.DccLocoAddress;
 import jmri.LocoAddress;
+import jmri.SpeedStepMode;
+import jmri.Throttle;
 import jmri.jmrix.AbstractThrottle;
 
 /**
  * An implementation of DccThrottle with code specific to an SRCP connection.
- * <P>
+ * <p>
  * Addresses of 99 and below are considered short addresses, and over 100 are
  * considered long addresses. This is not the NCE system standard, but is used
  * as an expedient here.
@@ -17,17 +20,21 @@ public class SRCPThrottle extends AbstractThrottle {
 
     /**
      * Constructor.
+     *
+     * @param memo    the memo containing the connection
+     * @param address the address to use
      */
-    public SRCPThrottle(SRCPBusConnectionMemo memo, DccLocoAddress address){
+    public SRCPThrottle(SRCPBusConnectionMemo memo, DccLocoAddress address) {
         // default to 128 speed steps with 28 functions and NMRA protocl.
-        this(memo,address,"N",SpeedStepMode128,28);
+        this(memo, address, "N", SpeedStepMode.NMRA_DCC_128, 28);
     }
-    
+
     public SRCPThrottle(SRCPBusConnectionMemo memo, DccLocoAddress address,
-            String protocol,int mode,int functions){
+            String protocol, SpeedStepMode mode, int functions) {
         super(memo);
-        if(!protocol.equals("N")) 
-           throw new IllegalArgumentException("Protocol " + protocol + " not supported");
+        if (!protocol.equals("N")) {
+            throw new IllegalArgumentException("Protocol " + protocol + " not supported");
+        }
         setSpeedStepMode(mode);
 
         bus = memo.getBus();
@@ -69,10 +76,10 @@ public class SRCPThrottle extends AbstractThrottle {
         // send allocation message
         String msg = "INIT " + bus + " GL "
                 + (address.getNumber())
-                + " " + protocol + " " 
-                + (address.isLongAddress()?" 2 ":" 1 ") 
-                + maxsteps + " " 
-                + functions +"\n";
+                + " " + protocol + " "
+                + (address.isLongAddress() ? " 2 " : " 1 ")
+                + maxsteps + " "
+                + functions + "\n";
         memo.getTrafficController()
                 .sendSRCPMessage(new SRCPMessage(msg), null);
     }
@@ -80,6 +87,7 @@ public class SRCPThrottle extends AbstractThrottle {
     /**
      * Send the message to set the state of functions F0, F1, F2, F3, F4.
      */
+    @Override
     protected void sendFunctionGroup1() {
         sendUpdate();
     }
@@ -87,6 +95,7 @@ public class SRCPThrottle extends AbstractThrottle {
     /**
      * Send the message to set the state of functions F5, F6, F7, F8.
      */
+    @Override
     protected void sendFunctionGroup2() {
         sendUpdate();
     }
@@ -94,6 +103,7 @@ public class SRCPThrottle extends AbstractThrottle {
     /**
      * Send the message to set the state of functions F9, F10, F11, F12.
      */
+    @Override
     protected void sendFunctionGroup3() {
         sendUpdate();
     }
@@ -102,41 +112,45 @@ public class SRCPThrottle extends AbstractThrottle {
      * Send the message to set the state of functions F13, F14, F15, F16, F17,
      * F18, F19, and F20.
      */
+    @Override
     protected void sendFunctionGroup4() {
         sendUpdate();
     }
 
     /**
-     * Send the message to set the state of functions F21, F22, F23, F24,
-     * F25, F26, F27 and F28.
+     * Send the message to set the state of functions F21, F22, F23, F24, F25,
+     * F26, F27 and F28.
      */
+    @Override
     protected void sendFunctionGroup5() {
         sendUpdate();
     }
 
     /**
      * Set the speed {@literal &} direction.
-     * <P>
+     * <p>
      * This intentionally skips the emergency stop value of 1.
      *
      * @param speed Number from 0 to 1; less than zero is emergency stop
      */
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "FE_FLOATING_POINT_EQUALITY") // OK to compare floating point, notify on any change
+    @SuppressFBWarnings(value = "FE_FLOATING_POINT_EQUALITY") // OK to compare floating point, notify on any change
+    @Override
     public void setSpeedSetting(float speed) {
         float oldSpeed = this.speedSetting;
         this.speedSetting = speed;
         sendUpdate();
         if (oldSpeed != this.speedSetting) {
-            notifyPropertyChangeListener("SpeedSetting", oldSpeed, this.speedSetting);
+            notifyPropertyChangeListener(SPEEDSETTING, oldSpeed, this.speedSetting);
         }
     }
 
+    @Override
     public void setIsForward(boolean forward) {
         boolean old = isForward;
         isForward = forward;
         sendUpdate();
         if (old != isForward) {
-            notifyPropertyChangeListener("IsForward", old, isForward);
+            notifyPropertyChangeListener(Throttle.ISFORWARD, old, isForward);
         }
     }
 
@@ -156,8 +170,8 @@ public class SRCPThrottle extends AbstractThrottle {
         // direction and speed
         msg += (isForward ? " 1" : " 0");
         msg += " " + ((int) (speedSetting * maxsteps));
-        msg += " "; 
-        msg +=maxsteps;
+        msg += " ";
+        msg += maxsteps;
 
         // now add the functions
         msg += f0 ? " 1" : " 0";
@@ -196,30 +210,28 @@ public class SRCPThrottle extends AbstractThrottle {
         ((SRCPBusConnectionMemo) adapterMemo).getTrafficController().sendSRCPMessage(m, null);
     }
 
-    @Override
-    public void setSpeedStepMode(int Mode){
-       super.setSpeedStepMode(Mode);
-       switch(Mode){
-          case SpeedStepMode14:
-                 maxsteps = 14;
-                 break;
-          case SpeedStepMode27:
-                 maxsteps = 27;
-                 break;
-          case SpeedStepMode28:
-                 maxsteps = 28;
-                 break;
-          case SpeedStepMode128:
-          default:
-                 maxsteps = 126;
-       }
+    @Override	
+    public void setSpeedStepMode(SpeedStepMode Mode) {	
+        super.setSpeedStepMode(Mode);	
+        switch (Mode) {	
+            case NMRA_DCC_14:	
+            case NMRA_DCC_27:	
+            case NMRA_DCC_28:	
+            case NMRA_DCC_128:
+                maxsteps = Mode.numSteps;
+                break;	
+            default:	
+                maxsteps = 126;	
+                break;
+        }	
     }
 
-
+    @Override
     public LocoAddress getLocoAddress() {
         return address;
     }
 
+    @Override
     protected void throttleDispose() {
         finishRecord();
     }

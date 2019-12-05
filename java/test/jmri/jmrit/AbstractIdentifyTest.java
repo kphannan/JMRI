@@ -1,24 +1,26 @@
 package jmri.jmrit;
 
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
-
 import jmri.Programmer;
+import jmri.ProgrammingMode;
+import jmri.util.JUnitUtil;
+
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * Test the AbstractIdentify class. Since that's an abstract base class, we
  * define a local subclass here for the tests.
  *
- * @author	Bob Jacobsen Copyright 2001
- * @version	$Revision$
+ * @author Bob Jacobsen Copyright 2001
  */
-public class AbstractIdentifyTest extends TestCase {
+public class AbstractIdentifyTest {
 
+    @Test
     public void testFullSequence() {
         // walk through all 8 steps
-        AITest a = new AITest(new jmri.ProgrammerScaffold(jmri.managers.DefaultProgrammerManager.DIRECTMODE));
+        AITest a = new AITest(new jmri.ProgrammerScaffold(ProgrammingMode.DIRECTMODE));
 
         retval = false;
         invoked = -1;
@@ -76,9 +78,10 @@ public class AbstractIdentifyTest extends TestCase {
 
     }
 
+    @Test
     public void testShortSequence() {
         // walk through just 4 steps
-        AITest a = new AITest(new jmri.ProgrammerScaffold(jmri.managers.DefaultProgrammerManager.DIRECTMODE));
+        AITest a = new AITest(new jmri.ProgrammerScaffold(ProgrammingMode.DIRECTMODE));
 
         retval = false;
         invoked = -1;
@@ -118,66 +121,94 @@ public class AbstractIdentifyTest extends TestCase {
 
     }
 
+    @Test
+    public void testOptionalCv() {
+        // walk through just 4 steps
+        AITest a = new AITest(new jmri.ProgrammerScaffold(ProgrammingMode.DIRECTMODE));
+
+        a.setOptionalCv(true);
+        Assert.assertEquals("Test setOptionalCv(true)", a.isOptionalCv(), true);
+        a.setOptionalCv(false);
+        Assert.assertEquals("Test setOptionalCv(true)", a.isOptionalCv(), false);
+        a.setOptionalCv(true);
+        Assert.assertEquals("Test setOptionalCv(true)", a.isOptionalCv(), true);
+
+    }
+
     // internal class for testing
     class AITest extends AbstractIdentify {
-        public AITest(Programmer p) { super(p);}
-        
+
+        public AITest(Programmer p) {
+            super(p);
+        }
+
+        @Override
         public boolean test1() {
             invoked = 1;
             return retval;
         }
 
+        @Override
         public boolean test2(int value) {
             invoked = 2;
             ivalue = value;
             return retval;
         }
 
+        @Override
         public boolean test3(int value) {
             invoked = 3;
             ivalue = value;
             return retval;
         }
 
+        @Override
         public boolean test4(int value) {
             invoked = 4;
             ivalue = value;
             return retval;
         }
 
+        @Override
         public boolean test5(int value) {
             invoked = 5;
             ivalue = value;
             return retval;
         }
 
+        @Override
         public boolean test6(int value) {
             invoked = 6;
             ivalue = value;
             return retval;
         }
 
+        @Override
         public boolean test7(int value) {
             invoked = 7;
             ivalue = value;
             return retval;
         }
 
+        @Override
         public boolean test8(int value) {
             invoked = 8;
             ivalue = value;
             return retval;
         }
 
+        @Override
         public boolean test9(int value) {
             invoked = 8;
             ivalue = value;
             return retval;
         }
 
+        @Override
         protected void statusUpdate(String s) {
         }
 
+        @Override
         public void error() {
         }
 
@@ -187,31 +218,15 @@ public class AbstractIdentifyTest extends TestCase {
     public static int ivalue = -1;
     public static boolean retval = false;
 
-    // from here down is testing infrastructure
-    public AbstractIdentifyTest(String s) {
-        super(s);
+    @Before
+    public void setUp() {
+        JUnitUtil.setUp();
     }
 
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {AbstractIdentifyTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
+    @After
+    public void tearDown() {
+        JUnitUtil.tearDown();
     }
 
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(AbstractIdentifyTest.class);
-        return suite;
-    }
-
-    // The minimal setup for log4J
-    protected void setUp() {
-        apps.tests.Log4JFixture.setUp();
-    }
-
-    protected void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
-    }
-
-	// static private Logger log = LoggerFactory.getLogger(AbstractIdentifyTest.class.getName());
+    // private final static Logger log = LoggerFactory.getLogger(AbstractIdentifyTest.class);
 }

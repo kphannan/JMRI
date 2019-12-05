@@ -7,7 +7,9 @@ import com.jogamp.openal.ALConstants;
 import com.jogamp.openal.ALException;
 import com.jogamp.openal.ALFactory;
 import com.jogamp.openal.util.ALut;
-import java.util.List;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import jmri.Audio;
 import jmri.AudioManager;
 import jmri.InstanceManager;
@@ -67,15 +69,14 @@ import org.slf4j.LoggerFactory;
  * <br><br><br></i>
  * <hr>
  * This file is part of JMRI.
- * <P>
+ * <p>
  * JMRI is free software; you can redistribute it and/or modify it under the
  * terms of version 2 of the GNU General Public License as published by the Free
  * Software Foundation. See the "COPYING" file for a copy of this license.
- * <P>
+ * <p>
  * JMRI is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
  * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- * <P>
  *
  * @author Matthew Harris copyright (c) 2009
  */
@@ -186,20 +187,20 @@ public class JoalAudioFactory extends AbstractAudioFactory {
      * Enum Values are retrieved by string names. The following names are
      * defined for multi-channel wave formats ...
      * <ul>
-     * <li>"AL_FORMAT_QUAD8"	: 4 Channel, 8 bit data
-     * <li>"AL_FORMAT_QUAD16"	: 4 Channel, 16 bit data
-     * <li>"AL_FORMAT_51CHN8"	: 5.1 Channel, 8 bit data
-     * <li>"AL_FORMAT_51CHN16"	: 5.1 Channel, 16 bit data
-     * <li>"AL_FORMAT_61CHN8"	: 6.1 Channel, 8 bit data
-     * <li>"AL_FORMAT_61CHN16"	: 6.1 Channel, 16 bit data
-     * <li>"AL_FORMAT_71CHN8"	: 7.1 Channel, 8 bit data
-     * <li>"AL_FORMAT_71CHN16"	: 7.1 Channel, 16 bit data
+     * <li>"AL_FORMAT_QUAD8"   : 4 Channel, 8 bit data
+     * <li>"AL_FORMAT_QUAD16"  : 4 Channel, 16 bit data
+     * <li>"AL_FORMAT_51CHN8"  : 5.1 Channel, 8 bit data
+     * <li>"AL_FORMAT_51CHN16" : 5.1 Channel, 16 bit data
+     * <li>"AL_FORMAT_61CHN8"  : 6.1 Channel, 8 bit data
+     * <li>"AL_FORMAT_61CHN16" : 6.1 Channel, 16 bit data
+     * <li>"AL_FORMAT_71CHN8"  : 7.1 Channel, 8 bit data
+     * <li>"AL_FORMAT_71CHN16" : 7.1 Channel, 16 bit data
      * </ul>
      *
      * @return true, if initialisation successful
      */
     @Override
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD",
+    @SuppressFBWarnings(value = "ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD",
             justification = "OK to write to static variables as we only do so if not initialised")
     public boolean init() {
         if (initialised) {
@@ -348,6 +349,8 @@ public class JoalAudioFactory extends AbstractAudioFactory {
     }
 
     @Override
+    @SuppressFBWarnings(value = "ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD",
+            justification = "OK to write to static variables to record static library status")
     public void cleanup() {
         // Stop the command thread
         super.cleanup();
@@ -355,48 +358,45 @@ public class JoalAudioFactory extends AbstractAudioFactory {
         // Get the active AudioManager
         AudioManager am = InstanceManager.getDefault(jmri.AudioManager.class);
 
-        // Retrieve list of Audio Objects and remove the sources
-        List<String> audios = am.getSystemNameList();
-        for (String audioName : audios) {
-            Audio audio = am.getAudio(audioName);
-            if (audio.getSubType() == Audio.SOURCE) {
-                if (log.isDebugEnabled()) {
-                    log.debug("Removing JoalAudioSource: " + audioName);
-                }
-                // Cast to JoalAudioSource and cleanup
-                ((JoalAudioSource) audio).cleanUp();
+        // Retrieve list of AudioSource objects and remove the sources
+        SortedSet<Audio> sources = new TreeSet<>(am.getNamedBeanSet(Audio.SOURCE));
+        for (Audio source: sources) {
+            if (log.isDebugEnabled()) {
+                log.debug("Removing JoalAudioSource: {}", source.getSystemName());
             }
+            // Cast to JoalAudioSource and cleanup
+            ((JoalAudioSource) source).cleanup();
         }
 
-        // Now, re-retrieve list of Audio objects and remove the buffers
-        audios = am.getSystemNameList();
-        for (String audioName : audios) {
-            Audio audio = am.getAudio(audioName);
-            if (audio.getSubType() == Audio.BUFFER) {
-                if (log.isDebugEnabled()) {
-                    log.debug("Removing JoalAudioBuffer: " + audioName);
-                }
-                // Cast to JoalAudioBuffer and cleanup
-                ((JoalAudioBuffer) audio).cleanUp();
+        // Now, retrieve list of AudioBuffer objects and remove the buffers
+        SortedSet<Audio> buffers = new TreeSet<>(am.getNamedBeanSet(Audio.BUFFER));
+        for (Audio buffer : buffers) {
+            if (log.isDebugEnabled()) {
+                log.debug("Removing JoalAudioBuffer: {}", buffer.getSystemName());
             }
+            // Cast to JoalAudioBuffer and cleanup
+            ((JoalAudioBuffer) buffer).cleanup();
         }
 
-        // Lastly, re-retrieve list and remove listener.
-        audios = am.getSystemNameList();
-        for (String audioName : audios) {
-            Audio audio = am.getAudio(audioName);
-            if (audio.getSubType() == Audio.LISTENER) {
-                if (log.isDebugEnabled()) {
-                    log.debug("Removing JoalAudioListener: " + audioName);
-                }
-                // Cast to JoalAudioListener and cleanup
-                ((JoalAudioListener) audio).cleanUp();
+        // Lastly, retrieve list of AudioListener objects and remove listener.
+        SortedSet<Audio> listeners = new TreeSet<>(am.getNamedBeanSet(Audio.LISTENER));
+        for (Audio listener : listeners) {
+            if (log.isDebugEnabled()) {
+                log.debug("Removing JoalAudioListener: {}", listener.getSystemName());
             }
+            // Cast to JoalAudioListener and cleanup
+            ((JoalAudioListener) listener).cleanup();
         }
 
         // Finally, shutdown OpenAL and close the output device
-        log.debug("Shutting down OpenAL");
-        ALut.alutExit();
+        log.debug("Shutting down OpenAL, initialised: {}", initialised);
+        if (initialised) ALut.alutExit();
+        initialised = false;
+    }
+
+    @Override
+    public boolean isInitialised() {
+        return initialised;
     }
 
     @Override
@@ -556,6 +556,6 @@ public class JoalAudioFactory extends AbstractAudioFactory {
         }
     }
 
-    private static final Logger log = LoggerFactory.getLogger(JoalAudioFactory.class.getName());
+    private static final Logger log = LoggerFactory.getLogger(JoalAudioFactory.class);
 
 }

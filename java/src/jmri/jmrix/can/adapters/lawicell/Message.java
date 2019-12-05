@@ -1,4 +1,3 @@
-// Message.java
 package jmri.jmrix.can.adapters.lawicell;
 
 import jmri.jmrix.AbstractMRMessage;
@@ -8,16 +7,15 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Class for messages for a LAWICELL CAN hardware adapter.
- * <P>
+ * <p>
  * The Lawicell adapter protocol encodes messages as an ASCII string of up to 24
  * characters of the form: tiiildd...[CR] Tiiiiiiiildd...[CR] The t or T
  * indicates a standard or extended CAN frame iiiiiiii is the header as hex
  * digits l is the number of bytes of data dd are the (up to) 8 data bytes
- * <P>
+ * <p>
  *
  * @author Andrew Crosland Copyright (C) 2008
  * @author Bob Jacobsen Copyright (C) 2008, 2009
- * @version	$Revision$
  */
 public class Message extends AbstractMRMessage {
 
@@ -57,6 +55,7 @@ public class Message extends AbstractMRMessage {
     }
 
     // accessors to the bulk data
+    @Override
     public int getNumDataElements() {
         return _nDataChars;
     }
@@ -65,10 +64,12 @@ public class Message extends AbstractMRMessage {
         _nDataChars = (n <= MAXLEN) ? n : MAXLEN;
     }
 
+    @Override
     public int getElement(int n) {
         return _dataChars[n];
     }
 
+    @Override
     public void setElement(int n, int v) {
         _dataChars[n] = v;
     }
@@ -120,7 +121,7 @@ public class Message extends AbstractMRMessage {
 
     /**
      * Set a byte as two ASCII hex digits
-     * <P>
+     * <p>
      * Data bytes are encoded as two ASCII hex digits starting at byte 7 of the
      * message.
      *
@@ -148,7 +149,7 @@ public class Message extends AbstractMRMessage {
         }
     }
 
-    private final static Logger log = LoggerFactory.getLogger(Message.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(Message.class);
 }
 
-/* @(#)Message.java */
+

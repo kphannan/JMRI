@@ -10,15 +10,15 @@ import jmri.util.FileUtil;
 
 /**
  * Base implementation for the load and store actions.
- * <P>
+ * 
  * Primarily provides file checking services to the specific subclasses that
  * load/store particular types of data.
- * <P>
+ * <p>
  * Also used to hold common information, specifically common instances of the
  * JFileChooser. These bring the user back to the same place in the file system
  * each time an action is invoked.
  *
- * @author	Bob Jacobsen Copyright (C) 2004
+ * @author Bob Jacobsen Copyright (C) 2004
  * @see jmri.jmrit.XmlFile
  */
 abstract public class LoadStoreBaseAction extends AbstractAction {
@@ -26,8 +26,8 @@ abstract public class LoadStoreBaseAction extends AbstractAction {
     public LoadStoreBaseAction(String s) {
         super(s);
         // ensure that an XML config manager exists
-        if (InstanceManager.getOptionalDefault(ConfigureManager.class) == null) {
-            InstanceManager.setConfigureManager(new JmriConfigurationManager());
+        if (!InstanceManager.getOptionalDefault(ConfigureManager.class).isPresent()) {
+            InstanceManager.setDefault(ConfigureManager.class, new JmriConfigurationManager());
         }
     }
 
@@ -62,11 +62,12 @@ abstract public class LoadStoreBaseAction extends AbstractAction {
         return configFileChooser;
     }
 
-    static protected JFileChooser getUserFileChooser() {
+    // Made public so JmriConfigurationManager.java can set the
+    // "Store Panels..." default file (to the panel file being loaded)
+    static public JFileChooser getUserFileChooser() {
         if (userFileChooser == null) {
             userFileChooser = getXmlFileChooser(FileUtil.getUserFilesPath());
         }
         return userFileChooser;
     }
-
 }

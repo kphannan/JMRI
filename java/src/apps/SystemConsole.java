@@ -1,5 +1,6 @@
 package apps;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Font;
@@ -30,16 +31,15 @@ import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import jmri.UserPreferencesManager;
 import jmri.util.JmriJFrame;
+import jmri.util.swing.TextAreaFIFO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Class to direct standard output and standard error to a JTextArea. This
- * allows for easier clipboard operations etc.
+ * Class to direct standard output and standard error to a ( JTextArea ) TextAreaFIFO . 
+ * This allows for easier clipboard operations etc.
  * <hr>
  * This file is part of JMRI.
  * <p>
@@ -61,7 +61,7 @@ public final class SystemConsole extends JTextArea {
     private static final int STD_ERR = 1;
     private static final int STD_OUT = 2;
 
-    private final JTextArea console;
+    private final TextAreaFIFO console;
 
     private final PrintStream originalOut;
     private final PrintStream originalErr;
@@ -107,6 +107,8 @@ public final class SystemConsole extends JTextArea {
     private final String alwaysScrollCheck = this.getClass().getName() + ".alwaysScroll"; //NOI18N
     private final String alwaysOnTopCheck = this.getClass().getName() + ".alwaysOnTop";   //NOI18N
 
+    final public int MAX_CONSOLE_LINES = 5000;  // public, not static so can be modified via a script
+
     /**
      * Initialise the system console ensuring both System.out and System.err
      * streams are re-directed to the consoles JTextArea
@@ -116,13 +118,13 @@ public final class SystemConsole extends JTextArea {
         if (instance == null) {
             try {
                 instance = new SystemConsole();
-            } catch (Exception ex) {
+            } catch (RuntimeException ex) {
                 log.error("failed to complete Console redirection", ex);
             }
         }
     }
 
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "DM_DEFAULT_ENCODING",
+    @SuppressFBWarnings(value = "DM_DEFAULT_ENCODING",
             justification = "Can only be called from the same instance so default encoding OK")
     private SystemConsole() {
         // Record current System.out and System.err
@@ -131,7 +133,7 @@ public final class SystemConsole extends JTextArea {
         originalErr = System.err;
 
         // Create the console text area
-        console = new JTextArea();
+        console = new TextAreaFIFO(MAX_CONSOLE_LINES);
 
         // Setup the console text area
         console.setRows(20);
@@ -202,6 +204,9 @@ public final class SystemConsole extends JTextArea {
 
         pref = jmri.InstanceManager.getDefault(jmri.UserPreferencesManager.class);
 
+        // Add Help menu (Windows menu automaitically added)
+        frame.addHelpMenu("package.apps.SystemConsole", true); // NOI18N
+
         // Grab a reference to the system clipboard
         final Clipboard clipboard = frame.getToolkit().getSystemClipboard();
 
@@ -209,8 +214,18 @@ public final class SystemConsole extends JTextArea {
         JScrollPane scroll = new JScrollPane(console);
         frame.add(scroll, BorderLayout.CENTER);
 
-        // Add button to allow copy to clipboard
+
         JPanel p = new JPanel();
+        
+        // Add button to clear display
+        JButton clear = new JButton(Bundle.getMessage("ButtonClear"));
+        clear.addActionListener((ActionEvent event) -> {
+            console.setText("");
+        });
+        clear.setToolTipText(Bundle.getMessage("ButtonClearTip"));
+        p.add(clear);        
+        
+        // Add button to allow copy to clipboard        
         JButton copy = new JButton(Bundle.getMessage("ButtonCopyClip"));
         copy.addActionListener((ActionEvent event) -> {
             StringSelection text = new StringSelection(console.getText());
@@ -222,6 +237,7 @@ public final class SystemConsole extends JTextArea {
         JButton close = new JButton(Bundle.getMessage("ButtonClose"));
         close.addActionListener((ActionEvent event) -> {
             frame.setVisible(false);
+            console.dispose();
             frame.dispose();
         });
         p.add(close);
@@ -236,8 +252,9 @@ public final class SystemConsole extends JTextArea {
         // Use the inverted SimplePreferenceState to default as enabled
         p.add(autoScroll = new JCheckBox(Bundle.getMessage("CheckBoxAutoScroll"),
                 !pref.getSimplePreferenceState(alwaysScrollCheck)));
+        console.setAutoScroll(autoScroll.isSelected());
         autoScroll.addActionListener((ActionEvent event) -> {
-            doAutoScroll(console, autoScroll.isSelected());
+            console.setAutoScroll(autoScroll.isSelected());
             pref.setSimplePreferenceState(alwaysScrollCheck, !autoScroll.isSelected());
         });
 
@@ -320,30 +337,6 @@ public final class SystemConsole extends JTextArea {
         console.addMouseListener(popupListener);
         frame.addMouseListener(popupListener);
 
-        // Add document listener to scroll to end when modified if required
-        console.getDocument().addDocumentListener(new DocumentListener() {
-
-            // References to the JTextArea and JCheckBox
-            // of this instantiation
-            JTextArea ta = console;
-            JCheckBox chk = autoScroll;
-
-            @Override
-            public void insertUpdate(DocumentEvent e) {
-                doAutoScroll(ta, chk.isSelected());
-            }
-
-            @Override
-            public void removeUpdate(DocumentEvent e) {
-                doAutoScroll(ta, chk.isSelected());
-            }
-
-            @Override
-            public void changedUpdate(DocumentEvent e) {
-                doAutoScroll(ta, chk.isSelected());
-            }
-        });
-
         // Add the button panel to the frame & then arrange everything
         frame.add(p, BorderLayout.SOUTH);
         frame.pack();
@@ -356,7 +349,6 @@ public final class SystemConsole extends JTextArea {
      * @param which the stream that this text is for
      */
     private void updateTextArea(final String text, final int which) {
-
         // Append message to the original System.out / System.err streams
         if (which == STD_OUT) {
             originalOut.append(text);
@@ -368,23 +360,6 @@ public final class SystemConsole extends JTextArea {
         // As append method is thread safe, we don't need to run this on
         // the Swing dispatch thread
         console.append(text);
-    }
-
-    /**
-     * Method to position caret at end of JTextArea ta when scroll true.
-     *
-     * @param ta     Reference to JTextArea
-     * @param scroll True to move to end
-     */
-    private void doAutoScroll(final JTextArea ta, final boolean scroll) {
-        SwingUtilities.invokeLater(() -> {
-            int len = ta.getText().length();
-            if (scroll) {
-                ta.setCaretPosition(len);
-            } else if (ta.getCaretPosition() == len && len > 0) {
-                ta.setCaretPosition(len - 1);
-            }
-        });
     }
 
     /**
@@ -401,7 +376,7 @@ public final class SystemConsole extends JTextArea {
             }
 
             @Override
-            @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "DM_DEFAULT_ENCODING",
+            @SuppressFBWarnings(value = "DM_DEFAULT_ENCODING",
                     justification = "Can only be called from the same instance so default encoding OK")
             public void write(byte[] b, int off, int len) throws IOException {
                 updateTextArea(new String(b, off, len), which);
@@ -417,7 +392,7 @@ public final class SystemConsole extends JTextArea {
     /**
      * Method to redirect the system streams to the console
      */
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "DM_DEFAULT_ENCODING",
+    @SuppressFBWarnings(value = "DM_DEFAULT_ENCODING",
             justification = "Can only be called from the same instance so default encoding OK")
     private void redirectSystemStreams() {
         System.setOut(this.getOutputStream());
@@ -645,6 +620,6 @@ public final class SystemConsole extends JTextArea {
         }
     }
 
-    private static final Logger log = LoggerFactory.getLogger(SystemConsole.class.getName());
+    private static final Logger log = LoggerFactory.getLogger(SystemConsole.class);
 
 }

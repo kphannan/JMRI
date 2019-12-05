@@ -1,36 +1,28 @@
-// CarsTableFrame.java
 package jmri.jmrit.operations.rollingstock.cars;
 
 import java.text.MessageFormat;
 import java.util.List;
-import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
-import javax.swing.ButtonGroup;
-import javax.swing.JButton;
-import javax.swing.JLabel;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JRadioButton;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.JTextField;
-import javax.swing.ScrollPaneConstants;
+
+import javax.swing.*;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableColumnModel;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import jmri.InstanceManager;
 import jmri.jmrit.operations.OperationsFrame;
 import jmri.jmrit.operations.OperationsXml;
-import jmri.jmrit.operations.locations.ModifyLocationsAction;
-import jmri.jmrit.operations.locations.ScheduleManager;
-import jmri.jmrit.operations.rollingstock.RollingStock;
+import jmri.jmrit.operations.locations.schedules.ScheduleManager;
+import jmri.jmrit.operations.locations.tools.ModifyLocationsAction;
+import jmri.jmrit.operations.rollingstock.cars.tools.PrintCarLoadsAction;
+import jmri.jmrit.operations.rollingstock.cars.tools.ResetCheckboxesCarsTableAction;
+import jmri.jmrit.operations.rollingstock.cars.tools.ShowCheckboxesCarsTableAction;
 import jmri.jmrit.operations.setup.Control;
 import jmri.jmrit.operations.setup.Setup;
 import jmri.jmrit.operations.trains.tools.TrainsByCarTypeAction;
-import jmri.util.com.sun.TableSorter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import jmri.swing.JTablePersistenceManager;
 
 /**
  * Frame for adding and editing the car roster for operations.
@@ -38,16 +30,15 @@ import org.slf4j.LoggerFactory;
  * @author Bob Jacobsen Copyright (C) 2001
  * @author Daniel Boudreau Copyright (C) 2008, 2009, 2010, 2011, 2012, 2013,
  * 2014
- * @version $Revision$
  */
 public class CarsTableFrame extends OperationsFrame implements TableModelListener {
 
-    CarsTableModel carsTableModel;
+    public CarsTableModel carsTableModel;
     JTable carsTable;
     boolean showAllCars;
     String locationName;
     String trackName;
-    CarManager carManager = CarManager.instance();
+    CarManager carManager = InstanceManager.getDefault(CarManager.class);
 
     // labels
     JLabel numCars = new JLabel();
@@ -77,9 +68,9 @@ public class CarsTableFrame extends OperationsFrame implements TableModelListene
     ButtonGroup group = new ButtonGroup();
 
     // major buttons
-    JButton addButton = new JButton(Bundle.getMessage("Add"));
+    JButton addButton = new JButton(Bundle.getMessage("ButtonAdd"));
     JButton findButton = new JButton(Bundle.getMessage("Find"));
-    JButton saveButton = new JButton(Bundle.getMessage("Save"));
+    JButton saveButton = new JButton(Bundle.getMessage("ButtonSave"));
 
     JTextField findCarTextBox = new JTextField(6);
 
@@ -93,9 +84,7 @@ public class CarsTableFrame extends OperationsFrame implements TableModelListene
 
         // Set up the table in a Scroll Pane..
         carsTableModel = new CarsTableModel(showAllCars, locationName, trackName);
-        TableSorter sorter = new TableSorter(carsTableModel);
-        carsTable = new JTable(sorter);
-        sorter.setTableHeader(carsTable.getTableHeader());
+        carsTable = new JTable(carsTableModel);
         JScrollPane carsPane = new JScrollPane(carsTable);
         carsPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         carsTableModel.initTable(carsTable, this);
@@ -113,9 +102,9 @@ public class CarsTableFrame extends OperationsFrame implements TableModelListene
         cp1.add(sortByType);
 
         JPanel clp = new JPanel();
-        clp.setBorder(BorderFactory.createTitledBorder(""));
-        clp.add(sortByColor);
+        clp.setBorder(BorderFactory.createTitledBorder(""));  
         clp.add(sortByLoad);
+        clp.add(sortByColor);
         cp1.add(clp);
         cp1.add(sortByKernel);
         cp1.add(sortByLocation);
@@ -139,7 +128,7 @@ public class CarsTableFrame extends OperationsFrame implements TableModelListene
         if (Setup.isRfidEnabled()) {
             movep.add(sortByRfid);
         }
-        if (ScheduleManager.instance().numEntries() > 0) {
+        if (InstanceManager.getDefault(ScheduleManager.class).numEntries() > 0) {
             movep.add(sortByWait);
             movep.add(sortByPickup);
         }
@@ -254,6 +243,8 @@ public class CarsTableFrame extends OperationsFrame implements TableModelListene
         toolMenu.add(new ResetCheckboxesCarsTableAction(carsTableModel));
         toolMenu.add(new ModifyLocationsAction());
         toolMenu.add(new TrainsByCarTypeAction());
+        toolMenu.add(new PrintCarLoadsAction(true, this));
+        toolMenu.add(new PrintCarLoadsAction(false, this));
         toolMenu.add(new CarsSetFrameAction(carsTable));
         menuBar.add(toolMenu);
         menuBar.add(new jmri.jmrit.operations.OperationsMenu());
@@ -271,6 +262,8 @@ public class CarsTableFrame extends OperationsFrame implements TableModelListene
     @Override
     public void radioButtonActionPerformed(java.awt.event.ActionEvent ae) {
         log.debug("radio button activated");
+        // clear any sorts by column
+        clearTableSort(carsTable);
         if (ae.getSource() == sortByNumber) {
             carsTableModel.setSort(carsTableModel.SORTBY_NUMBER);
         }
@@ -328,12 +321,10 @@ public class CarsTableFrame extends OperationsFrame implements TableModelListene
         if (ae.getSource() == sortByLast) {
             carsTableModel.setSort(carsTableModel.SORTBY_LAST);
         }
-        // clear any sorts by column
-        clearTableSort(carsTable);
     }
 
-    public List<RollingStock> getSortByList() {
-        return carsTableModel.sysList;
+    public List<Car> getSortByList() {
+        return carsTableModel.carList;
     }
 
     CarEditFrame f = null;
@@ -368,7 +359,6 @@ public class CarsTableFrame extends OperationsFrame implements TableModelListene
                 carsTable.getCellEditor().stopCellEditing();
             }
             OperationsXml.save();
-            saveTableDetails(carsTable);
             if (Setup.isCloseWindowOnSaveEnabled()) {
                 dispose();
             }
@@ -391,6 +381,9 @@ public class CarsTableFrame extends OperationsFrame implements TableModelListene
         if (f != null) {
             f.dispose();
         }
+        InstanceManager.getOptionalDefault(JTablePersistenceManager.class).ifPresent(tpm -> {
+            tpm.stopPersisting(carsTable);
+        });
         super.dispose();
     }
 
@@ -403,7 +396,7 @@ public class CarsTableFrame extends OperationsFrame implements TableModelListene
     }
 
     private void updateNumCars() {
-        String totalNumber = Integer.toString(CarManager.instance().getNumEntries());
+        String totalNumber = Integer.toString(InstanceManager.getDefault(CarManager.class).getNumEntries());
         if (showAllCars) {
             numCars.setText(totalNumber);
             return;
@@ -412,6 +405,6 @@ public class CarsTableFrame extends OperationsFrame implements TableModelListene
         numCars.setText(showNumber + "/" + totalNumber);
     }
 
-    private final static Logger log = LoggerFactory.getLogger(CarsTableFrame.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(CarsTableFrame.class);
 
 }

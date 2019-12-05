@@ -6,9 +6,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Implements SerialPortAdapter for the Sprog system.
- * <P>
+ * <p>
  * This connects a Pi-SPROG One command station via a serial com port.
- * <P>
+ * <p>
  * The current implementation only handles the 115,200 baud rate, and does not use
  * any other options at configuration time.
  *
@@ -19,13 +19,16 @@ public class PiSprogOneCSSerialDriverAdapter
 
     public PiSprogOneCSSerialDriverAdapter() {
         super(SprogMode.OPS, 115200);
-        options.put("TrackPowerState", new Option("Track Power At StartUp:", new String[]{"Powered Off", "Powered On"}, true));
+        options.put("TrackPowerState", new Option(Bundle.getMessage("OptionTrackPowerLabel"),
+                new String[]{Bundle.getMessage("PowerStateOff"), Bundle.getMessage("PowerStateOn")},
+                true)); // first element (TrackPowerState) NOI18N
         //Set the username to match name, once refactored to handle multiple connections or user setable names/prefixes then this can be removed
-        this.getSystemConnectionMemo().setUserName("Pi-SPROG One Command Station");
+        this.getSystemConnectionMemo().setUserName(Bundle.getMessage("PiSprog1CSTitle"));
     }
 
     /**
-     * Get an array of valid baud rates. This is currently only 115,200 bps
+     * {@inheritDoc}
+     * Currently only 115,200 bps
      */
     @Override
     public String[] validBaudRates() {
@@ -33,23 +36,20 @@ public class PiSprogOneCSSerialDriverAdapter
     }
 
     /**
-     * @deprecated JMRI Since 4.4 instance() shouldn't be used, convert to JMRI multi-system support structure
+     * {@inheritDoc}
      */
-    @Deprecated
-    static public PiSprogOneCSSerialDriverAdapter instance() {
-        if (mInstance == null) {
-            PiSprogOneCSSerialDriverAdapter m = new PiSprogOneCSSerialDriverAdapter();
-            m.setManufacturer(jmri.jmrix.sprog.SprogConnectionTypeList.SPROG);
-            mInstance = m;
-        }
-        return mInstance;
+    @Override
+    public int[] validBaudNumbers() {
+        return new int[]{115200};
     }
+
     /**
      * @deprecated JMRI Since 4.4 instance() shouldn't be used, convert to JMRI multi-system support structure
      */
-    @Deprecated
-    static volatile PiSprogOneCSSerialDriverAdapter mInstance = null;
-
-    static Logger log = LoggerFactory.getLogger(PiSprogOneCSSerialDriverAdapter.class.getName());
+    @Deprecated  // will be removed when class converted to multi-system
+    static public PiSprogOneCSSerialDriverAdapter instance() {
+        return null;
+    }
+    // private final static Logger log = LoggerFactory.getLogger(PiSprogOneCSSerialDriverAdapter.class);
 
 }

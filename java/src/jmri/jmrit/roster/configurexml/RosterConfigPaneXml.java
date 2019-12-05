@@ -1,22 +1,25 @@
 package jmri.jmrit.roster.configurexml;
 
+import jmri.ConfigureManager;
 import jmri.InstanceManager;
 import jmri.jmrit.roster.Roster;
 import jmri.jmrit.roster.RosterConfigManager;
 import jmri.jmrit.roster.RosterConfigPane;
+import jmri.profile.Profile;
+import jmri.profile.ProfileManager;
+
 import org.jdom2.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Handle XML persistance of Roster default values.
- * <P>
+ * <p>
  * This class is named as being the persistant form of the RosterConfigPane
  * class, but there's no object of that form created when this is read back.
  * Instead, this persists static members of the roster.Roster class.
  *
  * @author Bob Jacobsen Copyright: Copyright (c) 2003
- * @version $Revision$
  */
 public class RosterConfigPaneXml extends jmri.configurexml.AbstractXmlAdapter {
 
@@ -52,16 +55,20 @@ public class RosterConfigPaneXml extends jmri.configurexml.AbstractXmlAdapter {
     @Override
     public boolean load(Element shared, Element perNode) {
         boolean result = true;
+        Profile project = ProfileManager.getDefault().getActiveProfile();
         if (shared.getAttribute("directory") != null) {
-            InstanceManager.getDefault(RosterConfigManager.class).setDirectory(shared.getAttribute("directory").getValue());
+            InstanceManager.getDefault(RosterConfigManager.class).setDirectory(project, shared.getAttribute("directory").getValue());
             if (log.isDebugEnabled()) {
                 log.debug("set roster location (1): " + shared.getAttribute("directory").getValue());
             }
         }
         if (shared.getAttribute("ownerDefault") != null) {
-            InstanceManager.getDefault(RosterConfigManager.class).setDefaultOwner(shared.getAttribute("ownerDefault").getValue());
+            InstanceManager.getDefault(RosterConfigManager.class).setDefaultOwner(project, shared.getAttribute("ownerDefault").getValue());
         }
-        InstanceManager.getOptionalDefault(jmri.ConfigureManager.class).registerPref(new RosterConfigPane());
+        ConfigureManager cm = InstanceManager.getNullableDefault(jmri.ConfigureManager.class);
+        if (cm != null) {
+            cm.registerPref(new RosterConfigPane());
+        }
         return result;
     }
 
@@ -79,9 +86,12 @@ public class RosterConfigPaneXml extends jmri.configurexml.AbstractXmlAdapter {
         if (element.getAttribute("directory") != null) {
             Roster.getDefault().setRosterLocation(element.getAttribute("directory").getValue());
         }
-        InstanceManager.getOptionalDefault(jmri.ConfigureManager.class).registerPref(new RosterConfigPane());
+        ConfigureManager cm = InstanceManager.getNullableDefault(jmri.ConfigureManager.class);
+        if (cm != null) {
+            cm.registerPref(new RosterConfigPane());
+        }
     }
     // initialize logging
-    private final static Logger log = LoggerFactory.getLogger(RosterConfigPaneXml.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(RosterConfigPaneXml.class);
 
 }

@@ -3,56 +3,28 @@ package jmri.util;
 import java.util.Comparator;
 
 /**
- * If the two objects are Strings that can be made into integers, compare like
- * that otherwise as Strings.
- *
- * @author	Bob Jacobsen Copyright (C) 2013
+ * Perform an comparison using {@link AlphanumComparator}, followed up with a
+ * standard String comparison if
+ * {@link AlphanumComparator#compare(String, String)} returns 0.
+ * <p>
+ * If the requirement is that {@link Comparator#compare(Object, Object)} return
+ * 0 for two numerically identical Strings (i.e. {@code 42 == 0042}), use
+ * {@link AlphanumComparator}, but if the requirement is that Strings should be
+ * numerically ordered, but that non-identical representations should be
+ * different, (i.e. {@code 42 != 0042}, but order should be
+ * {@code 3, 4, 5, 42, 0042, 50}), use this Comparator, since the standard
+ * String comparator will not order numbers correctly.
+ * 
+ * @author Randall Wood Copyright 2019
  */
-public class PreferNumericComparator implements Comparator<Object>, java.io.Serializable {
+public class PreferNumericComparator extends AlphanumComparator {
 
-    public PreferNumericComparator() {
-    }
-
-    public int compare(Object oo1, Object oo2) {
-
-        boolean isFirstNumeric, isSecondNumeric;
-        String o1 = oo1.toString(), o2 = oo2.toString();
-
-        isFirstNumeric = o1.matches("\\d+");
-        isSecondNumeric = o2.matches("\\d+");
-
-        if (isFirstNumeric) {
-            if (isSecondNumeric) {
-                return Integer.valueOf(o1).compareTo(Integer.valueOf(o2));
-            } else {
-                return -1; // numbers always smaller than letters
-            }
-        } else {
-            if (isSecondNumeric) {
-                return 1; // numbers always smaller than letters
-            } else {
-                // Neither numeric
-                isFirstNumeric = o1.split("\\.")[0].matches("\\d+");
-                isSecondNumeric = o2.split("\\.")[0].matches("\\d+");
-
-                if (isFirstNumeric) {
-                    if (isSecondNumeric) {
-                        int intCompare = Integer.valueOf(o1.split("\\.")[0]).compareTo(Integer.valueOf(o2.split("\\.")[0]));
-                        if (intCompare == 0) {
-                            return o1.compareToIgnoreCase(o2);
-                        }
-                        return intCompare;
-                    } else {
-                        return -1; // numbers always smaller than letters
-                    }
-                } else {
-                    if (isSecondNumeric) {
-                        return 1; // numbers always smaller than letters
-                    } else {
-                        return o1.compareToIgnoreCase(o2);
-                    }
-                }
-            }
+    @Override
+    public int compare(String s1, String s2) {
+        int comparison = super.compare(s1, s2);
+        if (comparison == 0) {
+            return s1.compareTo(s2);
         }
+        return comparison;
     }
 }

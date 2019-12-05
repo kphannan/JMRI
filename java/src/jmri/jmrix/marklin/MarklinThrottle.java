@@ -1,7 +1,8 @@
 package jmri.jmrix.marklin;
 
-import jmri.DccThrottle;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import jmri.LocoAddress;
+import jmri.SpeedStepMode;
 import jmri.Throttle;
 import jmri.jmrix.AbstractThrottle;
 import org.slf4j.Logger;
@@ -9,11 +10,10 @@ import org.slf4j.LoggerFactory;
 
 /**
  * An implementation of DccThrottle with code specific to an TAMS connection.
- * <P>
+ * <p>
  * Based on Glen Oberhauser's original LnThrottle implementation
  *
- * @author	Kevin Dickerson Copyright (C) 2012
- * @version $Revision: 19946 $
+ * @author Kevin Dickerson Copyright (C) 2012
  */
 public class MarklinThrottle extends AbstractThrottle implements MarklinListener {
 
@@ -41,7 +41,7 @@ public class MarklinThrottle extends AbstractThrottle implements MarklinListener
         this.address = address;
         this.isForward = true;
 
-        setSpeedStepMode(jmri.DccThrottle.SpeedStepMode128);
+        setSpeedStepMode(jmri.SpeedStepMode.NMRA_DCC_128);
         tc.addMarklinListener(this);
         tc.sendMarklinMessage(MarklinMessage.getQryLocoSpeed(getCANAddress()), this);
         tc.sendMarklinMessage(MarklinMessage.getQryLocoDirection(getCANAddress()), this);
@@ -54,6 +54,7 @@ public class MarklinThrottle extends AbstractThrottle implements MarklinListener
      * Send the message to set the state of functions F0, F1, F2, F3, F4. To
      * send function group 1 we have to also send speed, direction etc.
      */
+    @Override
     protected void sendFunctionGroup1() {
 
         tc.sendMarklinMessage(MarklinMessage.setLocoFunction(getCANAddress(), 0, (f0 ? 0x01 : 0x00)), this);
@@ -67,6 +68,7 @@ public class MarklinThrottle extends AbstractThrottle implements MarklinListener
     /**
      * Send the message to set the state of functions F5, F6, F7, F8.
      */
+    @Override
     protected void sendFunctionGroup2() {
 
         tc.sendMarklinMessage(MarklinMessage.setLocoFunction(getCANAddress(), 5, (f5 ? 0x01 : 0x00)), this);
@@ -76,6 +78,7 @@ public class MarklinThrottle extends AbstractThrottle implements MarklinListener
 
     }
 
+    @Override
     protected void sendFunctionGroup3() {
 
         tc.sendMarklinMessage(MarklinMessage.setLocoFunction(getCANAddress(), 9, (f9 ? 0x01 : 0x00)), this);
@@ -85,6 +88,7 @@ public class MarklinThrottle extends AbstractThrottle implements MarklinListener
 
     }
 
+    @Override
     protected void sendFunctionGroup4() {
 
         tc.sendMarklinMessage(MarklinMessage.setLocoFunction(getCANAddress(), 13, (f13 ? 0x01 : 0x00)), this);
@@ -98,6 +102,7 @@ public class MarklinThrottle extends AbstractThrottle implements MarklinListener
 
     }
 
+    @Override
     protected void sendFunctionGroup5() {
 
         tc.sendMarklinMessage(MarklinMessage.setLocoFunction(getCANAddress(), 21, (f21 ? 0x01 : 0x00)), this);
@@ -113,12 +118,13 @@ public class MarklinThrottle extends AbstractThrottle implements MarklinListener
 
     /**
      * Set the speed {@literal &} direction.
-     * <P>
+     * <p>
      * This intentionally skips the emergency stop value of 1.
      *
      * @param speed Number from 0 to 1; less than zero is emergency stop
      */
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "FE_FLOATING_POINT_EQUALITY") // OK to compare floating point, notify on any change
+    @SuppressFBWarnings(value = "FE_FLOATING_POINT_EQUALITY") // OK to compare floating point, notify on any change
+    @Override
     public void setSpeedSetting(float speed) {
         float oldSpeed = this.speedSetting;
         this.speedSetting = speed;
@@ -137,7 +143,7 @@ public class MarklinThrottle extends AbstractThrottle implements MarklinListener
             log.debug("Float speed = " + speed + " Int speed = " + value);
         }
         if (oldSpeed != this.speedSetting) {
-            notifyPropertyChangeListener("SpeedSetting", oldSpeed, this.speedSetting);
+            notifyPropertyChangeListener(SPEEDSETTING, oldSpeed, this.speedSetting);
         }
     }
 
@@ -151,13 +157,14 @@ public class MarklinThrottle extends AbstractThrottle implements MarklinListener
         return ((lSpeed) / 1000.f);
     }
 
+    @Override
     public void setIsForward(boolean forward) {
         boolean old = isForward;
         isForward = forward;
         setSpeedSetting(0.0f); //Stop the loco first before changing direction.
         tc.sendMarklinMessage(MarklinMessage.setLocoDirection(getCANAddress(), (forward ? 0x01 : 0x02)), this);
         if (old != isForward) {
-            notifyPropertyChangeListener("IsForward", old, isForward);
+            notifyPropertyChangeListener(ISFORWARD, old, isForward);
         }
     }
 
@@ -165,7 +172,8 @@ public class MarklinThrottle extends AbstractThrottle implements MarklinListener
 
     MarklinTrafficController tc;
 
-    public void setSpeedStepMode(int Mode) {
+    @Override
+    public void setSpeedStepMode(SpeedStepMode Mode) {
         if (log.isDebugEnabled()) {
             log.debug("Speed Step Mode Change to Mode: " + Mode
                     + " Current mode is: " + this.speedStepMode);
@@ -173,35 +181,39 @@ public class MarklinThrottle extends AbstractThrottle implements MarklinListener
         boolean isLong = ((jmri.ThrottleManager) adapterMemo.get(jmri.ThrottleManager.class)).canBeLongAddress(address.getNumber());
         switch (address.getProtocol()) {
             case DCC:
-                if (Mode == DccThrottle.SpeedStepMode28 && isLong) {
+                if (Mode == SpeedStepMode.NMRA_DCC_28 && isLong) {
                     tc.sendMarklinMessage(MarklinMessage.setLocoSpeedSteps(getCANAddress(), MarklinConstants.STEPLONG28), this);
-                } else if (Mode == DccThrottle.SpeedStepMode28 && !isLong) {
+                } else if (Mode == SpeedStepMode.NMRA_DCC_28 && !isLong) {
                     tc.sendMarklinMessage(MarklinMessage.setLocoSpeedSteps(getCANAddress(), MarklinConstants.STEPSHORT28), this);
-                } else if (Mode == DccThrottle.SpeedStepMode128 && isLong) {
+                } else if (Mode == SpeedStepMode.NMRA_DCC_128 && isLong) {
                     tc.sendMarklinMessage(MarklinMessage.setLocoSpeedSteps(getCANAddress(), MarklinConstants.STEPLONG128), this);
-                } else if (Mode == DccThrottle.SpeedStepMode128 && !isLong) {
+                } else if (Mode == SpeedStepMode.NMRA_DCC_128 && !isLong) {
                     tc.sendMarklinMessage(MarklinMessage.setLocoSpeedSteps(getCANAddress(), MarklinConstants.STEPSHORT128), this);
                 }
                 break;
             default:
-                Mode = DccThrottle.SpeedStepMode28;
+                Mode = SpeedStepMode.NMRA_DCC_28;
                 break;
         }
         super.setSpeedStepMode(Mode);
     }
 
+    @Override
     public LocoAddress getLocoAddress() {
         return address;
     }
 
+    @Override
     protected void throttleDispose() {
         active = false;
     }
 
+    @Override
     public void message(MarklinMessage m) {
         // messages are ignored
     }
 
+    @Override
     public void reply(MarklinReply m) {
         if (m.getPriority() == MarklinConstants.PRIO_1 && m.getCommand() >= MarklinConstants.MANCOMMANDSTART && m.getCommand() <= MarklinConstants.MANCOMMANDEND) {
             if (m.getAddress() != getCANAddress()) {
@@ -222,7 +234,7 @@ public class MarklinThrottle extends AbstractThrottle implements MarklinListener
                         if (!isForward) {
                             speedSetting = 0.0f;
                             super.setSpeedSetting(speedSetting);
-                            notifyPropertyChangeListener("IsForward", isForward, true);
+                            notifyPropertyChangeListener(ISFORWARD, isForward, true);
                             isForward = true;
                         }
                         return;
@@ -230,14 +242,14 @@ public class MarklinThrottle extends AbstractThrottle implements MarklinListener
                         if (isForward) {
                             speedSetting = 0.0f;
                             super.setSpeedSetting(speedSetting);
-                            notifyPropertyChangeListener("IsForward", isForward, false);
+                            notifyPropertyChangeListener(ISFORWARD, isForward, false);
                             isForward = false;
                         }
                         return;
                     case 0x03:
                         speedSetting = 0.0f;
                         super.setSpeedSetting(speedSetting);
-                        notifyPropertyChangeListener("Isforward", isForward, !isForward);
+                        notifyPropertyChangeListener(ISFORWARD, isForward, !isForward);
                         isForward = !isForward;
                         return;
                     default:
@@ -460,6 +472,6 @@ public class MarklinThrottle extends AbstractThrottle implements MarklinListener
     }
 
     // initialize logging
-    private final static Logger log = LoggerFactory.getLogger(MarklinThrottle.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(MarklinThrottle.class);
 
 }

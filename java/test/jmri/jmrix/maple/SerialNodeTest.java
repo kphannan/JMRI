@@ -1,72 +1,67 @@
 package jmri.jmrix.maple;
 
 import jmri.jmrix.AbstractMRMessage;
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import jmri.util.JUnitUtil;
+import org.junit.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Assert;
 
 /**
  * JUnit tests for the SerialNode class
  *
- * @author	Bob Jacobsen Copyright 2003
- * @author	Dave Duchamp multi-node extensions 2003
- * @version	$Revision$
+ * @author Bob Jacobsen Copyright 2003
+ * @author Dave Duchamp multi-node extensions 2003
  */
-public class SerialNodeTest extends TestCase {
+public class SerialNodeTest {
 
-    SerialNode b = new SerialNode();
+    private SerialNode b = null;
+    private SerialTrafficController tc = null;
 
+    @Test
     public void testConstructor1() {
         Assert.assertEquals("check default ctor address", 1, b.getNodeAddress());
     }
 
+    @Test
     public void testConstructor2() {
-        SerialNode c = new SerialNode(3, 0);
+        SerialNode c = new SerialNode(3, 0, tc);
         Assert.assertEquals("check ctor address", 3, c.getNodeAddress());
     }
 
+    @Test
     public void testConstructor3() {
-        SerialNode d = new SerialNode(4, 0);
+        SerialNode d = new SerialNode(4, 0, tc);
         Assert.assertEquals("check ctor address", 4, d.getNodeAddress());
     }
 
+    @Test
     public void testAccessors() {
-        SerialNode n = new SerialNode(2, 0);
+        SerialNode n = new SerialNode(2, 0, tc);
         n.setNodeAddress(7);
         Assert.assertEquals("check address", 7, n.getNodeAddress());
     }
 
+    @Test
     public void testInitialization1() {
         // no initialization needed for Maple
         AbstractMRMessage m = b.createInitPacket();
         Assert.assertEquals("null message", null, m);
     }
 
-    // from here down is testing infrastructure
-    public SerialNodeTest(String s) {
-        super(s);
+    @Before
+    public void setUp() {
+        JUnitUtil.setUp();
+        tc = new SerialTrafficControlScaffold();
+        b = new SerialNode(tc);
     }
 
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading", SerialNodeTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
+    @After
+    public void tearDown() {
+        b = null;
+        JUnitUtil.clearShutDownManager(); // put in place because AbstractMRTrafficController implementing subclass was not terminated properly
+        JUnitUtil.tearDown();
 
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(SerialNodeTest.class);
-        return suite;
-    }
-
-    // The minimal setup for log4J
-    protected void setUp() {
-        apps.tests.Log4JFixture.setUp();
-    }
-
-    protected void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
     }
 
 }

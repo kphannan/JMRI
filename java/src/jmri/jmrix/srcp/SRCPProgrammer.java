@@ -2,9 +2,10 @@ package jmri.jmrix.srcp;
 
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nonnull;
+
 import jmri.ProgrammingMode;
 import jmri.jmrix.AbstractProgrammer;
-import jmri.managers.DefaultProgrammerManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,14 +27,17 @@ public class SRCPProgrammer extends AbstractProgrammer implements SRCPListener {
         LONG_TIMEOUT = 180000;
     }
 
-    /**
+    /** 
+     * {@inheritDoc}
+     *
      * Types implemented here.
      */
     @Override
+    @Nonnull
     public List<ProgrammingMode> getSupportedModes() {
-        List<ProgrammingMode> ret = new ArrayList<ProgrammingMode>();
-        ret.add(DefaultProgrammerManager.DIRECTBYTEMODE);
-        ret.add(DefaultProgrammerManager.REGISTERMODE);
+        List<ProgrammingMode> ret = new ArrayList<>();
+        ret.add(ProgrammingMode.DIRECTBYTEMODE);
+        ret.add(ProgrammingMode.REGISTERMODE);
         return ret;
     }
 
@@ -47,9 +51,12 @@ public class SRCPProgrammer extends AbstractProgrammer implements SRCPListener {
     int _val;	// remember the value being read/written for confirmative reply
     int _cv;	// remember the cv being read/written
 
-    // programming interface
+    /** 
+     * {@inheritDoc}
+     */
     @Override
-    synchronized public void writeCV(int CV, int val, jmri.ProgListener p) throws jmri.ProgrammerException {
+    synchronized public void writeCV(String CVname, int val, jmri.ProgListener p) throws jmri.ProgrammerException {
+        final int CV = Integer.parseInt(CVname);
         if (log.isDebugEnabled()) {
             log.debug("writeCV " + CV + " listens " + p);
         }
@@ -67,7 +74,7 @@ public class SRCPProgrammer extends AbstractProgrammer implements SRCPListener {
             startLongTimer();
 
             // write
-            if (getMode() == DefaultProgrammerManager.DIRECTBYTEMODE) {
+            if (getMode() == ProgrammingMode.DIRECTBYTEMODE) {
                 m = SRCPMessage.getWriteDirectCV(_bus, _cv, _val);
             } else {
                 m = SRCPMessage.getWriteRegister(_bus, registerFromCV(_cv), _val);
@@ -80,6 +87,9 @@ public class SRCPProgrammer extends AbstractProgrammer implements SRCPListener {
         }
     }
 
+    /** 
+     * {@inheritDoc}
+     */
     @Override
     synchronized public void confirmCV(String CVname, int val, jmri.ProgListener p) throws jmri.ProgrammerException {
         int CV = Integer.parseInt(CVname);
@@ -99,7 +109,7 @@ public class SRCPProgrammer extends AbstractProgrammer implements SRCPListener {
             // start the error timer
             startLongTimer();
 
-            if (getMode() == DefaultProgrammerManager.DIRECTBYTEMODE) {
+            if (getMode() == ProgrammingMode.DIRECTBYTEMODE) {
                 m = SRCPMessage.getConfirmDirectCV(_bus, _cv, _confirmVal);
             } else {
                 m = SRCPMessage.getConfirmRegister(_bus, registerFromCV(_cv), _confirmVal);
@@ -111,12 +121,14 @@ public class SRCPProgrammer extends AbstractProgrammer implements SRCPListener {
             progState = NOTPROGRAMMING;
             throw e;
         }
-
-        //readCV(CV, p);
     }
 
+    /** 
+     * {@inheritDoc}
+     */
     @Override
-    synchronized public void readCV(int CV, jmri.ProgListener p) throws jmri.ProgrammerException {
+    synchronized public void readCV(String CVname, jmri.ProgListener p) throws jmri.ProgrammerException {
+        final int CV = Integer.parseInt(CVname);
         if (log.isDebugEnabled()) {
             log.debug("readCV " + CV + " listens " + p);
         }
@@ -133,7 +145,7 @@ public class SRCPProgrammer extends AbstractProgrammer implements SRCPListener {
             startLongTimer();
 
             // format and send the write message
-            if (getMode() == DefaultProgrammerManager.DIRECTBYTEMODE) {
+            if (getMode() == ProgrammingMode.DIRECTBYTEMODE) {
                 m = SRCPMessage.getReadDirectCV(_bus, _cv);
             } else {
                 m = SRCPMessage.getReadRegister(_bus, registerFromCV(_cv));
@@ -159,14 +171,21 @@ public class SRCPProgrammer extends AbstractProgrammer implements SRCPListener {
             throw new jmri.ProgrammerException("programmer in use");
         } else {
             _usingProgrammer = p;
-            return;
         }
     }
 
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
     public void message(SRCPMessage m) {
         log.error("message received unexpectedly: " + m.toString());
     }
 
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
     synchronized public void reply(SRCPReply m) {
         if (progState == NOTPROGRAMMING) {
             // we get the complete set of replies now, so ignore these
@@ -176,7 +195,6 @@ public class SRCPProgrammer extends AbstractProgrammer implements SRCPListener {
             if (!m.isResponseOK()) {
                 log.warn("Reply \"" + m.toString() + "\"");
             }
-            return;
         } else if (progState == COMMANDSENT) {
             if (log.isDebugEnabled()) {
                 log.debug("reply in COMMANDSENT state");
@@ -212,6 +230,10 @@ public class SRCPProgrammer extends AbstractProgrammer implements SRCPListener {
         }
     }
 
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
     synchronized public void reply(jmri.jmrix.srcp.parser.SimpleNode n) {
         if (log.isDebugEnabled()) {
             log.debug("reply called with simpleNode " + n.jjtGetValue());
@@ -221,9 +243,12 @@ public class SRCPProgrammer extends AbstractProgrammer implements SRCPListener {
         }
     }
 
-    /**
+    /** 
+     * {@inheritDoc}
+     *
      * Internal routine to handle a timeout
      */
+    @Override
     synchronized protected void timeout() {
         if (progState != NOTPROGRAMMING) {
             // we're programming, time to stop
@@ -239,9 +264,9 @@ public class SRCPProgrammer extends AbstractProgrammer implements SRCPListener {
 
     /**
      * Internal method to send a cleanup message (if needed) on timeout.
-     * <P>
-     * Here, it sends a request to exit from programming mode. But subclasses,
-     * e.g. ops mode, may redefine that.
+     * <p>
+     * Here, it sends a request to exit from programming mode. But subclasses
+     * may redefine that.
      */
     void cleanup() {
         controller().sendSRCPMessage(SRCPMessage.getExitProgMode(_bus), this);
@@ -256,7 +281,7 @@ public class SRCPProgrammer extends AbstractProgrammer implements SRCPListener {
         // clear the current listener _first_
         jmri.ProgListener temp = _usingProgrammer;
         _usingProgrammer = null;
-        temp.programmingOpReply(value, status);
+        notifyProgListenerEnd(temp,value,status);
     }
 
     SRCPTrafficController _controller = null;
@@ -269,9 +294,6 @@ public class SRCPProgrammer extends AbstractProgrammer implements SRCPListener {
         return _controller;
     }
 
-    private final static Logger log = LoggerFactory.getLogger(SRCPProgrammer.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(SRCPProgrammer.class);
 
 }
-
-
-/* @(#)SRCPProgrammer.java */

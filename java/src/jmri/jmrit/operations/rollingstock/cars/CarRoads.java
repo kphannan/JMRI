@@ -1,19 +1,19 @@
-// CarRoads.java
 package jmri.jmrit.operations.rollingstock.cars;
 
-import jmri.jmrit.operations.rollingstock.RollingStockAttribute;
-import jmri.jmrit.operations.setup.Control;
 import org.jdom2.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import jmri.InstanceManager;
+import jmri.InstanceManagerAutoDefault;
+import jmri.jmrit.operations.rollingstock.RollingStockAttribute;
 
 /**
  * Represents the road names that cars can have.
  *
  * @author Daniel Boudreau Copyright (C) 2008, 2014
- * @version $Revision$
  */
-public class CarRoads extends RollingStockAttribute {
+public class CarRoads extends RollingStockAttribute implements InstanceManagerAutoDefault {
 
     private static final String ROADS = Bundle.getMessage("carRoadNames");
     public static final String CARROADS_CHANGED_PROPERTY = "CarRoads Length"; // NOI18N
@@ -23,22 +23,15 @@ public class CarRoads extends RollingStockAttribute {
     }
 
     /**
-     * record the single instance *
+     * Get the default instance of this class.
+     *
+     * @return the default instance of this class
+     * @deprecated since 4.9.2; use
+     * {@link jmri.InstanceManager#getDefault(java.lang.Class)} instead
      */
-    private static CarRoads _instance = null;
-
+    @Deprecated
     public static synchronized CarRoads instance() {
-        if (_instance == null) {
-            if (log.isDebugEnabled()) {
-                log.debug("CarRoads creating instance");
-            }
-            // create and load
-            _instance = new CarRoads();
-        }
-        if (Control.SHOW_INSTANCE) {
-            log.debug("CarRoads returns instance {}", _instance);
-        }
-        return _instance;
+        return InstanceManager.getDefault(CarRoads.class);
     }
 
     @Override
@@ -66,35 +59,27 @@ public class CarRoads extends RollingStockAttribute {
             setDirtyAndFirePropertyChange(CARROADS_CHANGED_PROPERTY, list.size() + 1, list.size());
         }
     }
-    
+
     /**
      * Get the maximum character length of a road name when printing on a
      * manifest or switch list. Characters after the "-" are ignored.
      *
-     * @return the maximum character length of a car type
+     * @return the maximum character length of a car road name
      */
     @Override
     public int getMaxNameLength() {
-        if (maxNameLengthSubType == 0) {
-            String maxName = "";
-            maxNameLengthSubType = MIN_NAME_LENGTH;
-            for (String name : getNames()) {
-                String[] subString = name.split("-");
-                if (subString[0].length() > maxNameLengthSubType) {
-                    maxName = name;
-                    maxNameLengthSubType = subString[0].length();
-                }
-            }
-            log.info("Max road name ({}) length {}", maxName, maxNameLengthSubType);
+        if (maxNameLength == 0) {
+            getMaxNameSubStringLength();
+            log.info("Max road name ({}) length {}", maxName, maxNameLength);
         }
-        return maxNameLengthSubType;
+        return maxNameLength;
     }
-
-    private int maxNameLengthSubType = 0;
 
     /**
      * Create an XML element to represent this Entry. This member has to remain
      * synchronized with the detailed DTD in operations-cars.dtd.
+     *
+     * @param root The common Element for operations-cars.dtd.
      *
      */
     public void store(Element root) {
@@ -107,9 +92,9 @@ public class CarRoads extends RollingStockAttribute {
 
     protected void setDirtyAndFirePropertyChange(String p, Object old, Object n) {
         // Set dirty
-        CarManagerXml.instance().setDirty(true);
+        InstanceManager.getDefault(CarManagerXml.class).setDirty(true);
         super.firePropertyChange(p, old, n);
     }
 
-    private final static Logger log = LoggerFactory.getLogger(CarRoads.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(CarRoads.class);
 }

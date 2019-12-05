@@ -1,18 +1,24 @@
 package jmri.jmrix.rps.serial;
 
-import gnu.io.CommPortIdentifier;
-import gnu.io.PortInUseException;
-import gnu.io.SerialPort;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Arrays;
+
+import jmri.InvokeOnGuiThread;
 import jmri.jmrix.rps.Distributor;
 import jmri.jmrix.rps.Engine;
 import jmri.jmrix.rps.Reading;
 import jmri.jmrix.rps.RpsSystemConnectionMemo;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import purejavacomm.CommPortIdentifier;
+import purejavacomm.NoSuchPortException;
+import purejavacomm.PortInUseException;
+import purejavacomm.SerialPort;
+import purejavacomm.UnsupportedCommOperationException;
 
 /**
  * Implements SerialPortAdapter for the RPS system.
@@ -27,17 +33,43 @@ import org.slf4j.LoggerFactory;
  *
  * @author	Bob Jacobsen Copyright (C) 2001, 2002, 2008
  */
-public class SerialAdapter extends jmri.jmrix.AbstractSerialPortController implements jmri.jmrix.SerialPortAdapter {
+public class SerialAdapter extends jmri.jmrix.AbstractSerialPortController {
 
     public SerialAdapter() {
         super(new RpsSystemConnectionMemo());
-        option1Name = "Protocol";
-        options.put(option1Name, new Option("Protocol", validOptions1));
+        option1Name = "Protocol"; // NOI18N
+        options.put(option1Name, new Option(Bundle.getMessage("ProtocolVersionLabel"), validOptions1));
         this.manufacturerName = jmri.jmrix.rps.RpsConnectionTypeList.NAC;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public RpsSystemConnectionMemo getSystemConnectionMemo() {
+        return (RpsSystemConnectionMemo) super.getSystemConnectionMemo();
+    }
+
+    /**
+     * Set up all of the other objects to operate.
+     */
+    @Override
+    public void configure() {
+        // Connect the control objects:
+        //   connect an Engine to the Distributor
+        Engine e = Engine.instance();
+        Distributor.instance().addReadingListener(e);
+
+        // start the reader
+        readerThread = new Thread(new Reader());
+        readerThread.start();
+
+        this.getSystemConnectionMemo().configureManagers();
     }
 
     transient SerialPort activeSerialPort = null;
 
+    @Override
     public synchronized String openPort(String portName, String appName) {
         // open the port, check ability to set moderators
         try {
@@ -49,31 +81,22 @@ public class SerialAdapter extends jmri.jmrix.AbstractSerialPortController imple
                 return handlePortBusy(p, portName, log);
             }
 
-            // try to set it for comunication via SerialDriver
+            // try to set it for communication via SerialDriver
             try {
                 // find the baud rate value, configure comm options
-                int baud = validSpeedValues[0];  // default, but also defaulted in the initial value of selectedSpeed
-                for (int i = 0; i < validSpeeds.length; i++) {
-                    if (validSpeeds[i].equals(mBaudRate)) {
-                        baud = validSpeedValues[i];
-                    }
-                }
+                int baud = currentBaudNumber(mBaudRate);
                 activeSerialPort.setSerialPortParams(baud, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
-            } catch (gnu.io.UnsupportedCommOperationException e) {
-                log.error("Cannot set serial parameters on port " + portName + ": " + e.getMessage());
+            } catch (UnsupportedCommOperationException e) {
+                log.error("Cannot set serial parameters on port {}: {}", portName, e.getMessage());
                 return "Cannot set serial parameters on port " + portName + ": " + e.getMessage();
             }
 
-            // set RTS high, DTR high
-            activeSerialPort.setRTS(true);		// not connected in some serial ports and adapters
-            activeSerialPort.setDTR(true);		// pin 1 in DIN8; on main connector, this is DTR
-
             // disable flow control; hardware lines used for signaling, XON/XOFF might appear in data
-            activeSerialPort.setFlowControlMode(0);
+            configureLeadsAndFlowControl(activeSerialPort, 0);
 
             // set timeout
-            log.debug("Serial timeout was observed as: " + activeSerialPort.getReceiveTimeout()
-                    + " " + activeSerialPort.isReceiveTimeoutEnabled());
+            log.debug("Serial timeout was observed as: {} {}", activeSerialPort.getReceiveTimeout(),
+                    activeSerialPort.isReceiveTimeoutEnabled());
 
             // get and save streams
             serialStream = new DataInputStream(activeSerialPort.getInputStream());
@@ -99,16 +122,14 @@ public class SerialAdapter extends jmri.jmrix.AbstractSerialPortController imple
 
             opened = true;
 
-        } catch (gnu.io.NoSuchPortException p) {
+        } catch (NoSuchPortException p) {
             return handlePortNotFound(p, portName, log);
-        } catch (Exception ex) {
-            log.error("Unexpected exception while opening port " + portName + " trace follows: " + ex);
-            ex.printStackTrace();
+        } catch (IOException ex) {
+            log.error("Unexpected exception while opening port {}", portName, ex);
             return "Unexpected error while opening port " + portName + ": " + ex;
         }
 
         return null; // indicates OK return
-
     }
 
     /**
@@ -131,25 +152,8 @@ public class SerialAdapter extends jmri.jmrix.AbstractSerialPortController imple
         }
     }
 
-    /**
-     * Set up all of the other objects to operate
-     */
-    public void configure() {
-
-        // Connect the control objects:
-        //   connect an Engine to the Distributor
-        Engine e = Engine.instance();
-        Distributor.instance().addReadingListener(e);
-
-        // start the reader
-        readerThread = new Thread(new Reader());
-        readerThread.start();
-
-        jmri.jmrix.rps.ActiveFlag.setActive();
-
-    }
-
     // base class methods for the PortController interface
+    @Override
     public synchronized DataInputStream getInputStream() {
         if (!opened) {
             log.error("getInputStream called before load(), stream not available");
@@ -158,6 +162,7 @@ public class SerialAdapter extends jmri.jmrix.AbstractSerialPortController imple
         return new DataInputStream(serialStream);
     }
 
+    @Override
     public synchronized DataOutputStream getOutputStream() {
         if (!opened) {
             log.error("getOutputStream called before load(), stream not available");
@@ -170,26 +175,41 @@ public class SerialAdapter extends jmri.jmrix.AbstractSerialPortController imple
         return null;
     }
 
+    @Override
     public boolean status() {
         return opened;
     }
 
     /**
-     * Get an array of valid baud rates.
+     * {@inheritDoc}
      */
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "EI_EXPOSE_REP") // OK to expose array instead of copy until Java 1.6
+    @Override
     public String[] validBaudRates() {
-        return validSpeeds;
+        return Arrays.copyOf(validSpeeds, validSpeeds.length);
     }
 
-    protected String[] validSpeeds = new String[]{"115,200 baud"};
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int[] validBaudNumbers() {
+        return Arrays.copyOf(validSpeedValues, validSpeedValues.length);
+    }
+
+    protected String[] validSpeeds = new String[]{Bundle.getMessage("Baud115200")};
     protected int[] validSpeedValues = new int[]{115200};
 
-    String[] validOptions1 = new String[]{"Version 1", "Version 2"};
+    @Override
+    public int defaultBaudIndex() {
+        return 0;
+    }
+
+    String[] validOptions1 = new String[]{Bundle.getMessage("Version1Choice"), Bundle.getMessage("Version2Choice")};
 
     /**
      * Set the second port option.
      */
+    @Override
     public void configureOption1(String value) {
         setOptionState(option1Name, value);
         if (value.equals(validOptions1[0])) {
@@ -205,6 +225,7 @@ public class SerialAdapter extends jmri.jmrix.AbstractSerialPortController imple
     volatile OutputStream ostream = null;
     int[] offsetArray = null;
 
+    @Deprecated
     static public SerialAdapter instance() {
         if (mInstance == null) {
             mInstance = new SerialAdapter();
@@ -243,8 +264,7 @@ public class SerialAdapter extends jmri.jmrix.AbstractSerialPortController imple
     }
 
     /**
-     * Internal class to handle the separate character-receive thread
-     *
+     * Internal class to handle the separate character-receive thread.
      */
     class Reader implements Runnable {
 
@@ -254,6 +274,7 @@ public class SerialAdapter extends jmri.jmrix.AbstractSerialPortController imple
          * PortController via <code>connectPort</code>. Terminates with the
          * input stream breaking out of the try block.
          */
+        @Override
         public void run() {
             // have to limit verbosity!
 
@@ -261,7 +282,7 @@ public class SerialAdapter extends jmri.jmrix.AbstractSerialPortController imple
                 try {
                     handleIncomingData();
                 } catch (java.io.IOException e) {
-                    log.warn("run: Exception: " + e.toString());
+                    log.warn("run: Exception: ", e);
                 }
             }
         }
@@ -297,7 +318,7 @@ public class SerialAdapter extends jmri.jmrix.AbstractSerialPortController imple
 
             // create the String to display (as String has .equals)
             msgString = msg.toString();
-            log.debug("Msg <" + msgString + ">");
+            log.debug("Msg <{}>", msgString);
 
             // return a notification via the queue to ensure end
             Runnable r = new Runnable() {
@@ -305,6 +326,7 @@ public class SerialAdapter extends jmri.jmrix.AbstractSerialPortController imple
                 // retain a copy of the message at startup
                 String msgForLater = msgString;
 
+                @Override
                 public void run() {
                     nextLine(msgForLater);
                 }
@@ -316,12 +338,13 @@ public class SerialAdapter extends jmri.jmrix.AbstractSerialPortController imple
 
     /**
      * Handle a new line from the device.
-     *
+     * <p>
      * This needs to execute on the Swing GUI thread. It forwards via the
      * Distributor object.
      *
      * @param s The new message to distribute
      */
+    @InvokeOnGuiThread
     protected void nextLine(String s) {
         // check for startup lines we ignore
         if (s.length() < 5) {
@@ -337,7 +360,7 @@ public class SerialAdapter extends jmri.jmrix.AbstractSerialPortController imple
         try {
             r = makeReading(s);
         } catch (Exception e) {
-            log.error("Exception formatting input line \"" + s + "\": " + e);
+            log.error("Exception formatting input line \"{}\": ", s, e);
             // r = new Reading(-1, new double[]{-1, -1, -1, -1} );
             // skip handling this line
             return;
@@ -350,14 +373,13 @@ public class SerialAdapter extends jmri.jmrix.AbstractSerialPortController imple
         try {
             Distributor.instance().submitReading(r);
         } catch (Exception e) {
-            log.error("Exception forwarding reading: " + e);
+            log.error("Exception forwarding reading: ", e);
         }
     }
 
     /**
      * Handle the message which lists the receiver numbers. Just makes an array
      * of those, which is not actually used.
-     *
      */
     void setReceivers(String s) {
         try {
@@ -370,11 +392,11 @@ public class SerialAdapter extends jmri.jmrix.AbstractSerialPortController imple
             // rest are receiver numbers
             // Find how many
             int n = c.getColumnCount() - 2;
-            log.debug("Found " + n + " receivers");
+            log.debug("Found {} receivers", n);
 
             // find max receiver number
             int max = Integer.valueOf(c.get(c.getColumnCount() - 1)).intValue();
-            log.debug("Highest receiver address is " + max);
+            log.debug("Highest receiver address is {}", max);
 
             offsetArray = new int[n];
             for (int i = 0; i < n; i++) {
@@ -382,7 +404,7 @@ public class SerialAdapter extends jmri.jmrix.AbstractSerialPortController imple
             }
 
         } catch (IOException e) {
-            log.debug("Did not handle init message <" + s + "> due to " + e);
+            log.debug("Did not handle init message <{}> due to {}", s, e);
         }
     }
 
@@ -390,11 +412,11 @@ public class SerialAdapter extends jmri.jmrix.AbstractSerialPortController imple
     private boolean first = true;
 
     /**
-     * Convert input line to Reading object
+     * Convert input line to Reading object.
      */
     Reading makeReading(String s) throws IOException {
         if (first) {
-            log.info("RPS starts, using protocol version " + version);
+            log.info("RPS starts, using protocol version {}", version);
             first = false;
         }
 
@@ -449,13 +471,8 @@ public class SerialAdapter extends jmri.jmrix.AbstractSerialPortController imple
                         vals[index] = Double.valueOf(c.get(2 + i * 2 + 1)).doubleValue();
                     }
                 }
-            } catch (Exception e) {
-                log.warn("Exception handling input: " + e);
-                System.out.flush();
-                System.err.flush();
-                e.printStackTrace();
-                System.out.flush();
-                System.err.flush();
+            } catch (IOException | NumberFormatException e) {
+                log.warn("Exception handling input.", e);
                 return null;
             }
             Reading r = new Reading(Engine.instance().getPolledID(), vals, s);
@@ -466,6 +483,6 @@ public class SerialAdapter extends jmri.jmrix.AbstractSerialPortController imple
         }
     }
 
-    private final static Logger log = LoggerFactory.getLogger(SerialAdapter.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(SerialAdapter.class);
 
 }

@@ -1,25 +1,28 @@
 package jmri;
 
 import jmri.util.JUnitUtil;
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * Tests for the NamedBeanHandleManager class
  *
  * @author	Kevin Dickerson Copyright (C) 2006
- * @version $Revision: 18111 $
+ * 
  */
-public class NamedBeanHandleManagerTest extends TestCase {
+public class NamedBeanHandleManagerTest {
 
+    @Test
     public void testCreate() {
     }
 
+    @Test
     public void testNameBeanManager() throws JmriException {
-        SensorManager sm = new jmri.managers.InternalSensorManager();
-        TurnoutManager tm = new jmri.managers.InternalTurnoutManager();
+        SensorManager sm = jmri.InstanceManager.sensorManagerInstance();
+        TurnoutManager tm = jmri.InstanceManager.turnoutManagerInstance();
         MemoryManager mm = jmri.InstanceManager.memoryManagerInstance();
 
         String name = "MyUserName";
@@ -80,38 +83,23 @@ public class NamedBeanHandleManagerTest extends TestCase {
         Assert.assertTrue("Sensor NamedBean2 should have a the system name IS2 set against it ", ns2.getName().equals("IS2"));
         Assert.assertTrue("Memory NamedBean1 should have a the user name set against it " + name, nm1.getName().equals(name));
 
-    }
-
-    // from here down is testing infrastructure
-    public NamedBeanHandleManagerTest(String s) {
-        super(s);
-    }
-
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {NamedBeanHandleManagerTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(NamedBeanHandleManagerTest.class);
-        return suite;
+        NamedBeanHandle<Sensor> checkRename = nbhm.getNamedBeanHandle("ISno_user_name", sm.provideSensor("ISno_user_name"));
+        nbhm.updateBeanFromUserToSystem(checkRename.getBean());
+        jmri.util.JUnitAppender.assertWarnMessage("updateBeanFromUserToSystem requires non-blank user name: \"ISno_user_name\" not renamed");
     }
 
     jmri.NamedBeanHandleManager nbhm;
 
-    protected void setUp() throws Exception {
-        super.setUp();
+    @Before
+    public void setUp() throws Exception {
+        JUnitUtil.setUp();
         JUnitUtil.resetInstanceManager();
-        apps.tests.Log4JFixture.setUp();
         jmri.InstanceManager.store(new jmri.NamedBeanHandleManager(), jmri.NamedBeanHandleManager.class);
         nbhm = jmri.InstanceManager.getDefault(jmri.NamedBeanHandleManager.class);
     }
 
-    protected void tearDown() throws Exception {
-        JUnitUtil.resetInstanceManager();
-        super.tearDown();
-        apps.tests.Log4JFixture.tearDown();
+    @After
+    public void tearDown() throws Exception {
+        JUnitUtil.tearDown();
     }
 }

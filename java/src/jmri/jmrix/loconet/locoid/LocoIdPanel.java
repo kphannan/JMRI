@@ -5,13 +5,12 @@ import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import jmri.jmrix.loconet.LnTrafficController;
-import jmri.jmrix.loconet.LocoNetBundle;
 import jmri.jmrix.loconet.LocoNetListener;
 import jmri.jmrix.loconet.LocoNetMessage;
 import jmri.jmrix.loconet.LocoNetSystemConnectionMemo;
 
 /**
- * User interface for setting the LocoNet ID
+ * User interface for setting the LocoNet ID.
  *
  * @author Bob Jacobsen Copyright (C) 2006, 2010
  */
@@ -28,16 +27,18 @@ public class LocoIdPanel extends jmri.jmrix.loconet.swing.LnPanel implements
 
     public LocoIdPanel() {
         super();
+        idBox = new javax.swing.JComboBox<String>(IDValues);
     }
 
-    public void initComponents() throws Exception {
-        ResourceBundle rb = ResourceBundle
-                .getBundle("jmri.jmrix.loconet.locoid.LocoId");
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void initComponents() {
 
         // Create our UI elements, two buttons and a drop-down.
-        setButton = new javax.swing.JButton(rb.getString("ButtonSet"));
-        readButton = new javax.swing.JButton(rb.getString("ButtonRead"));
-        idBox = new javax.swing.JComboBox<String>(IDValues);
+        setButton = new javax.swing.JButton(Bundle.getMessage("ButtonSet"));
+        readButton = new javax.swing.JButton(Bundle.getMessage("ButtonRead"));
 
         // Do our layout, two buttons side by side, drop down below.
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
@@ -51,32 +52,46 @@ public class LocoIdPanel extends jmri.jmrix.loconet.swing.LnPanel implements
 
         p = new JPanel();
         p.setLayout(new java.awt.FlowLayout());
-        p.add(new JLabel(rb.getString("LabelValue")));
+        p.add(new JLabel(Bundle.getMessage("LabelValue")));
         p.add(idBox);
 
         add(p);
 
         // Set our callbacks
         setButton.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
                 setButtonActionPerformed();
             }
         });
         readButton.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
                 readButtonActionPerformed();
             }
         });
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public String getHelpTarget() {
-        return "package.jmri.jmrix.loconet.locoid.LocoIdFrame";
+        return "package.jmri.jmrix.loconet.locoid.LocoIdFrame"; // NOI18N
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public String getTitle() {
-        return getTitle(LocoNetBundle.bundle().getString("MenuItemSetID"));
+        return getTitle(Bundle.getMessage("MenuItemSetID"));
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void initComponents(LocoNetSystemConnectionMemo memo) {
         super.initComponents(memo);
 
@@ -104,7 +119,7 @@ public class LocoIdPanel extends jmri.jmrix.loconet.swing.LnPanel implements
      */
     public void readButtonActionPerformed() {
         // We set the display to "-" until the callback gets the value from the
-        // Loconet
+        // LocoNet
         idBox.setSelectedIndex(0);
         memo.getLnTrafficController().sendLocoNetMessage(createReadPacket());
     }
@@ -117,6 +132,7 @@ public class LocoIdPanel extends jmri.jmrix.loconet.swing.LnPanel implements
      *
      * @param m Inbound LocoNet message to check.
      */
+    @Override
     public void message(LocoNetMessage m) {
 
         // The message is 6 bytes long.
@@ -124,9 +140,9 @@ public class LocoIdPanel extends jmri.jmrix.loconet.swing.LnPanel implements
             return;
         }
 
-        int b1 = m.getElement(0) & 0xFF;
-        int b2 = m.getElement(1) & 0xFF;
-        int b3 = m.getElement(2) & 0xFF;
+        int b1 = m.getOpCode();
+        int b2 = m.getElement(1);
+        int b3 = m.getElement(2);
         int b4 = m.getElement(3) & 0x07; // UR-92's set bit 4 for duplex
 
         // Response code is D7 {12, 17, 1F} 00 <value>
@@ -183,6 +199,10 @@ public class LocoIdPanel extends jmri.jmrix.loconet.swing.LnPanel implements
         t.addLocoNetListener(~0, this);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void dispose() {
         memo.getLnTrafficController().removeLocoNetListener(~0, this);
         super.dispose();

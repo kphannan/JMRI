@@ -4,8 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Handle configuring the XPressNet tunnel for the z21 Connection.
- * <P>
+ * Handle configuring the XpressNet tunnel for the z21 Connection.
+ * <p>
  * This uses the {@link Z21XNetStreamPortController} class to do the actual 
  * connection.
  *
@@ -25,26 +25,34 @@ public class Z21XNetConnectionConfig extends jmri.jmrix.AbstractStreamConnection
     }
 
     /**
-     * Ctor for a functional Swing object with no prexisting adapter
+     * Ctor for a connection configuration with no preexisting adapter.
+     * {@link #setInstance()} will fill the adapter member.
      */
     public Z21XNetConnectionConfig() {
         super();
     }
 
+    @Override
     public String name() {
-        return "Z21 XPressNet Stream";
+        return "Z21 XpressNet Stream";
     }
 
     String manufacturerName = "Roco";
 
+    @Override
     public String getManufacturer() {
         return manufacturerName;
     }
 
+    @Override
     public void setManufacturer(String manu) {
         manufacturerName = manu;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     protected void setInstance() {
        log.error("Unexpected call to setInstance");
     }
@@ -61,6 +69,6 @@ public class Z21XNetConnectionConfig extends jmri.jmrix.AbstractStreamConnection
         return false;
     }
 
-    private final static Logger log = LoggerFactory.getLogger(Z21XNetConnectionConfig.class.getName());
+    private static final Logger log = LoggerFactory.getLogger(Z21XNetConnectionConfig.class);
 
 }

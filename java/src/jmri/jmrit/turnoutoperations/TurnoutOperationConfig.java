@@ -1,28 +1,21 @@
-/**
- *
- */
 package jmri.jmrit.turnoutoperations;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import javax.swing.JPanel;
 import jmri.TurnoutOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * configuration panel for TurnoutOperation class Must be overridden to define
- * specific panel details for class Must have exactly one constructor like the
- * one shown below
+ * Configuration panel for TurnoutOperation class. Must be overridden to define
+ * specific panel details for class. Must have exactly one constructor like the
+ * one shown below.
  *
- * @author John Harper	Copyright 2005
- * @version $Revision$
+ * @author John Harper Copyright 2005
  */
 public class TurnoutOperationConfig extends JPanel {
 
-    /**
-     *
-     */
-    private static final long serialVersionUID = 8525871604406638058L;
     TurnoutOperation myOperation;
     //boolean valid = true;
 
@@ -34,8 +27,6 @@ public class TurnoutOperationConfig extends JPanel {
         return myOperation;
     }
 
-    //Boudreau 2009: Should not override isValid() causes contents to not be be displayed with Java 1.6
-    //public boolean isValid() { return valid; }
     public void endConfigure() {
         log.error("Should have been overridden!");
     }
@@ -46,12 +37,12 @@ public class TurnoutOperationConfig extends JPanel {
      * If anything goes wrong (no such class, wrong constructors, instantiation
      * error, ....) just return null
      *
-     * @param op	operation for which configurator is required
-     * @return	the configurator
+     * @param op operation for which configurator is required
+     * @return the configurator or null in case of an error
      */
     static public TurnoutOperationConfig getConfigPanel(TurnoutOperation op) {
         TurnoutOperationConfig config = null;
-        String[] path = jmri.util.StringUtil.split(op.getClass().getName(), ".");
+        String[] path = op.getClass().getName().split("\\.");
         String configName = "jmri.jmrit.turnoutoperations." + path[path.length - 1] + "Config";
         try {
             Class<?> configClass = Class.forName(configName);
@@ -59,16 +50,19 @@ public class TurnoutOperationConfig extends JPanel {
             if (constrs.length == 1) {
                 try {
                     config = (TurnoutOperationConfig) constrs[0].newInstance(new Object[]{op});
-                } catch (Throwable e) {
-                }		// too many to list!
+                } catch (IllegalAccessException | IllegalArgumentException | InstantiationException | InvocationTargetException ex) {
+                    log.error("Error configuring TurnoutOperation", ex);
+                }
             }
         } catch (ClassNotFoundException e) {
         }
         if (config == null) {
             //config = null;
-            log.debug("could not create configurator for " + op.getClass().getName() + " \"" + op.getName() + "\"");
+            log.debug("could not create configurator for {} \"{}\"", op.getClass().getName(), op.getName());
         }
         return config;
     }
-    private final static Logger log = LoggerFactory.getLogger(TurnoutOperationConfig.class.getName());
+
+    private final static Logger log = LoggerFactory.getLogger(TurnoutOperationConfig.class);
+
 }

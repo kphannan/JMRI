@@ -1,20 +1,21 @@
 package jmri.server.json.sensor;
 
+import static jmri.server.json.sensor.JsonSensor.SENSOR;
+import static jmri.server.json.sensor.JsonSensor.SENSORS;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jmri.server.json.JsonConnection;
-import jmri.server.json.JsonHttpService;
-import jmri.server.json.JsonSocketService;
 import jmri.spi.JsonServiceFactory;
+import org.openide.util.lookup.ServiceProvider;
 
 /**
  * Factory for JSON services for {@link jmri.Sensor}s.
- * 
+ *
  * @author Randall Wood
  */
-public class JsonSensorServiceFactory implements JsonServiceFactory {
+@ServiceProvider(service = JsonServiceFactory.class)
+public class JsonSensorServiceFactory implements JsonServiceFactory<JsonSensorHttpService, JsonSensorSocketService> {
 
-    public static final String SENSOR = "sensor"; // NOI18N
-    public static final String SENSORS = "sensors"; // NOI18N
 
     @Override
     public String[] getTypes() {
@@ -22,12 +23,12 @@ public class JsonSensorServiceFactory implements JsonServiceFactory {
     }
 
     @Override
-    public JsonSocketService getSocketService(JsonConnection connection) {
+    public JsonSensorSocketService getSocketService(JsonConnection connection) {
         return new JsonSensorSocketService(connection);
     }
 
     @Override
-    public JsonHttpService getHttpService(ObjectMapper mapper) {
+    public JsonSensorHttpService getHttpService(ObjectMapper mapper) {
         return new JsonSensorHttpService(mapper);
     }
 

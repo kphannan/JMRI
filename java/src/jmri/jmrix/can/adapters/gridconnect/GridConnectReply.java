@@ -1,4 +1,3 @@
-// GridConnectReply.java
 package jmri.jmrix.can.adapters.gridconnect;
 
 import jmri.jmrix.AbstractMRReply;
@@ -8,18 +7,17 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Class for replies in a GridConnect based message/reply protocol.
- * <P>
+ * <p>
  * The GridConnect protocol encodes messages as an ASCII string of up to 24
  * characters of the form: :ShhhhNd0d1d2d3d4d5d6d7; hhhh is the two byte (11
  * useful bits) header The S indicates a standard CAN frame
  * :XhhhhhhhhNd0d1d2d3d4d5d6d7; The X indicates an extended CAN frame N or R
  * indicates a normal or remote frame, in position 6 or 10 d0 - d7 are the (up
  * to) 8 data bytes
- * <P>
+ * <p>
  *
  * @author Andrew Crosland Copyright (C) 2008, 2009
  * @author Bob Jacobsen Copyright (C) 2008
- * @version	$Revision$
  */
 public class GridConnectReply extends AbstractMRReply {
 
@@ -80,6 +78,7 @@ public class GridConnectReply extends AbstractMRReply {
         return true;
     }
 
+    @Override
     protected int skipPrefix(int index) {
         while (_dataChars[index] == ':') {
             index++;
@@ -88,6 +87,7 @@ public class GridConnectReply extends AbstractMRReply {
     }
 
     // accessors to the bulk data
+    @Override
     public int getNumDataElements() {
         return _nDataChars;
     }
@@ -96,10 +96,12 @@ public class GridConnectReply extends AbstractMRReply {
         _nDataChars = (n <= MAXLEN) ? n : MAXLEN;
     }
 
+    @Override
     public int getElement(int n) {
         return _dataChars[n];
     }
 
+    @Override
     public void setElement(int n, int v) {
         if (n < MAXLEN) {
             _dataChars[n] = v;
@@ -116,6 +118,7 @@ public class GridConnectReply extends AbstractMRReply {
     }
 
     // 
+    @Override
     public int maxSize() {
         return MAXLEN;
     }
@@ -163,7 +166,7 @@ public class GridConnectReply extends AbstractMRReply {
 
     /**
      * Get a hex data byte from the message
-     * <P>
+     * <p>
      * Data bytes are encoded as two ASCII hex digits starting at byte 7 of the
      * message.
      *
@@ -198,7 +201,7 @@ public class GridConnectReply extends AbstractMRReply {
         return (byte) b;
     }
 
-    private final static Logger log = LoggerFactory.getLogger(GridConnectReply.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(GridConnectReply.class);
 }
 
-/* @(#)GridConnectReply.java */
+

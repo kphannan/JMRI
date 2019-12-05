@@ -12,17 +12,16 @@ import org.jdom2.Element;
 /**
  * Handle XML persistence of layout connections by persisting the
  * NetworkDriverAdapter (and connections).
- * <P>
+ * <p>
  * Note this is named as the XML version of a ConnectionConfig object, but it's
  * actually persisting the NetworkDriverAdapter.
- * <P>
+ * <p>
  * This class is invoked from jmrix.JmrixConfigPaneXml on write, as that class
  * is the one actually registered. Reads are brought here directly via the class
  * attribute in the XML.
  *
  * @author Bob Jacobsen Copyright: Copyright (c) 2003, 2015
  * @author kcameron Copyright (C) 2010 added multiple connections
- * @version $Revision: 28746 $
  */
 public class ConnectionConfigXml extends AbstractNetworkConnectionConfigXml {
 
@@ -30,10 +29,15 @@ public class ConnectionConfigXml extends AbstractNetworkConnectionConfigXml {
         super();
     }
 
+    @Override
     protected void getInstance() {
-        adapter = new NetworkDriverAdapter();
+        if(adapter == null) {
+           adapter = new NetworkDriverAdapter();
+           adapter.configure(); // sets the memo and traffic controller.
+        }
     }
 
+    @Override
     protected void getInstance(Object object) {
         adapter = ((ConnectionConfig) object).getAdapter();
     }
@@ -43,11 +47,10 @@ public class ConnectionConfigXml extends AbstractNetworkConnectionConfigXml {
      *
      * @param e Element being extended
      */
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "SBSC_USE_STRINGBUFFER_CONCATENATION")
-    // Only used occasionally, so inefficient String processing not really a problem
-    // though it would be good to fix it if you're working in this area
+    @Override
     protected void extendElement(Element e) {
-        SerialNode node = (SerialNode) SerialTrafficController.instance().getNode(0);
+        SerialTrafficController tc = ((CMRISystemConnectionMemo)adapter.getSystemConnectionMemo()).getTrafficController();
+        SerialNode node = (SerialNode) tc.getNode(0);
         int index = 1;
         while (node != null) {
             // add node as an element
@@ -60,19 +63,19 @@ public class ConnectionConfigXml extends AbstractNetworkConnectionConfigXml {
             n.addContent(makeParameter("transmissiondelay", "" + node.getTransmissionDelay()));
             n.addContent(makeParameter("num2lsearchlights", "" + node.getNum2LSearchLights()));
             n.addContent(makeParameter("pulsewidth", "" + node.getPulseWidth()));
-            String value = "";
+            StringBuilder value = new StringBuilder("");
             for (int i = 0; i < node.getLocSearchLightBits().length; i++) {
-                value = value + Integer.toHexString(node.getLocSearchLightBits()[i] & 0xF);
+                value.append(Integer.toHexString(node.getLocSearchLightBits()[i] & 0xF));
             }
-            n.addContent(makeParameter("locsearchlightbits", "" + value));
-            value = "";
+            n.addContent(makeParameter("locsearchlightbits", value.toString()));
+            value = new StringBuilder("");
             for (int i = 0; i < node.getCardTypeLocation().length; i++) {
-                value = value + Integer.toHexString(node.getCardTypeLocation()[i] & 0xF);
+                value.append(Integer.toHexString(node.getCardTypeLocation()[i] & 0xF));
             }
-            n.addContent(makeParameter("cardtypelocation", "" + value));
+            n.addContent(makeParameter("cardtypelocation", value.toString()));
 
             // look for the next node
-            node = (SerialNode) SerialTrafficController.instance().getNode(index);
+            node = (SerialNode) tc.getNode(index);
             index++;
         }
     }
@@ -118,27 +121,8 @@ public class ConnectionConfigXml extends AbstractNetworkConnectionConfigXml {
             }
 
             // Trigger initialization of this Node to reflect these parameters
-            SerialTrafficController.instance().initializeSerialNode(node);
+            ((CMRISystemConnectionMemo)adapter.getSystemConnectionMemo()).getTrafficController().initializeSerialNode(node);
         }
-    }
-
-    /**
-     * Service routine to look through "parameter" child elements to find a
-     * particular parameter value
-     *
-     * @param e    Element containing parameters
-     * @param name name of desired parameter
-     * @return String value
-     */
-    String findParmValue(Element e, String name) {
-        List<Element> l = e.getChildren("parameter");
-        for (int i = 0; i < l.size(); i++) {
-            Element n = l.get(i);
-            if (n.getAttributeValue("name").equals(name)) {
-                return n.getTextTrim();
-            }
-        }
-        return null;
     }
 
     @Override

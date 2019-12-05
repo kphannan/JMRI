@@ -1,4 +1,3 @@
-// TrackNode.java
 package jmri.jmrit.display.layoutEditor;
 
 import jmri.Block;
@@ -6,14 +5,14 @@ import jmri.Block;
 /**
  * TrackNode is a temporary object specifying and returning track node
  * information
- * <P>
+ * <p>
  * Used in conjunction with ConnectivityUtil.java to return information about
  * track nodes following a search of layout connectivity.
- * <P>
+ * <p>
  * Track nodes are nodes in the layout connectivity diagram. They may be:
  * positionable points - either anchor points that define a block boundary or
  * end bumpers (end of a track), turnouts, -OR_ level crossings
- * <P>
+ * <p>
  * The components of a TrackNode are: Node Object - the object reached by
  * searching connectivity Node Type - connection types defined in Layout Editor,
  * for example, TURNOUT_A, indicates a turnout connected at A (the throat of a
@@ -23,17 +22,18 @@ import jmri.Block;
  * before reaching a Node Object. 'false' otherwise. Node State - if the Node
  * Object can have multiple states, for example, a turnout, this gives the state
  * it was when finding this track node.
- * <P>
+ * <p>
  * Actually you could think of an End Bumper as a 'Node', but End Bumpers are
  * treated differently here. When an End Bumper is reached during a connectivity
  * search, Track Segment is returned, Reached End Bumper is set true, and Node
  * Object and Node Type, are not returned.
  *
- * @author	Dave Duchamp Copyright (C) 2009
+ * @author Dave Duchamp Copyright (C) 2009
+ * @author George Warner Copyright (c) 2017-2018
  */
 public class TrackNode {
 
-    public TrackNode(Object node, int nodeType, TrackSegment segment, boolean endBumper,
+    public TrackNode(LayoutTrack node, int nodeType, TrackSegment segment, boolean endBumper,
             int nodeState) {
         _Node = node;
         _NodeType = nodeType;
@@ -43,8 +43,8 @@ public class TrackNode {
     }
 
     // instance variables
-    Object _Node = null;
-    int _NodeType = LayoutEditor.NONE;
+    LayoutTrack _Node = null;
+    int _NodeType = LayoutTrack.NONE;
     TrackSegment _TrackSegment = null;
     boolean _ReachedEndBumper = false;
     int _NodeState = 0;
@@ -53,11 +53,11 @@ public class TrackNode {
     /**
      * Access methods
      */
-    public void setNode(Object node) {
+    public void setNode(LayoutTrack node) {
         _Node = node;
     }
 
-    public Object getNode() {
+    public LayoutTrack getNode() {
         return _Node;
     }
 
@@ -96,25 +96,23 @@ public class TrackNode {
      * Returns the Block of the node Object at the nodeType position
      */
     public Block getNodeBlock() {
-        if (LayoutEditor.POS_POINT == _NodeType) {
+        if (LayoutTrack.POS_POINT == _NodeType) {
             return _TrackSegment.getLayoutBlock().getBlock();
-        } else if (LayoutEditor.TURNOUT_A == _NodeType) {
+        } else if (LayoutTrack.TURNOUT_A == _NodeType) {
             return ((LayoutTurnout) _Node).getLayoutBlock().getBlock();
-        } else if (LayoutEditor.TURNOUT_B == _NodeType) {
+        } else if (LayoutTrack.TURNOUT_B == _NodeType) {
             return ((LayoutTurnout) _Node).getLayoutBlockB().getBlock();
-        } else if (LayoutEditor.TURNOUT_C == _NodeType) {
+        } else if (LayoutTrack.TURNOUT_C == _NodeType) {
             return ((LayoutTurnout) _Node).getLayoutBlockC().getBlock();
-        } else if (LayoutEditor.TURNOUT_D == _NodeType) {
+        } else if (LayoutTrack.TURNOUT_D == _NodeType) {
             return ((LayoutTurnout) _Node).getLayoutBlockD().getBlock();
-        } else if ((LayoutEditor.LEVEL_XING_A == _NodeType)
-                || (LayoutEditor.LEVEL_XING_C == _NodeType)) {
+        } else if ((LayoutTrack.LEVEL_XING_A == _NodeType)
+                || (LayoutTrack.LEVEL_XING_C == _NodeType)) {
             return ((LevelXing) _Node).getLayoutBlockAC().getBlock();
-        } else if ((LayoutEditor.LEVEL_XING_B == _NodeType)
-                || (LayoutEditor.LEVEL_XING_D == _NodeType)) {
+        } else if ((LayoutTrack.LEVEL_XING_B == _NodeType)
+                || (LayoutTrack.LEVEL_XING_D == _NodeType)) {
             return ((LevelXing) _Node).getLayoutBlockBD().getBlock();
         }
         return null;
     }
 }
-
-/* @(#)TrackNode.java */

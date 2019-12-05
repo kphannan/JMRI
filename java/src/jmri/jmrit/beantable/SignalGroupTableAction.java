@@ -1,61 +1,68 @@
 package jmri.jmrit.beantable;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Container;
 import java.awt.FlowLayout;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.FocusEvent;
-import java.awt.event.FocusListener;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ResourceBundle;
+
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.SortOrder;
 import javax.swing.border.Border;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
+import javax.swing.table.TableRowSorter;
+
 import jmri.InstanceManager;
-import jmri.Manager;
-import jmri.NamedBean;
 import jmri.SignalGroup;
+import jmri.SignalGroupManager;
 import jmri.SignalHead;
+import jmri.SignalHeadManager;
 import jmri.SignalMast;
+import jmri.SignalMastManager;
+import jmri.NamedBean.DisplayOptions;
+import jmri.swing.RowSorterUtil;
 import jmri.util.JmriJFrame;
-import jmri.util.swing.JmriBeanComboBox;
+import jmri.util.AlphanumComparator;
+import jmri.util.StringUtil;
+import jmri.swing.NamedBeanComboBox;
 import jmri.util.table.ButtonEditor;
 import jmri.util.table.ButtonRenderer;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Swing action to create and register a SignalGroup Table
- *
+ * Swing action to create and register a Signal Group Table.
+ * <p>
  * Based in part on RouteTableAction.java by Bob Jacobsen
  *
- * @author	Kevin Dickerson Copyright (C) 2010
- *
+ * @author Kevin Dickerson Copyright (C) 2010
+ * @author Egbert Broerse 2017, 2018
  */
-public class SignalGroupTableAction extends AbstractTableAction implements PropertyChangeListener {
-
-    static final ResourceBundle rbx = ResourceBundle.getBundle("jmri.jmrit.beantable.LogixTableBundle");
+public class SignalGroupTableAction extends AbstractTableAction<SignalGroup> implements PropertyChangeListener {
 
     /**
      * Create an action with a specific title.
-     * <P>
+     * <p>
      * Note that the argument is the Action title, not the title of the
      * resulting frame. Perhaps this should be changed?
      *
@@ -64,28 +71,27 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
     public SignalGroupTableAction(String s) {
         super(s);
         // disable ourself if there is no primary SignalGroup manager available
-        if (jmri.InstanceManager.getOptionalDefault(jmri.SignalGroupManager.class) == null) {
+        if (InstanceManager.getNullableDefault(SignalGroupManager.class) == null) {
             setEnabled(false);
         }
-
     }
 
     public SignalGroupTableAction() {
         this(Bundle.getMessage("TitleSignalGroupTable"));
     }
 
+    @Override
     public void propertyChange(java.beans.PropertyChangeEvent e) {
         if (e.getPropertyName().equals("UpdateCondition")) {
-            for (int i = _signalList.size() - 1; i >= 0; i--) {
-                SignalGroupSignal signal = _signalList.get(i);
-                //String tSysName = signal.getSysName();
-                SignalHead sigBean = signal.getBean();
-                if (curSignalGroup.isSignalIncluded(sigBean)) {
-                    signal.setIncluded(true);
-                    signal.setOnState(curSignalGroup.getSignalHeadOnState(sigBean));
-                    signal.setOffState(curSignalGroup.getSignalHeadOffState(sigBean));
+            for (int i = _signalHeadsList.size() - 1; i >= 0; i--) {
+                SignalGroupSignalHead signalHead = _signalHeadsList.get(i);
+                SignalHead sigBean = signalHead.getBean();
+                if (curSignalGroup.isHeadIncluded(sigBean)) {
+                    signalHead.setIncluded(true);
+                    signalHead.setOnState(curSignalGroup.getHeadOnState(sigBean));
+                    signalHead.setOffState(curSignalGroup.getHeadOffState(sigBean));
                 } else {
-                    signal.setIncluded(false);
+                    signalHead.setIncluded(false);
                 }
             }
         }
@@ -93,21 +99,24 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
 
     /**
      * Create the JTable DataModel, along with the changes for the specific case
-     * of SignalGroups
+     * of SignalGroups.
      */
+    @Override
     protected void createModel() {
-        m = new BeanTableDataModel() {
+        m = new BeanTableDataModel<SignalGroup>() {
             static public final int COMMENTCOL = 2;
             static public final int DELETECOL = 3;
             static public final int ENABLECOL = 4;
-            static public final int SETCOL = 5;
+            static public final int EDITCOL = 5; // default name: SETCOL
 
+            @Override
             public int getColumnCount() {
                 return 6;
             }
 
+            @Override
             public String getColumnName(int col) {
-                if (col == SETCOL) {
+                if (col == EDITCOL) {
                     return "";    // no heading on "Edit" column
                 }
                 if (col == ENABLECOL) {
@@ -123,8 +132,9 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
                 }
             }
 
+            @Override
             public Class<?> getColumnClass(int col) {
-                if (col == SETCOL) {
+                if (col == EDITCOL) {
                     return JButton.class;
                 }
                 if (col == ENABLECOL) {
@@ -140,28 +150,30 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
                 }
             }
 
+            @Override
             public int getPreferredWidth(int col) {
-                if (col == SETCOL) {
-                    return new JTextField(6).getPreferredSize().width;
+                if (col == EDITCOL) {
+                    return new JTextField(Bundle.getMessage("ButtonEdit")).getPreferredSize().width;
                 }
                 if (col == ENABLECOL) {
                     return new JTextField(6).getPreferredSize().width;
                 }
                 if (col == COMMENTCOL) {
-                    return new JTextField(15).getPreferredSize().width;
+                    return new JTextField(30).getPreferredSize().width;
                 }
                 if (col == DELETECOL) {
-                    return new JTextField(22).getPreferredSize().width;
+                    return new JTextField(Bundle.getMessage("ButtonDelete")).getPreferredSize().width;
                 } else {
                     return super.getPreferredWidth(col);
                 }
             }
 
+            @Override
             public boolean isCellEditable(int row, int col) {
                 if (col == COMMENTCOL) {
                     return true;
                 }
-                if (col == SETCOL) {
+                if (col == EDITCOL) {
                     return true;
                 }
                 if (col == ENABLECOL) {
@@ -174,15 +186,16 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
                 }
             }
 
+            @Override
             public Object getValueAt(int row, int col) {
-                NamedBean b;
-                if (col == SETCOL) {
+                SignalGroup b;
+                if (col == EDITCOL) {
                     return Bundle.getMessage("ButtonEdit");
                 } else if (col == ENABLECOL) {
-                    return Boolean.valueOf(((SignalGroup) getBySystemName((String) getValueAt(row, SYSNAMECOL))).getEnabled());
+                    return Boolean.valueOf(((SignalGroup) getValueAt(row, SYSNAMECOL)).getEnabled());
                     //return true;
                 } else if (col == COMMENTCOL) {
-                    b = getBySystemName(sysNameList.get(row));
+                    b = (SignalGroup) getValueAt(row, SYSNAMECOL);
                     return (b != null) ? b.getComment() : null;
                 } else if (col == DELETECOL) //
                 {
@@ -192,9 +205,10 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
                 }
             }
 
+            @Override
             public void setValueAt(Object value, int row, int col) {
-                if (col == SETCOL) {
-                    // set up to edit. Use separate Runnable so window is created on top
+                if (col == EDITCOL) {
+                    // set up to Edit. Use separate Runnable so window is created on top
                     class WindowMaker implements Runnable {
 
                         int row;
@@ -203,17 +217,18 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
                             row = r;
                         }
 
+                        @Override
                         public void run() {
-                            addPressed(null);
-                            _systemName.setText((String) getValueAt(row, SYSNAMECOL));
-                            editPressed(null); // don't really want to stop SignalGroup w/o user action
+                            addPressed(null); // set up add/edit panel addFrame (starts as Add pane)
+                            _systemName.setText(((SignalGroup) getValueAt(row, SYSNAMECOL)).toString());
+                            editPressed(null); // adjust addFrame for Edit
                         }
                     }
                     WindowMaker t = new WindowMaker(row);
                     javax.swing.SwingUtilities.invokeLater(t);
                 } else if (col == ENABLECOL) {
                     // alternate
-                    SignalGroup r = (SignalGroup) getBySystemName((String) getValueAt(row, SYSNAMECOL));
+                    SignalGroup r = (SignalGroup) getValueAt(row, SYSNAMECOL);
                     boolean v = r.getEnabled();
                     r.setEnabled(!v);
                 } else if (col == COMMENTCOL) {
@@ -228,6 +243,7 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
                 }
             }
 
+            @Override
             public void configureTable(JTable table) {
                 table.setDefaultRenderer(Boolean.class, new EnablingCheckboxRenderer());
                 table.setDefaultRenderer(JComboBox.class, new jmri.jmrit.symbolicprog.ValueRenderer());
@@ -235,6 +251,7 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
                 super.configureTable(table);
             }
 
+            @Override
             protected void configDeleteColumn(JTable table) {
                 // have the delete column hold a button
                 SignalGroupTableAction.this.setColumnToHoldButton(table, DELETECOL,
@@ -243,174 +260,248 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
 
             /**
              * Delete the bean after all the checking has been done.
-             * <P>
-             * Deactivate the light, then use the superclass to delete it.
+             * <p>
+             * (Deactivate the Signal Group), then use the superclass to delete
+             * it.
              */
-            void doDelete(NamedBean bean) {
+            @Override
+            void doDelete(SignalGroup bean) {
                 //((SignalGroup)bean).deActivateSignalGroup();
                 super.doDelete(bean);
             }
 
             // want to update when enabled parameter changes
+            @Override
             protected boolean matchPropertyName(java.beans.PropertyChangeEvent e) {
                 if (e.getPropertyName().equals("Enabled")) {
                     return true;
-                } //if (e.getPropertyName().equals("Locked")) return true;
-                else {
+                } else {
                     return super.matchPropertyName(e);
                 }
             }
 
-            public Manager getManager() {
-                return jmri.InstanceManager.getDefault(jmri.SignalGroupManager.class);
+            @Override
+            public SignalGroupManager getManager() {
+                return InstanceManager.getDefault(SignalGroupManager.class);
             }
 
-            public NamedBean getBySystemName(String name) {
-                return jmri.InstanceManager.getDefault(jmri.SignalGroupManager.class).getBySystemName(name);
+            @Override
+            public SignalGroup getBySystemName(String name) {
+                return InstanceManager.getDefault(SignalGroupManager.class).getBySystemName(name);
             }
 
-            public NamedBean getByUserName(String name) {
-                return jmri.InstanceManager.getDefault(jmri.SignalGroupManager.class).getByUserName(name);
+            @Override
+            public SignalGroup getByUserName(String name) {
+                return InstanceManager.getDefault(SignalGroupManager.class).getByUserName(name);
             }
 
+            @Override
             public int getDisplayDeleteMsg() {
                 return 0x00;/*return InstanceManager.getDefault(jmri.UserPreferencesManager.class).getWarnDeleteSignalGroup();*/ }
 
-            public void setDisplayDeleteMsg(int boo) { /*InstanceManager.getDefault(jmri.UserPreferencesManager.class).setWarnDeleteSignalGroup(boo); */
+            @Override
+            public void setDisplayDeleteMsg(int boo) {
+                /*InstanceManager.getDefault(jmri.UserPreferencesManager.class).setWarnDeleteSignalGroup(boo); */
 
             }
 
+            @Override
             protected String getMasterClassName() {
                 return getClassName();
             }
 
-            public void clickOn(NamedBean t) {
+            @Override
+            public void clickOn(SignalGroup t) { // mute action
                 //((SignalGroup)t).setSignalGroup();
             }
 
-            public String getValue(String s) {
+            @Override
+            public String getValue(String s) { // not directly used but should be present to implement abstract class
                 return "Set";
             }
 
-            public JButton configureButton() {
+            /*            public JButton configureButton() {
                 return new JButton(" Set ");
-            }
-
+            }*/
+            @Override
             protected String getBeanType() {
                 return "Signal Group";
             }
         };
     }
 
+    @Override
     protected void setTitle() {
         f.setTitle(Bundle.getMessage("TitleSignalGroupTable"));
     }
 
+    @Override
     protected String helpTarget() {
         return "package.jmri.jmrit.beantable.SignalGroupTable";
     }
 
+    /**
+     * Read Appearance for a Signal Group Signal Head from the state comboBox.
+     * <p>
+     * Called from SignalGroupSubTableAction.
+     *
+     * @param box comboBox to read from
+     * @return index representing selected set to appearance for head
+     */
     int signalStateFromBox(JComboBox<String> box) {
         String mode = (String) box.getSelectedItem();
-        int result = jmri.util.StringUtil.getStateFromName(mode, signalStatesValues, signalStates);
+        int result = StringUtil.getStateFromName(mode, signalStatesValues, signalStates);
 
         if (result < 0) {
-            log.warn("unexpected mode string in sensorMode: " + mode);
+            log.warn("unexpected mode string in signalState Aspect: {}", mode);
             throw new IllegalArgumentException();
         }
         return result;
     }
 
+    /**
+     * Set Appearance in a Signal Group Signal Head state comboBox. Called from
+     * SignalGroupSubTableAction
+     *
+     * @param mode Value to be set
+     * @param box  in which to enter mode
+     */
     void setSignalStateBox(int mode, JComboBox<String> box) {
-        String result = jmri.util.StringUtil.getNameFromState(mode, signalStatesValues, signalStates);
+        String result = StringUtil.getNameFromState(mode, signalStatesValues, signalStates);
         box.setSelectedItem(result);
     }
 
     JTextField _systemName = new JTextField(10);
     JTextField _userName = new JTextField(22);
+    JCheckBox _autoSystemName = new JCheckBox(Bundle.getMessage("LabelAutoSysName"));
+    String systemNameAuto = this.getClass().getName() + ".AutoSystemName";
+    jmri.UserPreferencesManager pref;
 
     JmriJFrame addFrame = null;
 
-    SignalGroupSignalModel _SignalGroupSignalModel;
-    JScrollPane _SignalGroupSignalScrollPane;
+    SignalGroupSignalHeadModel _SignalGroupHeadModel;
+    JScrollPane _SignalGroupHeadScrollPane;
 
-    SignalMastAppearanceModel _AppearanceModel;
+    SignalMastAspectModel _AspectModel;
     JScrollPane _SignalAppearanceScrollPane;
 
-    //JTextField mainSignal = new JTextField(30);
-    JmriBeanComboBox mainSignal;
+    NamedBeanComboBox<SignalMast> mainSignalComboBox;
 
     ButtonGroup selGroup = null;
     JRadioButton allButton = null;
     JRadioButton includedButton = null;
 
-    JLabel nameLabel = new JLabel(Bundle.getMessage("LabelSystemName"));
-    JLabel userLabel = new JLabel(Bundle.getMessage("LabelUserName"));
+    JLabel nameLabel = new JLabel(Bundle.getMessage("LabelSystemName"), JLabel.TRAILING);
+    JLabel userLabel = new JLabel(Bundle.getMessage("LabelUserName"), JLabel.TRAILING);
     JLabel fixedSystemName = new JLabel("xxxxxxxxxxx");
 
-    JButton cancelButton = new JButton(Bundle.getMessage("ButtonCancel"));
     JButton deleteButton = new JButton(Bundle.getMessage("ButtonDelete") + " " + Bundle.getMessage("BeanNameSignalGroup"));
+    JButton createButton = new JButton(Bundle.getMessage("ButtonCreate"));
     JButton updateButton = new JButton(Bundle.getMessage("ButtonApply"));
+    JButton cancelButton = new JButton(Bundle.getMessage("ButtonCancel"));
 
-    JPanel p2xs = null;   // SignalHead list table
-    JPanel p2xsi = null;   // SignalHead list table
+    static final String createInst = Bundle.getMessage("SignalGroupAddStatusInitial1", Bundle.getMessage("ButtonCreate")); // I18N to include original button name in help string
+    static final String updateInst = Bundle.getMessage("SignalGroupAddStatusInitial3", Bundle.getMessage("ButtonApply"));
+    static final String cancelInst = Bundle.getMessage("SignalGroupAddStatusInitial4", Bundle.getMessage("ButtonCancel"));
+
+    JLabel status1 = new JLabel(createInst);
+    JLabel status2 = new JLabel(cancelInst);
+
+    JPanel p2xs = null;   // Container for...
+    JPanel p2xsi = null;  // SignalHead list table
     JPanel p3xsi = null;
 
     SignalGroup curSignalGroup = null;
-    boolean SignalGroupDirty = false;  // true to fire reminder to save work
-    boolean editMode = false;
+    boolean signalGroupDirty = false;  // true to fire reminder to save work
+    boolean inEditMode = false; // to warn and prevent opening more than 1 editing session
 
+    /**
+     * Respond to click on Add... button below Signal Group Table.
+     * <p>
+     * Create JPanel with options for configuration.
+     *
+     * @param e Event from origin; null when called from Edit button in Signal
+     *          Group Table row
+     */
+    @Override
     protected void addPressed(ActionEvent e) {
-        /*if (editMode) {
-         cancelEdit();
-         }*/
+        pref = InstanceManager.getDefault(jmri.UserPreferencesManager.class);
+        if (inEditMode) {
+            log.debug("Can not open another editing session for Signal Groups.");
+            // add user warning that a 2nd session not allowed (cf. Logix)
+            // Already editing a Signal Group, ask for completion of that edit first
+            String workingTitle = _systemName.getText();
+            if (workingTitle == null || workingTitle.isEmpty()) {
+                workingTitle = Bundle.getMessage("NONE");
+                _systemName.setText(workingTitle);
+            }
+            JOptionPane.showMessageDialog(addFrame,
+                    Bundle.getMessage("SigGroupEditBusyWarning", workingTitle),
+                    Bundle.getMessage("ErrorTitle"),
+                    JOptionPane.ERROR_MESSAGE);
+            // cancelEdit(); not needed as second edit is blocked
+            return;
+        }
 
-        jmri.TurnoutManager tm = InstanceManager.turnoutManagerInstance();
-        List<String> systemNameList = tm.getSystemNameList();
-        _mastAppearancesList = null;
+        //inEditMode = true;
+        _mastAspectsList = null;
 
-        jmri.SignalHeadManager shm = InstanceManager.getDefault(jmri.SignalHeadManager.class);
-        systemNameList = shm.getSystemNameList();
-        _signalList = new ArrayList<SignalGroupSignal>(systemNameList.size());
-
-        Iterator<String> iter = systemNameList.iterator();
-        while (iter.hasNext()) {
-            String systemName = iter.next();
-            if (shm.getBySystemName(systemName).getClass().getName().contains("SingleTurnoutSignalHead")) {
-                String userName = shm.getBySystemName(systemName).getUserName();
-                _signalList.add(new SignalGroupSignal(systemName, userName));
+        SignalHeadManager shm = InstanceManager.getDefault(SignalHeadManager.class);
+        _signalHeadsList = new ArrayList<SignalGroupSignalHead>();
+        // create list of all available Single Output Signal Heads to choose from
+        for (SignalHead sh : shm.getNamedBeanSet()) {
+            String systemName = sh.getSystemName();
+            if (sh.getClass().getName().contains("SingleTurnoutSignalHead")) {
+                String userName = sh.getUserName();
+                // add every single output signal head item to the list
+                _signalHeadsList.add(new SignalGroupSignalHead(systemName, userName));
             } else {
-                log.debug("Signal Head " + systemName + " is not a single Turnout Controlled Signal Head");
+                log.debug("Signal Head {} is not a Single Output Controlled Signal Head", systemName);
             }
         }
 
-        // Set up Add/edit SignalGroup window
-        if (addFrame == null) {
-            mainSignal = new JmriBeanComboBox(jmri.InstanceManager.getDefault(jmri.SignalMastManager.class), null, JmriBeanComboBox.DISPLAYNAME);
-            mainSignal.setFirstItemBlank(true);
-            addFrame = new JmriJFrame(Bundle.getMessage("AddEditSignalGroup"), false, true);
+        // Set up Add/Edit Signal Group window
+        if (addFrame == null) { // if it's not yet present, create addFrame
+
+            mainSignalComboBox = new NamedBeanComboBox<>(InstanceManager.getDefault(SignalMastManager.class), null, DisplayOptions.DISPLAYNAME);
+            mainSignalComboBox.setAllowNull(true); // causes NPE when user selects that 1st line, so do not respond to result null
+            addFrame = new JmriJFrame(Bundle.getMessage("AddSignalGroup"), false, true);
             addFrame.addHelpMenu("package.jmri.jmrit.beantable.SignalGroupAddEdit", true);
             addFrame.setLocation(100, 30);
             addFrame.getContentPane().setLayout(new BoxLayout(addFrame.getContentPane(), BoxLayout.Y_AXIS));
             Container contentPane = addFrame.getContentPane();
-            // add system name
+
+            JPanel namesGrid = new JPanel();
+            GridLayout layout = new GridLayout(2, 2, 10, 0); // (int rows, int cols, int hgap, int vgap)
+            namesGrid.setLayout(layout);
+            // row 1: add system name label + field/label
+            namesGrid.add(nameLabel);
+            nameLabel.setLabelFor(_systemName);
             JPanel ps = new JPanel();
-            ps.setLayout(new FlowLayout());
-            ps.add(nameLabel);
+            ps.setLayout(new BoxLayout(ps, BoxLayout.X_AXIS));
             ps.add(_systemName);
-            _systemName.setToolTipText("Enter system name for new SignalGroup, e.g. R12.");
+            _systemName.setToolTipText(Bundle.getMessage("SignalGroupSysNameTooltip"));
             ps.add(fixedSystemName);
             fixedSystemName.setVisible(false);
-            contentPane.add(ps);
-            // add user name
+            ps.add(_autoSystemName);
+            _autoSystemName.addActionListener((ActionEvent e1) -> {
+                autoSystemName();
+            });
+            if (pref.getSimplePreferenceState(systemNameAuto)) {
+                _autoSystemName.setSelected(true);
+            }
+            namesGrid.add(ps);
+            // row 2: add user name label + field
+            namesGrid.add(userLabel);
+            userLabel.setLabelFor(_userName);
             JPanel p = new JPanel();
-            p.setLayout(new FlowLayout());
-            p.add(userLabel);
+            p.setLayout(new BoxLayout(p, BoxLayout.X_AXIS));
             p.add(_userName);
-            _userName.setToolTipText("Enter user name for new SignalGroup, e.g. Junction Indicator on Signal 1.");
+            _userName.setToolTipText(Bundle.getMessage("SignalGroupUserNameTooltip"));
+            namesGrid.add(p);
+            contentPane.add(namesGrid);
 
-            contentPane.add(p);
-            // add Turnout Display Choice
+            // add Signal Masts/Heads Display Choice
             JPanel py = new JPanel();
             py.add(new JLabel(Bundle.getMessage("Show")));
             selGroup = new ButtonGroup();
@@ -418,12 +509,13 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
             selGroup.add(allButton);
             py.add(allButton);
             allButton.addActionListener(new ActionListener() {
+                @Override
                 public void actionPerformed(ActionEvent e) {
-                    // Setup for display of all Turnouts, if needed
+                    // Setup for display of all Signal Masts & SingleTO Heads, if needed
                     if (!showAll) {
                         showAll = true;
-                        _SignalGroupSignalModel.fireTableDataChanged();
-                        _AppearanceModel.fireTableDataChanged();
+                        _SignalGroupHeadModel.fireTableDataChanged();
+                        _AspectModel.fireTableDataChanged();
                     }
                 }
             });
@@ -431,32 +523,30 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
             selGroup.add(includedButton);
             py.add(includedButton);
             includedButton.addActionListener(new ActionListener() {
+                @Override
                 public void actionPerformed(ActionEvent e) {
                     // Setup for display of included Turnouts only, if needed
                     if (showAll) {
                         showAll = false;
                         initializeIncludedList();
-                        _SignalGroupSignalModel.fireTableDataChanged();
-                        _AppearanceModel.fireTableDataChanged();
-
+                        _SignalGroupHeadModel.fireTableDataChanged();
+                        _AspectModel.fireTableDataChanged();
                     }
                 }
             });
-            py.add(new JLabel("  " + Bundle.getMessage("_and_", Bundle.getMessage("LabelAspects"), Bundle.getMessage("SignalHeads"))));
+            py.add(new JLabel("  " + Bundle.getMessage("_and_", Bundle.getMessage("LabelAspects"),
+                    Bundle.getMessage("SignalHeads"))));
             contentPane.add(py);
 
-            // add control sensor table
+            // add main signal mast table
             JPanel p3 = new JPanel();
             p3.setLayout(new BoxLayout(p3, BoxLayout.Y_AXIS));
             JPanel p31 = new JPanel();
             p31.add(new JLabel(Bundle.getMessage("EnterMastAttached", Bundle.getMessage("BeanNameSignalMast"))));
             p3.add(p31);
             JPanel p32 = new JPanel();
-            p32.add(new JLabel(Bundle.getMessage("BeanNameSignalMast") + ":"));
-            p32.add(mainSignal);
-            //p32.add(new JLabel("Appearance Logic"));
-            //p32.add(mainSignalOperation);
-            //mainSignal.setText("");
+            p32.add(new JLabel(Bundle.getMessage("MakeLabel", Bundle.getMessage("BeanNameSignalMast"))));
+            p32.add(mainSignalComboBox); // comboBox to pick a main Signal Mast
             p3.add(p32);
 
             p3xsi = new JPanel();
@@ -470,47 +560,52 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
             p31si.add(new JLabel(Bundle.getMessage("SelectAppearanceTrigger")));
 
             p3xsi.add(p31si);
-            _AppearanceModel = new SignalMastAppearanceModel();
-            JTable SignalAppearanceTable = jmri.util.JTableUtil.sortableDataModel(_AppearanceModel);
-            try {
-                jmri.util.com.sun.TableSorter tmodel = ((jmri.util.com.sun.TableSorter) SignalAppearanceTable.getModel());
-                tmodel.setColumnComparator(String.class, new jmri.util.SystemNameComparator());
-                tmodel.setSortingStatus(SignalGroupTableAction.SignalMastAppearanceModel.APPEAR_COLUMN, jmri.util.com.sun.TableSorter.ASCENDING);
-            } catch (ClassCastException e3) {
-            }  // if not a sortable table model
-            SignalAppearanceTable.setRowSelectionAllowed(false);
-            SignalAppearanceTable.setPreferredScrollableViewportSize(new java.awt.Dimension(200, 80));
-            TableColumnModel SignalAppearanceColumnModel = SignalAppearanceTable.getColumnModel();
-            TableColumn includeColumnA = SignalAppearanceColumnModel.
-                    getColumn(SignalGroupTableAction.SignalMastAppearanceModel.INCLUDE_COLUMN);
+            _AspectModel = new SignalMastAspectModel();
+            JTable SignalMastAspectTable = new JTable(_AspectModel);
+            TableRowSorter<SignalMastAspectModel> smaSorter = new TableRowSorter<>(_AspectModel);
+            smaSorter.setComparator(SignalMastAspectModel.ASPECT_COLUMN, new AlphanumComparator());
+            RowSorterUtil.setSortOrder(smaSorter, SignalMastAspectModel.ASPECT_COLUMN, SortOrder.ASCENDING);
+            SignalMastAspectTable.setRowSorter(smaSorter);
+            SignalMastAspectTable.setRowSelectionAllowed(false);
+            SignalMastAspectTable.setPreferredScrollableViewportSize(new java.awt.Dimension(200, 80));
+            TableColumnModel SignalMastAspectColumnModel = SignalMastAspectTable.getColumnModel();
+            TableColumn includeColumnA = SignalMastAspectColumnModel.
+                    getColumn(SignalGroupTableAction.SignalMastAspectModel.INCLUDE_COLUMN);
             includeColumnA.setResizable(false);
             includeColumnA.setMinWidth(30);
             includeColumnA.setMaxWidth(60);
             @SuppressWarnings("static-access")
-            TableColumn sNameColumnA = SignalAppearanceColumnModel.
-                    getColumn(_AppearanceModel.APPEAR_COLUMN);
+            TableColumn sNameColumnA = SignalMastAspectColumnModel.
+                    getColumn(_AspectModel.ASPECT_COLUMN);
             sNameColumnA.setResizable(true);
             sNameColumnA.setMinWidth(75);
             sNameColumnA.setMaxWidth(140);
 
-            _SignalAppearanceScrollPane = new JScrollPane(SignalAppearanceTable);
+            _SignalAppearanceScrollPane = new JScrollPane(SignalMastAspectTable);
             p3xsi.add(_SignalAppearanceScrollPane, BorderLayout.CENTER);
             p3.add(p3xsi);
             p3xsi.setVisible(true);
 
-            mainSignal.addFocusListener(
-                    new FocusListener() {
-                        public void focusGained(FocusEvent e) {
-                        }
-
-                        public void focusLost(FocusEvent e) {
-                            if (curSignalGroup == null) {
-                                setValidSignalAppearances();
-                            } else if (mainSignal.getSelectedBean() != curSignalGroup.getSignalMast()) {
-                                setValidSignalAppearances();
-                            }
+            mainSignalComboBox.addActionListener(// respond to comboBox selection
+                    new ActionListener() {
+                //public void focusGained(FocusEvent e) {
+                //}
+                @Override
+                public void actionPerformed(ActionEvent event) {
+                    if (mainSignalComboBox.getSelectedItem() == null) { // ie. empty first row was selected or set
+                        log.debug("Empty line in mainSignal comboBox");
+                        //setValidSignalMastAspects(); // clears the Aspect table
+                    } else {
+                        if (curSignalGroup == null
+                                || mainSignalComboBox.getSelectedItem() != curSignalGroup.getSignalMast()) {
+                            log.debug("comboBox closed, choice: {}", mainSignalComboBox.getSelectedItem());
+                            setValidSignalMastAspects(); // refresh table with signal mast aspects
+                        } else {
+                            log.debug("Mast {} picked in mainSignal comboBox", mainSignalComboBox.getSelectedItem());
                         }
                     }
+                }
+            }
             );
 
             // complete this panel
@@ -528,59 +623,77 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
             p21si.setLayout(new BoxLayout(p21si, BoxLayout.Y_AXIS));
             p21si.add(new JLabel(Bundle.getMessage("SelectInGroup", Bundle.getMessage("SignalHeads"))));
             p2xsi.add(p21si);
-            _SignalGroupSignalModel = new SignalGroupSignalModel();
-            JTable SignalGroupSignalTable = jmri.util.JTableUtil.sortableDataModel(_SignalGroupSignalModel);
-            try {
-                jmri.util.com.sun.TableSorter tmodel = ((jmri.util.com.sun.TableSorter) SignalGroupSignalTable.getModel());
-                tmodel.setColumnComparator(String.class, new jmri.util.SystemNameComparator());
-                tmodel.setSortingStatus(SignalGroupSignalModel.SNAME_COLUMN, jmri.util.com.sun.TableSorter.ASCENDING);
-            } catch (ClassCastException e3) {
-            }  // if not a sortable table model
-            SignalGroupSignalTable.setRowSelectionAllowed(false);
-            SignalGroupSignalTable.setPreferredScrollableViewportSize(new java.awt.Dimension(480, 160));
-            TableColumnModel SignalGroupSignalColumnModel = SignalGroupSignalTable.getColumnModel();
+            _SignalGroupHeadModel = new SignalGroupSignalHeadModel();
+            JTable SignalGroupHeadTable = new JTable(_SignalGroupHeadModel);
+            TableRowSorter<SignalGroupSignalHeadModel> sgsSorter = new TableRowSorter<>(_SignalGroupHeadModel);
+
+            // use NamedBean's built-in Comparator interface for sorting the system name column
+            RowSorterUtil.setSortOrder(sgsSorter, SignalGroupSignalHeadModel.SNAME_COLUMN, SortOrder.ASCENDING);
+            SignalGroupHeadTable.setRowSorter(sgsSorter);
+            SignalGroupHeadTable.setRowSelectionAllowed(false);
+            SignalGroupHeadTable.setPreferredScrollableViewportSize(new java.awt.Dimension(480, 160));
+            TableColumnModel SignalGroupSignalColumnModel = SignalGroupHeadTable.getColumnModel();
+
             TableColumn includeColumnSi = SignalGroupSignalColumnModel.
-                    getColumn(SignalGroupSignalModel.INCLUDE_COLUMN);
+                    getColumn(SignalGroupSignalHeadModel.INCLUDE_COLUMN);
             includeColumnSi.setResizable(false);
             includeColumnSi.setMinWidth(30);
             includeColumnSi.setMaxWidth(60);
+
             TableColumn sNameColumnSi = SignalGroupSignalColumnModel.
-                    getColumn(SignalGroupSignalModel.SNAME_COLUMN);
+                    getColumn(SignalGroupSignalHeadModel.SNAME_COLUMN);
             sNameColumnSi.setResizable(true);
             sNameColumnSi.setMinWidth(75);
             sNameColumnSi.setMaxWidth(95);
+
             TableColumn uNameColumnSi = SignalGroupSignalColumnModel.
-                    getColumn(SignalGroupSignalModel.UNAME_COLUMN);
+                    getColumn(SignalGroupSignalHeadModel.UNAME_COLUMN);
             uNameColumnSi.setResizable(true);
             uNameColumnSi.setMinWidth(100);
             uNameColumnSi.setMaxWidth(260);
-            TableColumn stateColumnSi = SignalGroupSignalColumnModel.
-                    getColumn(SignalGroupSignalModel.STATE_ON_COLUMN);
-            stateColumnSi.setResizable(false);
-            stateColumnSi.setMinWidth(50);
-            stateColumnSi.setMaxWidth(100);
+
+            TableColumn stateOnColumnSi = SignalGroupSignalColumnModel.
+                    getColumn(SignalGroupSignalHeadModel.STATE_ON_COLUMN); // a 6 column table
+            stateOnColumnSi.setResizable(false);
+            stateOnColumnSi.setMinWidth(Bundle.getMessage("SignalHeadStateFlashingYellow").length()); // was 50
+            stateOnColumnSi.setMaxWidth(100);
 
             TableColumn stateOffColumnSi = SignalGroupSignalColumnModel.
-                    getColumn(SignalGroupSignalModel.STATE_OFF_COLUMN);
+                    getColumn(SignalGroupSignalHeadModel.STATE_OFF_COLUMN);
             stateOffColumnSi.setResizable(false);
             stateOffColumnSi.setMinWidth(50);
             stateOffColumnSi.setMaxWidth(100);
-            JButton editButton = new JButton(Bundle.getMessage("ButtonEdit"));
-            TableColumn editColumnSi = SignalGroupSignalColumnModel.
-                    getColumn(SignalGroupSignalModel.EDIT_COLUMN);
-            editColumnSi.setResizable(false);
-            editColumnSi.setMinWidth(50);
-            editColumnSi.setMaxWidth(100);
-            setColumnToHoldButton(SignalGroupSignalTable, SignalGroupSignalModel.EDIT_COLUMN, editButton);
 
-            _SignalGroupSignalScrollPane = new JScrollPane(SignalGroupSignalTable);
-            p2xsi.add(_SignalGroupSignalScrollPane, BorderLayout.CENTER);
+            TableColumn editColumnSi = SignalGroupSignalColumnModel.
+                    getColumn(SignalGroupSignalHeadModel.EDIT_COLUMN);
+            editColumnSi.setResizable(false);
+            editColumnSi.setMinWidth(Bundle.getMessage("ButtonEdit").length()); // was 50
+            editColumnSi.setMaxWidth(100);
+            JButton editButton = new JButton(Bundle.getMessage("ButtonEdit"));
+            setColumnToHoldButton(SignalGroupHeadTable, SignalGroupSignalHeadModel.EDIT_COLUMN, editButton);
+
+            _SignalGroupHeadScrollPane = new JScrollPane(SignalGroupHeadTable);
+            p2xsi.add(_SignalGroupHeadScrollPane, BorderLayout.CENTER);
+            p2xsi.setToolTipText(Bundle.getMessage("SignalGroupHeadTableTooltip")); // add tooltip to explain which head types are shown
             contentPane.add(p2xsi);
             p2xsi.setVisible(true);
 
-            // add notes panel, may be empty (a dot on the screen)
+            // add notes panel
             JPanel pa = new JPanel();
             pa.setLayout(new BoxLayout(pa, BoxLayout.Y_AXIS));
+            // include status bar
+            JPanel p1 = new JPanel();
+            p1.setLayout(new FlowLayout());
+            status1.setFont(status1.getFont().deriveFont(0.9f * nameLabel.getFont().getSize())); // a bit smaller
+            status1.setForeground(Color.gray);
+            p1.add(status1);
+            JPanel p2 = new JPanel();
+            p2.setLayout(new FlowLayout());
+            status2.setFont(status1.getFont().deriveFont(0.9f * nameLabel.getFont().getSize())); // a bit smaller
+            status2.setForeground(Color.gray);
+            p2.add(status2);
+            pa.add(p1);
+            pa.add(p2);
 
             Border pBorder = BorderFactory.createEtchedBorder();
             pa.setBorder(pBorder);
@@ -592,6 +705,7 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
 
             pb.add(cancelButton);
             cancelButton.addActionListener(new ActionListener() {
+                @Override
                 public void actionPerformed(ActionEvent e) {
                     cancelPressed(e);
                 }
@@ -599,53 +713,77 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
             cancelButton.setVisible(true);
             pb.add(deleteButton);
             deleteButton.addActionListener(new ActionListener() {
+                @Override
                 public void actionPerformed(ActionEvent e) {
                     deletePressed(e);
                 }
             });
             deleteButton.setToolTipText(Bundle.getMessage("DeleteSignalGroupInSystem"));
-            // Update SignalGroup button
+            // Add Create Group button
+            pb.add(createButton);
+            createButton.addActionListener(this::createPressed);
+            createButton.setToolTipText(Bundle.getMessage("TooltipCreateGroup"));
+            // [Update] Signal Group button in Add/Edit SignalGroup pane
             pb.add(updateButton);
             updateButton.addActionListener(new ActionListener() {
+                @Override
                 public void actionPerformed(ActionEvent e) {
-                    updatePressed(e, false, true);
+                    updatePressed(e, false, false);
                 }
             });
-            updateButton.setToolTipText(Bundle.getMessage("TooltipUpdate"));
-            updateButton.setVisible(true);
+            updateButton.setToolTipText(Bundle.getMessage("TooltipUpdateGroup"));
+
             contentPane.add(pb);
             // pack and release space
             addFrame.pack();
             p2xsiSpace.setVisible(false);
-        } // set listener for window closing
-        else {
-            mainSignal.setSelectedBean(null);
+        } else {
+            mainSignalComboBox.setSelectedItem(null);
+            addFrame.setTitle(Bundle.getMessage("AddSignalGroup")); // reset title for new group
         }
+        status1.setText(createInst);
+        _autoSystemName.setVisible(true);
+        updateButton.setVisible(false);
+        createButton.setVisible(true);
+        // set listener for window closing
         addFrame.addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
             public void windowClosing(java.awt.event.WindowEvent e) {
-                // remind to save, if SignalGroup was created or edited
-                if (SignalGroupDirty) {
+                // remind to save, if Signal Group was created or edited
+                if (signalGroupDirty) {
                     InstanceManager.getDefault(jmri.UserPreferencesManager.class).
-                            showInfoMessage(Bundle.getMessage("ReminderTitle"), Bundle.getMessage("ReminderSaveString", Bundle.getMessage("SignalGroup")),
+                            showInfoMessage(Bundle.getMessage("ReminderTitle"),
+                                    Bundle.getMessage("ReminderSaveString", Bundle.getMessage("SignalGroup")),
                                     "beantable.SignalGroupTableAction",
                                     "remindSignalGroup"); // NOI18N
-                    SignalGroupDirty = false;
+                    signalGroupDirty = false;
                 }
                 // hide addFrame
-                addFrame.setVisible(false);
+                if (addFrame != null) {
+                    addFrame.setVisible(false);
+                } // hide first, could be gone by the time of the close event, so prevent NPE
+                inEditMode = false; // release editing soon, as long as NPEs occor in the following methods
                 finishUpdate();
-                _SignalGroupSignalModel.dispose();
-                _AppearanceModel.dispose();
-
+                _SignalGroupHeadModel.dispose();
+                _AspectModel.dispose();
             }
         });
-        // display the window
+        // display the pane
         addFrame.setVisible(true);
+        autoSystemName();
+    }
 
+    void autoSystemName() {
+        if (_autoSystemName.isSelected()) {
+            _systemName.setEnabled(false);
+            nameLabel.setEnabled(false);
+        } else {
+            _systemName.setEnabled(true);
+            nameLabel.setEnabled(true);
+        }
     }
 
     void setColumnToHoldButton(JTable table, int column, JButton sample) {
-        //TableColumnModel tcm = table.getColumnModel();
         // install a button renderer & editor
         ButtonRenderer buttonRenderer = new ButtonRenderer();
         table.setDefaultRenderer(JButton.class, buttonRenderer);
@@ -658,90 +796,147 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
     }
 
     /**
-     * Initialize list of included turnout positions
+     * Initialize list of included signal head appearances for when "Included"
+     * is selected.
      */
     void initializeIncludedList() {
-        _includedMastAppearancesList = new ArrayList<SignalMastAppearances>();
-        for (int i = 0; i < _mastAppearancesList.size(); i++) {
-            if (_mastAppearancesList.get(i).isIncluded()) {
-                _includedMastAppearancesList.add(_mastAppearancesList.get(i));
+        _includedMastAspectsList = new ArrayList<SignalMastAspect>();
+        for (int i = 0; i < _mastAspectsList.size(); i++) {
+            if (_mastAspectsList.get(i).isIncluded()) {
+                _includedMastAspectsList.add(_mastAspectsList.get(i));
             }
-
         }
-        _includedSignalList = new ArrayList<SignalGroupSignal>();
-        for (int i = 0; i < _signalList.size(); i++) {
-            if (_signalList.get(i).isIncluded()) {
-                _includedSignalList.add(_signalList.get(i));
+        _includedSignalHeadsList = new ArrayList<SignalGroupSignalHead>();
+        for (int i = 0; i < _signalHeadsList.size(); i++) {
+            if (_signalHeadsList.get(i).isIncluded()) {
+                _includedSignalHeadsList.add(_signalHeadsList.get(i));
             }
         }
     }
 
+    /**
+     * Respond to the Create button.
+     *
+     * @param e the action event
+     */
+    void createPressed(ActionEvent e) {
+        if (!_autoSystemName.isSelected()) {
+            if (!checkNewNamesOK()) {
+                log.debug("NewNames not OK");
+                return;
+            }
+        }
+        updatePressed(e, true, true); // to close pane after creating
+        pref.setSimplePreferenceState(systemNameAuto, _autoSystemName.isSelected());
+        // activate the signal group
+    }
+
+    /**
+     * Check name for a new SignalGroup object using the _systemName field on
+     * the addFrame pane. Not used when autoSystemName is checked.
+     *
+     * @return whether name entered is allowed
+     */
     boolean checkNewNamesOK() {
-        // Get system name and user name
-        String sName = _systemName.getText().toUpperCase();
-        String uName = _userName.getText();
-        if (sName.length() == 0) {
-            javax.swing.JOptionPane.showMessageDialog(null, "System Name field can not be left blank", "System Name Error", javax.swing.JOptionPane.WARNING_MESSAGE);
+        // Get system name and user name from Add Signal Group pane
+        String sName = _systemName.getText();
+        String uName = _userName.getText(); // may be empty
+        if (sName.length() == 0) { // show warning in status bar
+            status1.setText(Bundle.getMessage("AddBeanStatusEnter"));
+            status1.setForeground(Color.red);
             return false;
         }
         SignalGroup g = null;
         // check if a SignalGroup with the same user name exists
         if (!uName.equals("")) {
-            g = jmri.InstanceManager.getDefault(jmri.SignalGroupManager.class).getByUserName(uName);
+            g = InstanceManager.getDefault(SignalGroupManager.class).getByUserName(uName);
             if (g != null) {
-                // SignalGroup with this user name already exists
-                javax.swing.JOptionPane.showMessageDialog(null, "Signal Group with this username already exists", "User Name Error", javax.swing.JOptionPane.WARNING_MESSAGE);
+                // SignalGroup already exists
+                status1.setText(Bundle.getMessage("SignalGroupDuplicateUserNameWarning", uName));
                 return false;
-            } else {
-                return true;
             }
         }
         // check if a SignalGroup with this system name already exists
-        g = jmri.InstanceManager.getDefault(jmri.SignalGroupManager.class).getBySystemName(sName);
+        sName = InstanceManager.getDefault(SignalGroupManager.class).makeSystemName(sName);
+        g = InstanceManager.getDefault(SignalGroupManager.class).getBySystemName(sName);
         if (g != null) {
             // SignalGroup already exists
-            javax.swing.JOptionPane.showMessageDialog(null, "A SignalGroup with this system name already exists", "System Name Error", javax.swing.JOptionPane.WARNING_MESSAGE);
+            status1.setText(Bundle.getMessage("SignalGroupDuplicateSystemNameWarning", sName));
             return false;
         }
         return true;
     }
 
+    /**
+     * Check selection in Main Mast comboBox and store object as mMast for
+     * further calculations.
+     *
+     * @return The new/updated SignalGroup object
+     */
     boolean checkValidSignalMast() {
-        SignalMast mMast = (SignalMast) mainSignal.getSelectedBean();
+        SignalMast mMast = mainSignalComboBox.getSelectedItem();
         if (mMast == null) {
-            log.warn("Signal Mast not selected");
-            javax.swing.JOptionPane.showMessageDialog(null, "SignalMast not selected.", "Error", javax.swing.JOptionPane.WARNING_MESSAGE);
+            //log.warn("Signal Mast not selected. mainSignal = {}", mainSignalComboBox.getSelectedItem());
+            JOptionPane.showMessageDialog(null,
+                    Bundle.getMessage("NoMastSelectedWarning"),
+                    Bundle.getMessage("ErrorTitle"),
+                    JOptionPane.WARNING_MESSAGE);
             return false;
         }
         return true;
     }
 
+    /**
+     * Check name and return a new or existing SignalGroup object with the name
+     * as entered in the _systemName field on the addFrame pane.
+     *
+     * @return The new/updated SignalGroup object
+     */
     SignalGroup checkNamesOK() {
         // Get system name and user name
-        String sName = _systemName.getText().toUpperCase();
+        String sName = _systemName.getText();
         String uName = _userName.getText();
-        if (sName.length() == 0) {
-            javax.swing.JOptionPane.showMessageDialog(null, "Please enter a System Name and User Name.", "Error", javax.swing.JOptionPane.WARNING_MESSAGE);
-            return null;
+        SignalGroup g;
+        if (_autoSystemName.isSelected() && !inEditMode) {
+            // create new Signal Group with auto system name
+            log.debug("SignalGroupTableAction checkNamesOK new autogroup");
+            g = InstanceManager.getDefault(jmri.SignalGroupManager.class).newSignaGroupWithUserName(uName);
+        } else {
+            if (sName.length() == 0) { // show warning in status bar
+                status1.setText(Bundle.getMessage("AddBeanStatusEnter"));
+                status1.setForeground(Color.red);
+                return null;
+            }
+            try {
+                sName = InstanceManager.getDefault(SignalGroupManager.class).makeSystemName(sName);
+                g = InstanceManager.getDefault(SignalGroupManager.class).provideSignalGroup(sName, uName);
+            } catch (IllegalArgumentException ex) {
+                log.error("checkNamesOK; Unknown failure to create Signal Group with System Name: {}", sName); // NOI18N
+                g = null; // for later check
+            }
         }
-        try {
-            SignalGroup g = jmri.InstanceManager.getDefault(jmri.SignalGroupManager.class).provideSignalGroup(sName, uName);
-            return g;
-        } catch (IllegalArgumentException ex) {
+        if (g == null) {
             // should never get here
-            log.error("Unknown failure to create SignalGroup with System Name: " + sName);
-            throw ex;
-        }   
+            log.error("Unknown failure to create Signal Group with System Name: {}", sName); // NOI18N
+        }
+        return g;
     }
 
-    int setSignalInformation(SignalGroup g) {
-        for (int i = 0; i < g.getNumSignalHeadItems(); i++) {
-            SignalHead sig = g.getSignalHeadItemBeanByIndex(i);
+    /**
+     * Check all available Single Output Signal Heads against the list of signal
+     * head items registered with the group. Updates the list, which is stored
+     * in the field _includedSignalHeadsList.
+     *
+     * @param g Signal Group object
+     * @return The number of Signal Heads included in the group
+     */
+    int setHeadInformation(SignalGroup g) {
+        for (int i = 0; i < g.getNumHeadItems(); i++) {
+            SignalHead sig = g.getHeadItemBeanByIndex(i);
             boolean valid = false;
-            for (int x = 0; x < _includedSignalList.size(); x++) {
-                SignalGroupSignal s = _includedSignalList.get(x);
-                //String si = s.getBean();
-                if (sig == s.getBean()) {
+            for (int x = 0; x < _includedSignalHeadsList.size(); x++) {
+                SignalGroupSignalHead sh = _includedSignalHeadsList.get(x);
+                if (sig == sh.getBean()) {
                     valid = true;
                     break;
                 }
@@ -750,178 +945,221 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
                 g.deleteSignalHead(sig);
             }
         }
-
-        for (int i = 0; i < _includedSignalList.size(); i++) {
-            SignalGroupSignal s = _includedSignalList.get(i);
+        for (int i = 0; i < _includedSignalHeadsList.size(); i++) {
+            SignalGroupSignalHead s = _includedSignalHeadsList.get(i);
             SignalHead sig = s.getBean();
-            if (!g.isSignalIncluded(sig)) {
+            if (!g.isHeadIncluded(sig)) {
                 g.addSignalHead(sig);
-                g.setSignalHeadOnState(sig, s.getOnStateInt());
-                g.setSignalHeadOffState(sig, s.getOffStateInt());
+                g.setHeadOnState(sig, s.getOnStateInt());
+                g.setHeadOffState(sig, s.getOffStateInt());
             }
         }
-
-        return _includedSignalList.size();
+        return _includedSignalHeadsList.size();
     }
 
-    void setMastAppearanceInformation(SignalGroup g) {
-        g.clearSignalMastAppearance();
-        for (int x = 0; x < _includedMastAppearancesList.size(); x++) {
-            g.addSignalMastAppearance(_includedMastAppearancesList.get(x).getAppearance());
+    /**
+     * Store included Aspects for the selected main Signal Mast in the Signal
+     * Group
+     *
+     * @param g Signal Group object
+     */
+    void setMastAspectInformation(SignalGroup g) {
+        g.clearSignalMastAspect();
+        for (int x = 0; x < _includedMastAspectsList.size(); x++) {
+            g.addSignalMastAspect(_includedMastAspectsList.get(x).getAspect());
         }
     }
 
     /**
-     * Sets the Sensor, Turnout, and delay control information for adding or
-     * editting if any
+     * Look up the list of valid Aspects for the selected main Signal Mast in
+     * the comboBox and store them in a table on the addFrame using _AspectModel
      */
-    /*void setControlInformation(SignalGroup g) {
-     // Get sensor control information if any
-     //Not sure about this...
-     String signalSystemName = mainSignal.getSelectedBean();
-     if(
-     if (signalSystemName.length() > 0) {
-     SignalHead s1 = InstanceManager.getDefault(jmri.SignalHeadManager.class).getSignalHead(signalSystemName);
-     if (s1!=null)
-     g.setSignalMast(signalSystemName);
-     }
-     }*/
-    void setValidSignalAppearances() {
-        jmri.SignalMast sh = (SignalMast) mainSignal.getSelectedBean();
-        if (sh == null) {
+    void setValidSignalMastAspects() {
+        SignalMast sm = mainSignalComboBox.getSelectedItem();
+        if (sm == null) {
+            log.debug("Null picked in mainSignal comboBox. Probably line 1 or no masts in system");
             return;
         }
-        java.util.Vector<String> appear = sh.getValidAspects();
+        log.debug("Mast {} picked in mainSignal comboBox", mainSignalComboBox.getSelectedItem());
+        java.util.Vector<String> aspects = sm.getValidAspects();
 
-        _mastAppearancesList = new ArrayList<SignalMastAppearances>(appear.size());
-        for (int i = 0; i < appear.size(); i++) {
-            _mastAppearancesList.add(new SignalMastAppearances(appear.get(i)));
+        _mastAspectsList = new ArrayList<SignalMastAspect>(aspects.size());
+        for (int i = 0; i < aspects.size(); i++) {
+            _mastAspectsList.add(new SignalMastAspect(aspects.get(i)));
         }
-        _AppearanceModel.fireTableDataChanged();
-    }
-
-    void cancelPressed(ActionEvent e) {
-        addFrame.setVisible(false);
-        addFrame.dispose();
-        addFrame = null;
+        _AspectModel.fireTableDataChanged();
     }
 
     /**
-     * Responds to the Edit button
+     * When user clicks Cancel during editing a Signal Group, close the
+     * Add/Edit pane and reset default entries.
+     *
+     * @param e Event from origin
+     */
+    void cancelPressed(ActionEvent e) {
+        cancelEdit();
+    }
+
+    /**
+     * Cancels edit mode
+     */
+    void cancelEdit() {
+        if (inEditMode) {
+            status1.setText(createInst);
+        }
+        if (addFrame != null) {
+            addFrame.setVisible(false);
+        } // hide first, may cause NPE unchecked
+        inEditMode = false; // release editing soon, as NPEs may occur in the following methods
+        finishUpdate();
+        _SignalGroupHeadModel.dispose();
+        _AspectModel.dispose();
+    }
+
+    /**
+     * Respond to the Edit button in the Signal Group Table after creating the
+     * Add/Edit pane with AddPressed supplying _SystemName. Hides the editable
+     * _systemName field on the Add Group pane and displays the value as a label
+     * instead.
+     *
+     * @param e Event from origin, null if invoked by clicking the Edit button
+     *          in a Signal Group Table row
      */
     void editPressed(ActionEvent e) {
-        // identify the SignalGroup with this name if it already exists
-        String sName = _systemName.getText().toUpperCase();
-        SignalGroup g = jmri.InstanceManager.getDefault(jmri.SignalGroupManager.class).getBySystemName(sName);
+        // identify the Signal Group with this name if it already exists
+        String sName = InstanceManager.getDefault(SignalGroupManager.class).makeSystemName(_systemName.getText());
+        // sName is already filled in from the Signal Group table by addPressed()
+        SignalGroup g = InstanceManager.getDefault(SignalGroupManager.class).getBySystemName(sName);
         if (g == null) {
-            // SignalGroup does not exist, so cannot be edited
+            // Signal Group does not exist, so cannot be edited
             return;
         }
         g.addPropertyChangeListener(this);
 
-        // SignalGroup was found, make its system name not changeable
+        // Signal Group was found, make its system name not changeable
         curSignalGroup = g;
+        log.debug("curSignalGroup was set");
 
-        jmri.SignalMast sh = jmri.InstanceManager.getDefault(jmri.SignalMastManager.class).getSignalMast(g.getSignalMastName());
-        java.util.Vector<String> appear = sh.getValidAspects();
+        SignalMast sm = InstanceManager.getDefault(SignalMastManager.class).getSignalMast(g.getSignalMastName());
+        if (sm != null) {
+            java.util.Vector<String> aspects = sm.getValidAspects();
+            _mastAspectsList = new ArrayList<SignalMastAspect>(aspects.size());
 
-        _mastAppearancesList = new ArrayList<SignalMastAppearances>(appear.size());
-
-        for (int i = 0; i < appear.size(); i++) {
-            _mastAppearancesList.add(new SignalMastAppearances(appear.get(i)));
+            for (int i = 0; i < aspects.size(); i++) {
+                _mastAspectsList.add(new SignalMastAspect(aspects.get(i)));
+            }
+        } else {
+            log.error("Failed to get signal mast {}", g.getSignalMastName()); // false indicates Can't find mast
         }
 
+        nameLabel.setEnabled(true);
         fixedSystemName.setText(sName);
         fixedSystemName.setVisible(true);
         _systemName.setVisible(false);
-        //mainSignal.setText(g.getSignalMastName());
-        mainSignal.setSelectedBean(g.getSignalMast());
-
+        mainSignalComboBox.setSelectedItem(g.getSignalMast());
         _userName.setText(g.getUserName());
+
         int setRow = 0;
 
-        for (int i = _signalList.size() - 1; i >= 0; i--) {
-            SignalGroupSignal signal = _signalList.get(i);
-            //String tSysName = signal.getSysName();
-            SignalHead sigBean = signal.getBean();
-            if (g.isSignalIncluded(sigBean)) {
-                signal.setIncluded(true);
-                signal.setOnState(g.getSignalHeadOnState(sigBean));
-                signal.setOffState(g.getSignalHeadOffState(sigBean));
+        for (int i = _signalHeadsList.size() - 1; i >= 0; i--) {
+            SignalGroupSignalHead sgsh = _signalHeadsList.get(i);
+            SignalHead sigBean = sgsh.getBean();
+            if (g.isHeadIncluded(sigBean)) {
+                sgsh.setIncluded(true);
+                sgsh.setOnState(g.getHeadOnState(sigBean));
+                sgsh.setOffState(g.getHeadOffState(sigBean));
                 setRow = i;
             } else {
-                signal.setIncluded(false);
-                //signal.setOnState(SignalHead.DARK);
-                //signal.setOffState(SignalHead.DARK);
+                sgsh.setIncluded(false);
             }
         }
-        _SignalGroupSignalScrollPane.getVerticalScrollBar().setValue(setRow * ROW_HEIGHT);
-        _SignalGroupSignalModel.fireTableDataChanged();
+        _SignalGroupHeadScrollPane.getVerticalScrollBar().setValue(setRow * ROW_HEIGHT);
+        _SignalGroupHeadModel.fireTableDataChanged();
 
-        for (int i = 0; i < _mastAppearancesList.size(); i++) {
-            SignalMastAppearances appearance = _mastAppearancesList.get(i);
-            String app = appearance.getAppearance();
-            if (g.isSignalMastAppearanceIncluded(app)) {
-                appearance.setIncluded(true);
+        for (int i = 0; i < _mastAspectsList.size(); i++) {
+            SignalMastAspect _aspect = _mastAspectsList.get(i);
+            String asp = _aspect.getAspect();
+            if (g.isSignalMastAspectIncluded(asp)) {
+                _aspect.setIncluded(true);
                 setRow = i;
             } else {
-                appearance.setIncluded(false);
+                _aspect.setIncluded(false);
             }
-
         }
         _SignalAppearanceScrollPane.getVerticalScrollBar().setValue(setRow * ROW_HEIGHT);
 
-        _AppearanceModel.fireTableDataChanged();
+        _AspectModel.fireTableDataChanged();
         initializeIncludedList();
 
-        SignalGroupDirty = true;  // to fire reminder to save work
+        signalGroupDirty = true;  // to fire reminder to save work
+        // set up buttons and notes fot Edit
+        status1.setText(updateInst);
         updateButton.setVisible(true);
+        createButton.setVisible(false);
+        _autoSystemName.setVisible(false);
         fixedSystemName.setVisible(true);
         _systemName.setVisible(false);
-        editMode = true;
+        addFrame.setTitle(Bundle.getMessage("EditSignalGroup"));
+        inEditMode = true; // to block opening another edit session
     }
 
     /**
-     * Responds to the Delete button
+     * Respond to the Delete button in the Add/Edit pane.
+     *
+     * @param e the event heard
      */
     void deletePressed(ActionEvent e) {
-        InstanceManager.getDefault(jmri.SignalGroupManager.class).deleteSignalGroup(curSignalGroup);
+        InstanceManager.getDefault(SignalGroupManager.class).deleteSignalGroup(curSignalGroup);
         curSignalGroup = null;
+        log.debug("DeletePressed; curSignalGroup set to null");
         finishUpdate();
     }
 
     /**
-     * Responds to the Update button - update to SignalGroup Table
+     * Respond to the Update button on the Edit Signal Group pane - store new
+     * properties in the Signal Group.
+     *
+     * @param e              Event from origin, null if invoked by clicking the
+     *                       Edit button in a Signal Group Table row
+     * @param newSignalGroup False when called as Update, True after editing
+     *                       Signal Head details
+     * @param close          True if the pane is closing, False if it stays open
      */
     void updatePressed(ActionEvent e, boolean newSignalGroup, boolean close) {
         // Check if the User Name has been changed
-        if (curSignalGroup == null) {
-            if (!checkNewNamesOK()) {
-                return;
-            }
-        }
-        if (!checkValidSignalMast()) {
-            return;
-        }
         String uName = _userName.getText();
-        SignalGroup g = checkNamesOK();
-        if (g == null) {
+        SignalGroup g = checkNamesOK(); // look up signal group under edit. If this fails, we are stuck
+        if (g == null) { // error logging/dialog handled in checkNamesOK()
+            log.debug("null signalGroup under edit");
             return;
         }
-        curSignalGroup = g;
+        // We might want to check if the User Name has been changed. But there's
+        // nothing to compare with so this is propably a newly created Signal Group.
+        // TODO cannot be compared since curSignalGroup is null, causes NPE
+        if (!checkValidSignalMast()) {
+            log.debug("invalid signal mast under edit");
+            return;
+        }
         // user name is unique, change it
         g.setUserName(uName);
         initializeIncludedList();
-        setSignalInformation(g);
-        setMastAppearanceInformation(g);
+        setHeadInformation(g);
+        setMastAspectInformation(g);
+        g.setSignalMast(mainSignalComboBox.getSelectedItem(), mainSignalComboBox.getSelectedItemDisplayName());
 
-        g.setSignalMast((SignalMast) mainSignal.getSelectedBean(), mainSignal.getSelectedDisplayName());
-        SignalGroupDirty = true;  // to fire reminder to save work
+        signalGroupDirty = true;  // to fire reminder to save work
+        curSignalGroup = g;
         if (close) {
             finishUpdate();
         }
+        status1.setForeground(Color.gray);
+        status1.setText((newSignalGroup ? Bundle.getMessage("SignalGroupAddStatusCreated") : Bundle.getMessage("SignalGroupAddStatusUpdated"))
+                + ": \"" + uName + "\"");
     }
 
+    /**
+     * Clean up the Edit Signal Group pane.
+     */
     void finishUpdate() {
         if (curSignalGroup != null) {
             curSignalGroup.removePropertyChangeListener(this);
@@ -930,21 +1168,41 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
         fixedSystemName.setVisible(false);
         _systemName.setText("");
         _userName.setText("");
-        mainSignal.setSelectedBean(null);
-        for (int i = _signalList.size() - 1; i >= 0; i--) {
-            _signalList.get(i).setIncluded(false);
+        _autoSystemName.setVisible(true);
+        autoSystemName();
+        // clear page
+        mainSignalComboBox.setSelectedItem(null); // empty the "main mast" comboBox
+        if (_signalHeadsList == null) {
+            // prevent NPE when clicking Cancel/close pane with no work done, after first display of pane (no mast selected)
+            log.debug("FinishUpdate; _signalHeadsList empty; no heads present");
+        } else {
+            for (int i = _signalHeadsList.size() - 1; i >= 0; i--) {
+                _signalHeadsList.get(i).setIncluded(false);
+            }
         }
-        for (int i = _mastAppearancesList.size() - 1; i >= 0; i--) {
-            _mastAppearancesList.get(i).setIncluded(false);
+        if (_mastAspectsList == null) {
+            // prevent NPE when clicking Cancel/close pane with no work done, after first display of pane (no mast selected)
+            log.debug("FinishUpdate; _mastAspectsList empty; no mast was selected");
+        } else {
+            for (int i = _mastAspectsList.size() - 1; i >= 0; i--) {
+                _mastAspectsList.get(i).setIncluded(false);
+            }
         }
-        // mainSignal.setText("");
+        inEditMode = false;
+        showAll = true;
         curSignalGroup = null;
-        addFrame.setVisible(false);
-
+        log.debug("FinishUpdate; curSignalGroup set to null. Hiding addFrame next");
+        if (addFrame != null) {
+            addFrame.setVisible(false);
+        }
     }
 
-    public class SignalMastAppearanceModel extends AbstractTableModel implements PropertyChangeListener {
+    /**
+     * Table Model for masts and their "Set To" aspect.
+     */
+    public class SignalMastAspectModel extends AbstractTableModel implements PropertyChangeListener {
 
+        @Override
         public Class<?> getColumnClass(int c) {
             if (c == INCLUDE_COLUMN) {
                 return Boolean.class;
@@ -953,20 +1211,23 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
             }
         }
 
+        @Override
         public String getColumnName(int col) {
             if (col == INCLUDE_COLUMN) {
                 return Bundle.getMessage("Include");
             }
-            if (col == APPEAR_COLUMN) {
-                return Bundle.getMessage("LabelAspectType"); // list contains Aspects not SignalMastAppearances
+            if (col == ASPECT_COLUMN) {
+                return Bundle.getMessage("LabelAspectType");
+                // list contains Signal Mast Aspects (might be called "Appearances" by some but in code keep to JMRI bean names and Help)
             }
             return "";
         }
 
         public void dispose() {
-            InstanceManager.getDefault(jmri.SignalMastManager.class).removePropertyChangeListener(this);
+            InstanceManager.getDefault(SignalMastManager.class).removePropertyChangeListener(this);
         }
 
+        @Override
         public void propertyChange(java.beans.PropertyChangeEvent e) {
             if (e.getPropertyName().equals("length")) {
                 // a new NamedBean is available in the manager
@@ -974,66 +1235,79 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
             }
         }
 
+        @Override
         public int getColumnCount() {
             return 2;
         }
 
+        @Override
         public boolean isCellEditable(int r, int c) {
             return ((c == INCLUDE_COLUMN));
         }
 
-        public static final int APPEAR_COLUMN = 0;
+        public static final int ASPECT_COLUMN = 0;
         public static final int INCLUDE_COLUMN = 1;
 
         public void setSetToState(String x) {
         }
 
+        @Override
         public int getRowCount() {
-            if (_mastAppearancesList == null) {
+            if (_mastAspectsList == null) {
                 return 0;
             }
             if (showAll) {
-                return _mastAppearancesList.size();
+                return _mastAspectsList.size();
             } else {
-                return _includedMastAppearancesList.size();
+                return _includedMastAspectsList.size();
             }
         }
 
+        @Override
         public Object getValueAt(int r, int c) {
-            ArrayList<SignalMastAppearances> appearList = null;
+            ArrayList<SignalMastAspect> aspectList = null;
             if (showAll) {
-                appearList = _mastAppearancesList;
+                aspectList = _mastAspectsList;
             } else {
-                appearList = _includedMastAppearancesList;
+                aspectList = _includedMastAspectsList;
             }
             // some error checking
-            if (r >= appearList.size()) {
-                log.debug("row is greater than turnout list size");
+            if (_mastAspectsList == null || r >= aspectList.size()) {
+                // prevent NPE when clicking Add... in table to add new group (with 1 group existing using a different mast type)
+                log.debug("SGTA getValueAt #1125: row value {} is greater than aspectList size {}", r, aspectList.size());
                 return null;
             }
             switch (c) {
                 case INCLUDE_COLUMN:
-                    return Boolean.valueOf(appearList.get(r).isIncluded());
-                case APPEAR_COLUMN:  // slot number
-                    return appearList.get(r).getAppearance();
+                    return Boolean.valueOf(aspectList.get(r).isIncluded());
+                case ASPECT_COLUMN:
+                    return aspectList.get(r).getAspect();
                 default:
                     return null;
             }
         }
 
+        @Override
         public void setValueAt(Object type, int r, int c) {
-            ArrayList<SignalMastAppearances> appearList = null;
+            log.debug("SigGroupEditSet A; row = {}", r);
+            ArrayList<SignalMastAspect> aspectList = null;
             if (showAll) {
-                appearList = _mastAppearancesList;
+                aspectList = _mastAspectsList;
             } else {
-                appearList = _includedMastAppearancesList;
+                aspectList = _includedMastAspectsList;
             }
+            if (_mastAspectsList == null || r >= aspectList.size()) {
+                // prevent NPE when closing window after NPE in getValueAdd() happened
+                log.debug("row value {} is greater than aspectList size {}", r, aspectList);
+                return;
+            }
+            log.debug("SigGroupEditSet B; row = {}; aspectList.size() = {}.", r, aspectList.size());
             switch (c) {
                 case INCLUDE_COLUMN:
-                    appearList.get(r).setIncluded(((Boolean) type).booleanValue());
+                    aspectList.get(r).setIncluded(((Boolean) type).booleanValue());
                     break;
-                case APPEAR_COLUMN:
-                    appearList.get(r).setAppearance((String) type);
+                case ASPECT_COLUMN:
+                    aspectList.get(r).setAspect((String) type);
                     break;
                 default:
                     break;
@@ -1043,10 +1317,11 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
     }
 
     /**
-     * Base table model for selecting outputs
+     * Base table model for managing generic Signal Group outputs.
      */
     public abstract class SignalGroupOutputModel extends AbstractTableModel implements PropertyChangeListener {
 
+        @Override
         public Class<?> getColumnClass(int c) {
             if (c == INCLUDE_COLUMN) {
                 return Boolean.class;
@@ -1055,6 +1330,7 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
             }
         }
 
+        @Override
         public void propertyChange(java.beans.PropertyChangeEvent e) {
             if (e.getPropertyName().equals("length")) {
                 // a new NamedBean is available in the manager
@@ -1064,14 +1340,17 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
             }
         }
 
+        @Override
         public String getColumnName(int c) {
             return COLUMN_NAMES[c];
         }
 
+        @Override
         public int getColumnCount() {
             return 4;
         }
 
+        @Override
         public boolean isCellEditable(int r, int c) {
             return ((c == INCLUDE_COLUMN) || (c == STATE_COLUMN));
         }
@@ -1083,16 +1362,21 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
 
     }
 
-    class SignalGroupSignalModel extends SignalGroupOutputModel {
+    /**
+     * Table Model to manage Signal Head outputs in a Signal Group.
+     */
+    class SignalGroupSignalHeadModel extends SignalGroupOutputModel {
 
-        SignalGroupSignalModel() {
-            InstanceManager.getDefault(jmri.SignalHeadManager.class).addPropertyChangeListener(this);
+        SignalGroupSignalHeadModel() {
+            InstanceManager.getDefault(SignalHeadManager.class).addPropertyChangeListener(this);
         }
 
+        @Override
         public boolean isCellEditable(int r, int c) {
             return ((c == INCLUDE_COLUMN) || (c == STATE_ON_COLUMN) || (c == STATE_OFF_COLUMN) || (c == EDIT_COLUMN));
         }
 
+        @Override
         public int getColumnCount() {
             return 6;
         }
@@ -1101,6 +1385,7 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
         public static final int STATE_OFF_COLUMN = 4;
         public static final int EDIT_COLUMN = 5;
 
+        @Override
         public Class<?> getColumnClass(int c) {
             if (c == INCLUDE_COLUMN) {
                 return Boolean.class;
@@ -1111,6 +1396,7 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
             }
         }
 
+        @Override
         public String getColumnName(int c) {
             return COLUMN_SIG_NAMES[c];
         }
@@ -1118,37 +1404,51 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
         public void setSetToState(String x) {
         }
 
+        /**
+         * The number of rows in the Signal Head table.
+         *
+         * @return The number of rows
+         */
+        @Override
         public int getRowCount() {
             if (showAll) {
-                return _signalList.size();
+                return _signalHeadsList.size();
             } else {
-                return _includedSignalList.size();
+                return _includedSignalHeadsList.size();
             }
         }
 
+        /**
+         * Fill in info cells of the Signal Head table on the Add/Edit Group
+         * Edit pane.
+         *
+         * @param r Index of the cell row
+         * @param c Index of the cell column
+         */
+        @Override
         public Object getValueAt(int r, int c) {
-            ArrayList<SignalGroupSignal> signalList = null;
+            ArrayList<SignalGroupSignalHead> headsList = null;
             if (showAll) {
-                signalList = _signalList;
+                headsList = _signalHeadsList;
             } else {
-                signalList = _includedSignalList;
+                headsList = _includedSignalHeadsList;
             }
             // some error checking
-            if (r >= signalList.size()) {
-                log.debug("row is greater than turnout list size");
+            if (r >= headsList.size()) {
+                log.debug("Row num {} is greater than headsList size {}", r, headsList.size());
                 return null;
             }
             switch (c) {
                 case INCLUDE_COLUMN:
-                    return Boolean.valueOf(signalList.get(r).isIncluded());
-                case SNAME_COLUMN:  // slot number
-                    return signalList.get(r).getSysName();
-                case UNAME_COLUMN:  //
-                    return signalList.get(r).getUserName();
-                case STATE_ON_COLUMN:  //
-                    return signalList.get(r).getOnState();
-                case STATE_OFF_COLUMN:  //
-                    return signalList.get(r).getOffState();
+                    return Boolean.valueOf(headsList.get(r).isIncluded());
+                case SNAME_COLUMN:
+                    return headsList.get(r).getSysName();
+                case UNAME_COLUMN:
+                    return headsList.get(r).getUserName();
+                case STATE_ON_COLUMN:
+                    return headsList.get(r).getOnState();
+                case STATE_OFF_COLUMN:
+                    return headsList.get(r).getOffState();
                 case EDIT_COLUMN:
                     return (Bundle.getMessage("ButtonEdit"));
                 default:
@@ -1156,6 +1456,13 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
             }
         }
 
+        /**
+         * Fetch User Name (System Name if User Name is empty) for a row in the
+         * Signal Head table.
+         *
+         * @param r index in the signal head table of head to be edited
+         * @return name of signal head
+         */
         public String getDisplayName(int r) {
             if (((String) getValueAt(r, UNAME_COLUMN) != null) && (!((String) getValueAt(r, UNAME_COLUMN)).equals(""))) {
                 return (String) getValueAt(r, UNAME_COLUMN);
@@ -1164,29 +1471,44 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
             }
         }
 
+        /**
+         * Fetch existing bean object for a row in the Signal Head table.
+         *
+         * @param r index in the signal head table of head to be edited
+         * @return bean object of the head
+         */
         public SignalHead getBean(int r) {
-            return jmri.InstanceManager.getDefault(jmri.SignalHeadManager.class).getSignalHead((String) getValueAt(r, SNAME_COLUMN));
+            return InstanceManager.getDefault(SignalHeadManager.class).getSignalHead((String) getValueAt(r, SNAME_COLUMN));
         }
 
+        /**
+         * Store info from the cells of the Signal Head table of the Add/Edit
+         * Group Edit pane.
+         *
+         * @param type The contents from the table
+         * @param r    Index of the cell row of the entry
+         * @param c    Index of the cell column of the entry
+         */
+        @Override
         public void setValueAt(Object type, int r, int c) {
-            ArrayList<SignalGroupSignal> signalList = null;
+            ArrayList<SignalGroupSignalHead> headsList = null;
             if (showAll) {
-                signalList = _signalList;
+                headsList = _signalHeadsList;
             } else {
-                signalList = _includedSignalList;
+                headsList = _includedSignalHeadsList;
             }
             switch (c) {
                 case INCLUDE_COLUMN:
-                    signalList.get(r).setIncluded(((Boolean) type).booleanValue());
+                    headsList.get(r).setIncluded(((Boolean) type).booleanValue());
                     break;
                 case STATE_ON_COLUMN:
-                    signalList.get(r).setSetOnState((String) type);
+                    headsList.get(r).setSetOnState((String) type);
                     break;
                 case STATE_OFF_COLUMN:
-                    signalList.get(r).setSetOffState((String) type);
+                    headsList.get(r).setSetOffState((String) type);
                     break;
                 case EDIT_COLUMN:
-                    signalList.get(r).setIncluded(((Boolean) true).booleanValue());
+                    headsList.get(r).setIncluded(((Boolean) true).booleanValue());
                     class WindowMaker implements Runnable {
 
                         final int row;
@@ -1195,10 +1517,9 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
                             row = r;
                         }
 
+                        @Override
                         public void run() {
-                            signalEditPressed(row);
-                            //_systemName.setText((String)getValueAt(row, SYSNAMECOL));
-                            //editPressed(null); 
+                            signalHeadEditPressed(row);
                         }
                     }
                     WindowMaker t = new WindowMaker(r);
@@ -1209,93 +1530,132 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
             }
         }
 
+        /**
+         * Remove listener from Signal Head in group. Called on Delete.
+         */
         public void dispose() {
-            InstanceManager.getDefault(jmri.SignalHeadManager.class).removePropertyChangeListener(this);
+            InstanceManager.getDefault(SignalHeadManager.class).removePropertyChangeListener(this);
         }
     }
 
-    JmriJFrame signalEditFrame = null;
+    JmriJFrame signalHeadEditFrame = null;
 
-    void signalEditPressed(int row) {
+    /**
+     * Open an editor to set the details of a Signal Head as part of a Signal
+     * Group when user clicks the Edit button in the Signal Head table in the
+     * lower half of the Edit Signal Group pane.
+     * (renamed from signalEditPressed in 4.7.1 to explain what's in here)
+     *
+     * @see SignalGroupSubTableAction#editHead(SignalGroup, String)
+     * SignalGroupSubTableAction.editHead
+     *
+     * @param row Index of line clicked in the displayed Signal Head table
+     */
+    void signalHeadEditPressed(int row) {
         if (curSignalGroup == null) {
-            if (!checkNewNamesOK()) {
-                return;
+            log.debug("From signalHeadCreatePressed");
+            if (!_autoSystemName.isSelected()) { // when creating a new Group with autoSystemName, allow empty sName field
+                if (!checkNewNamesOK()) {
+                    log.debug("signalHeadEditPressed: checkNewNamesOK = false");
+                    return;
+                }
             }
             if (!checkValidSignalMast()) {
                 return;
             }
             updatePressed(null, true, false);
+            // Read new entries provided in the Add pane before opening the Edit Signal Head subpane
         }
-        if (!curSignalGroup.isSignalIncluded(_SignalGroupSignalModel.getBean(row))) {
-            curSignalGroup.addSignalHead(_SignalGroupSignalModel.getBean(row));
+        if (!curSignalGroup.isHeadIncluded(_SignalGroupHeadModel.getBean(row))) {
+            curSignalGroup.addSignalHead(_SignalGroupHeadModel.getBean(row));
         }
-        _SignalGroupSignalModel.fireTableDataChanged();
+        _SignalGroupHeadModel.fireTableDataChanged();
+        log.debug("signalHeadEditPressed: opening sbaTableAction for edit");
         SignalGroupSubTableAction editSignalHead = new SignalGroupSubTableAction();
-        editSignalHead.editSignal(curSignalGroup, _SignalGroupSignalModel.getDisplayName(row));
+        // calls separate class file SignalGroupSubTableAction to edit details for Signal Head
+        editSignalHead.editHead(curSignalGroup, _SignalGroupHeadModel.getDisplayName(row));
     }
 
-    private boolean showAll = true;   // false indicates show only included Turnouts
+    private boolean showAll = true; // false indicates: show only included Signal Masts & SingleTO Heads
 
     private static int ROW_HEIGHT;
 
-    private static String[] COLUMN_NAMES = {
-            Bundle.getMessage("ColumnSystemName"),
-            Bundle.getMessage("ColumnUserName"),
-            Bundle.getMessage("Include"),
-            Bundle.getMessage("ColumnLabelSetState")
+    private static String[] COLUMN_NAMES = { // used in class SignalGroupOutputModel (Turnouts and Sensors)
+        Bundle.getMessage("ColumnSystemName"),
+        Bundle.getMessage("ColumnUserName"),
+        Bundle.getMessage("Include"),
+        Bundle.getMessage("ColumnLabelSetState")
     };
-    private static String[] COLUMN_SIG_NAMES = {
-            Bundle.getMessage("ColumnSystemName"),
-            Bundle.getMessage("ColumnUserName"),
-            Bundle.getMessage("Include"),
-            "On State", "Off State", ""
+    private static String[] COLUMN_SIG_NAMES = { // used in class SignalGroupSignalHeadModel
+        Bundle.getMessage("ColumnSystemName"),
+        Bundle.getMessage("ColumnUserName"),
+        Bundle.getMessage("Include"),
+        Bundle.getMessage("OnAppearance"),
+        Bundle.getMessage("OffAppearance"),
+        "" // No label above last (Edit) column
     };
-        // No label above last (Edit) column
 
-    private static String[] signalStates = new String[]{rbx.getString("StateSignalHeadDark"), rbx.getString("StateSignalHeadRed"), rbx.getString("StateSignalHeadYellow"), rbx.getString("StateSignalHeadGreen"), rbx.getString("StateSignalHeadLunar")};
+    private static String[] signalStates = new String[]{Bundle.getMessage("SignalHeadStateDark"), Bundle.getMessage("SignalHeadStateRed"), Bundle.getMessage("SignalHeadStateYellow"), Bundle.getMessage("SignalHeadStateGreen"), Bundle.getMessage("SignalHeadStateLunar")};
     private static int[] signalStatesValues = new int[]{SignalHead.DARK, SignalHead.RED, SignalHead.YELLOW, SignalHead.GREEN, SignalHead.LUNAR};
 
-    private ArrayList<SignalGroupSignal> _signalList;        // array of all Sensorsy
-    private ArrayList<SignalGroupSignal> _includedSignalList;
+    private ArrayList<SignalGroupSignalHead> _signalHeadsList;        // array of all single output signal heads
+    private ArrayList<SignalGroupSignalHead> _includedSignalHeadsList; // subset of heads included in sh table
 
-    private ArrayList<SignalMastAppearances> _mastAppearancesList;        // array of all Sensorsy
-    private ArrayList<SignalMastAppearances> _includedMastAppearancesList;
+    private ArrayList<SignalMastAspect> _mastAspectsList;        // array of all valid aspects for the main signal mast
+    private ArrayList<SignalMastAspect> _includedMastAspectsList; // subset of aspects included in asp table
 
-    private static class SignalGroupSignal {
+    /**
+     * Class to store definition of a Signal Head as part of a Signal Group.
+     * Includes properties for what to display (renamed from SignalGroupSignal
+     * in 4.7.1 to explain what's in here)
+     */
+    private static class SignalGroupSignalHead {
 
-        //String _sysName=null;
-        //String _userName=null;
-        SignalHead _signal = null;
+        SignalHead _signalHead = null;
         boolean _included;
 
-        SignalGroupSignal(String sysName, String userName) {
-            /*_sysName = sysName;
-             _userName = userName;*/
+        /**
+         * Create an object to hold name and configuration of a Signal Head as
+         * part of a Signal Group Filters only existing Single Turnout Signal
+         * Heads from the loaded configuration Used while editing Signal Groups
+         * Contains whether it is included in a group, the On state and Off
+         * state
+         *
+         * @param sysName  System Name of the grouphead
+         * @param userName Optional User Name
+         */
+        SignalGroupSignalHead(String sysName, String userName) {
             _included = false;
-            if (InstanceManager.getDefault(jmri.SignalHeadManager.class).getBySystemName(sysName).getClass().getName().contains("SingleTurnoutSignalHead")) {
-                jmri.implementation.SingleTurnoutSignalHead signal = (jmri.implementation.SingleTurnoutSignalHead) InstanceManager.getDefault(jmri.SignalHeadManager.class).getBySystemName(sysName);
-                _onState = signal.getOnAppearance();
-                _offState = signal.getOffAppearance();
-                _signal = signal;
+            SignalHead anySigHead = InstanceManager.getDefault(SignalHeadManager.class).getBySystemName(sysName);
+            if (anySigHead != null) {
+                if (anySigHead.getClass().getName().contains("SingleTurnoutSignalHead")) {
+                    jmri.implementation.SingleTurnoutSignalHead oneSigHead = (jmri.implementation.SingleTurnoutSignalHead) InstanceManager.getDefault(SignalHeadManager.class).getBySystemName(sysName);
+                    if (oneSigHead != null) {
+                        _onState = oneSigHead.getOnAppearance();
+                        _offState = oneSigHead.getOffAppearance();
+                        _signalHead = oneSigHead;
+                    } else {
+                        log.error("SignalGroupSignalHead: Failed to get oneSigHead head {}", sysName);
+                    }
+                }
+            } else {
+                log.error("SignalGroupSignalHead: Failed to get signal head {}", sysName);
             }
 
         }
 
         SignalHead getBean() {
-            return _signal;
+            return _signalHead;
         }
 
         String getSysName() {
-            return _signal.getSystemName();
+            return _signalHead.getSystemName();
         }
 
         String getUserName() {
-            return _signal.getUserName();
+            return _signalHead.getUserName();
         }
 
-        /*String getDisplayName(){
-         return _signal.getDisplayName();
-         }*/
         boolean isIncluded() {
             return _included;
         }
@@ -1304,50 +1664,70 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
             _included = include;
         }
 
+        /**
+         * Retrieve On setting for Signal Head in Signal Group. Should match
+         * entries in setOnState()
+         *
+         * @return localized string as the name for the Signal Head Appearance
+         *         when this head is On
+         */
         String getOnState() {
             switch (_onState) {
                 case SignalHead.DARK:
-                    return rbx.getString("StateSignalHeadDark");
+                    return Bundle.getMessage("SignalHeadStateDark");
                 case SignalHead.RED:
-                    return rbx.getString("StateSignalHeadRed");
+                    return Bundle.getMessage("SignalHeadStateRed");
                 case SignalHead.YELLOW:
-                    return rbx.getString("StateSignalHeadYellow");
+                    return Bundle.getMessage("SignalHeadStateYellow");
                 case SignalHead.GREEN:
-                    return rbx.getString("StateSignalHeadGreen");
+                    return Bundle.getMessage("SignalHeadStateGreen");
                 case SignalHead.LUNAR:
-                    return rbx.getString("StateSignalHeadLunar");
+                    return Bundle.getMessage("SignalHeadStateLunar");
                 case SignalHead.FLASHRED:
-                    return rbx.getString("StateSignalHeadFlashRed");
+                    return Bundle.getMessage("SignalHeadStateFlashingRed");
                 case SignalHead.FLASHYELLOW:
-                    return rbx.getString("StateSignalHeadFlashYellow");
+                    return Bundle.getMessage("SignalHeadStateFlashingYellow");
                 case SignalHead.FLASHGREEN:
-                    return rbx.getString("StateSignalHeadFlashGreen");
+                    return Bundle.getMessage("SignalHeadStateFlashingGreen");
                 case SignalHead.FLASHLUNAR:
-                    return rbx.getString("StateSignalHeadFlashLunar");
+                    return Bundle.getMessage("SignalHeadStateFlashingLunar");
+                default:
+                    // fall through
+                    break;
             }
             return "";
         }
 
+        /**
+         * Retrieve Off setting for Signal Head in Signal Group. Should match
+         * entries in setOffState()
+         *
+         * @return localized string as the name for the Signal Head Appearance
+         *         when this head is Off
+         */
         String getOffState() {
             switch (_offState) {
                 case SignalHead.DARK:
-                    return rbx.getString("StateSignalHeadDark");
+                    return Bundle.getMessage("SignalHeadStateDark");
                 case SignalHead.RED:
-                    return rbx.getString("StateSignalHeadRed");
+                    return Bundle.getMessage("SignalHeadStateRed");
                 case SignalHead.YELLOW:
-                    return rbx.getString("StateSignalHeadYellow");
+                    return Bundle.getMessage("SignalHeadStateYellow");
                 case SignalHead.GREEN:
-                    return rbx.getString("StateSignalHeadGreen");
+                    return Bundle.getMessage("SignalHeadStateGreen");
                 case SignalHead.LUNAR:
-                    return rbx.getString("StateSignalHeadLunar");
+                    return Bundle.getMessage("SignalHeadStateLunar");
                 case SignalHead.FLASHRED:
-                    return rbx.getString("StateSignalHeadFlashRed");
+                    return Bundle.getMessage("SignalHeadStateFlashingRed");
                 case SignalHead.FLASHYELLOW:
-                    return rbx.getString("StateSignalHeadFlashYellow");
+                    return Bundle.getMessage("SignalHeadStateFlashingYellow");
                 case SignalHead.FLASHGREEN:
-                    return rbx.getString("StateSignalHeadFlashGreen");
+                    return Bundle.getMessage("SignalHeadStateFlashingGreen");
                 case SignalHead.FLASHLUNAR:
-                    return rbx.getString("StateSignalHeadFlashLunar");
+                    return Bundle.getMessage("SignalHeadStateFlashingLunar");
+                default:
+                    // fall through
+                    break;
             }
             return "";
         }
@@ -1360,46 +1740,60 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
             return _offState;
         }
 
+        /**
+         * Store On setting for Signal Head in Signal Group. Should match
+         * entries in getOnState()
+         *
+         * @param state Localized name for the Signal Head Appearance when this head
+         *                  is On
+         */
         void setSetOnState(String state) {
-            if (state.equals(rbx.getString("StateSignalHeadDark"))) {
+            if (state.equals(Bundle.getMessage("SignalHeadStateDark"))) {
                 _onState = SignalHead.DARK;
-            } else if (state.equals(rbx.getString("StateSignalHeadRed"))) {
+            } else if (state.equals(Bundle.getMessage("SignalHeadStateRed"))) {
                 _onState = SignalHead.RED;
-            } else if (state.equals(rbx.getString("StateSignalHeadYellow"))) {
+            } else if (state.equals(Bundle.getMessage("SignalHeadStateYellow"))) {
                 _onState = SignalHead.YELLOW;
-            } else if (state.equals(rbx.getString("StateSignalHeadGreen"))) {
+            } else if (state.equals(Bundle.getMessage("SignalHeadStateGreen"))) {
                 _onState = SignalHead.GREEN;
-            } else if (state.equals(rbx.getString("StateSignalHeadLunar"))) {
+            } else if (state.equals(Bundle.getMessage("SignalHeadStateLunar"))) {
                 _onState = SignalHead.LUNAR;
-            } else if (state.equals(rbx.getString("StateSignalHeadFlashRed"))) {
+            } else if (state.equals(Bundle.getMessage("SignalHeadStateFlashingRed"))) {
                 _onState = SignalHead.FLASHRED;
-            } else if (state.equals(rbx.getString("StateSignalHeadFlashYellow"))) {
+            } else if (state.equals(Bundle.getMessage("SignalHeadStateFlashingYellow"))) {
                 _onState = SignalHead.FLASHYELLOW;
-            } else if (state.equals(rbx.getString("StateSignalHeadFlashGreen"))) {
+            } else if (state.equals(Bundle.getMessage("SignalHeadStateFlashingGreen"))) {
                 _onState = SignalHead.FLASHGREEN;
-            } else if (state.equals(rbx.getString("StateSignalHeadFlashLunar"))) {
+            } else if (state.equals(Bundle.getMessage("SignalHeadStateFlashingLunar"))) {
                 _onState = SignalHead.FLASHLUNAR;
             }
         }
 
+        /**
+         * Store Off setting for Signal Head in Signal Group. Should match
+         * entries in getOffState()
+         *
+         * @param state Localized name for the Signal Head Appearance when this head
+         *                  is Off
+         */
         void setSetOffState(String state) {
-            if (state.equals(rbx.getString("StateSignalHeadDark"))) {
+            if (state.equals(Bundle.getMessage("SignalHeadStateDark"))) {
                 _offState = SignalHead.DARK;
-            } else if (state.equals(rbx.getString("StateSignalHeadRed"))) {
+            } else if (state.equals(Bundle.getMessage("SignalHeadStateRed"))) {
                 _offState = SignalHead.RED;
-            } else if (state.equals(rbx.getString("StateSignalHeadYellow"))) {
+            } else if (state.equals(Bundle.getMessage("SignalHeadStateYellow"))) {
                 _offState = SignalHead.YELLOW;
-            } else if (state.equals(rbx.getString("StateSignalHeadGreen"))) {
+            } else if (state.equals(Bundle.getMessage("SignalHeadStateGreen"))) {
                 _offState = SignalHead.GREEN;
-            } else if (state.equals(rbx.getString("StateSignalHeadLunar"))) {
+            } else if (state.equals(Bundle.getMessage("SignalHeadStateLunar"))) {
                 _offState = SignalHead.LUNAR;
-            } else if (state.equals(rbx.getString("StateSignalHeadFlashRed"))) {
+            } else if (state.equals(Bundle.getMessage("SignalHeadStateFlashingRed"))) {
                 _offState = SignalHead.FLASHRED;
-            } else if (state.equals(rbx.getString("StateSignalHeadFlashYellow"))) {
+            } else if (state.equals(Bundle.getMessage("SignalHeadStateFlashingYellow"))) {
                 _offState = SignalHead.FLASHYELLOW;
-            } else if (state.equals(rbx.getString("StateSignalHeadFlashGreen"))) {
+            } else if (state.equals(Bundle.getMessage("SignalHeadStateFlashingGreen"))) {
                 _offState = SignalHead.FLASHGREEN;
-            } else if (state.equals(rbx.getString("StateSignalHeadFlashLunar"))) {
+            } else if (state.equals(Bundle.getMessage("SignalHeadStateFlashingLunar"))) {
                 _offState = SignalHead.FLASHLUNAR;
             }
         }
@@ -1416,13 +1810,17 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
         }
     }
 
-    private static class SignalMastAppearances {
+    /**
+     * Definition of main Signal Mast in a Signal Group.
+     */
+    private static class SignalMastAspect {
 
-        SignalMastAppearances(String appearance) {
-            _appearance = appearance;
+        SignalMastAspect(String aspect) {
+            _aspect = aspect;
         }
+
         boolean _include;
-        String _appearance;
+        String _aspect;
 
         void setIncluded(boolean include) {
             _include = include;
@@ -1432,23 +1830,26 @@ public class SignalGroupTableAction extends AbstractTableAction implements Prope
             return _include;
         }
 
-        void setAppearance(String app) {
-            _appearance = app;
+        void setAspect(String asp) {
+            _aspect = asp;
         }
 
-        String getAppearance() {
-            return _appearance;
+        String getAspect() {
+            return _aspect;
         }
 
     }
 
+    @Override
     protected String getClassName() {
         return SignalGroupTableAction.class.getName();
     }
 
+    @Override
     public String getClassDescription() {
         return Bundle.getMessage("TitleSignalGroupTable");
     }
 
-    private final static Logger log = LoggerFactory.getLogger(SignalGroupTableAction.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(SignalGroupTableAction.class);
+
 }

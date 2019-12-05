@@ -1,4 +1,3 @@
-// AutomationsTableFrame.java
 package jmri.jmrit.operations.automation;
 
 import java.awt.Dimension;
@@ -10,8 +9,10 @@ import javax.swing.JMenuBar;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
+import jmri.InstanceManager;
 import jmri.jmrit.operations.OperationsFrame;
 import jmri.jmrit.operations.setup.Control;
+import jmri.swing.JTablePersistenceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +21,6 @@ import org.slf4j.LoggerFactory;
  *
  * @author Bob Jacobsen Copyright (C) 2001
  * @author Daniel Boudreau Copyright (C) 2016
- * @version $Revision$
  */
 public class AutomationsTableFrame extends OperationsFrame {
 
@@ -79,8 +79,9 @@ public class AutomationsTableFrame extends OperationsFrame {
         JMenu toolMenu = new JMenu(Bundle.getMessage("MenuTools"));
         menuBar.add(toolMenu);
         toolMenu.add(new AutomationCopyAction());
+        toolMenu.add(new AutomationResumeAction());
         setJMenuBar(menuBar);
-        addHelpMenu("package.jmri.jmrit.operations.Operations_Automations", true); // NOI18N
+        addHelpMenu("package.jmri.jmrit.operations.Operations_Automation", true); // NOI18N
 
         initMinimumSize();
         // make panel a bit wider than minimum if the very first time opened
@@ -92,6 +93,8 @@ public class AutomationsTableFrame extends OperationsFrame {
     @Override
     public void radioButtonActionPerformed(java.awt.event.ActionEvent ae) {
         log.debug("radio button activated");
+        // clear any sorts by column
+        clearTableSort(automationsTable);
         if (ae.getSource() == sortByNameRadioButton) {
             sortByNameRadioButton.setSelected(true);
             sortByIdRadioButton.setSelected(false);
@@ -115,10 +118,12 @@ public class AutomationsTableFrame extends OperationsFrame {
     
     @Override
     public void dispose() {
-        saveTableDetails(automationsTable);
+        InstanceManager.getOptionalDefault(JTablePersistenceManager.class).ifPresent(tpm -> {
+            tpm.stopPersisting(automationsTable);
+        });
         automationsModel.dispose();
         super.dispose();
     }
 
-    private final static Logger log = LoggerFactory.getLogger(AutomationsTableFrame.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(AutomationsTableFrame.class);
 }

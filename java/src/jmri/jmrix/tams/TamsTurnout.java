@@ -1,6 +1,6 @@
-// TamsTurnout.java
 package jmri.jmrix.tams;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import jmri.Turnout;
 import jmri.implementation.AbstractTurnout;
 import org.slf4j.Logger;
@@ -8,23 +8,18 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Implement a Turnout via Tams communications.
- * <P>
+ * <p>
  * This object doesn't listen to the Tams communications. This is because it
  * should be the only object that is sending messages for this turnout; more
  * than one Turnout object pointing to a single device is not allowed.
  *
  * Based on work by Bob Jacobsen and Kevin Dickerson Copyright
  *
- * @author	Jan Boen
- * @version	$Revision: 20160627 $
+ * @author	 Jan Boen
  */
 public class TamsTurnout extends AbstractTurnout
         implements TamsListener {
 
-    /**
-     *
-     */
-    private static final long serialVersionUID = 1921305278634163107L;
     String prefix;
 
     /**
@@ -39,11 +34,10 @@ public class TamsTurnout extends AbstractTurnout
         this.prefix = prefix;
         tc = etc;
         //Request status of turnout
-        TamsMessage m = new TamsMessage("xT " + _number + ",,1");
+        TamsMessage m = new TamsMessage("xT " + _number + ",,0");
         m.setBinary(false);
         m.setReplyType('T');
         tc.sendTamsMessage(m, this);
-        //tc.addPollMessage(m, this);//Not adding a poll message as status updates will come via TamsTurnoutManager
 
         _validFeedbackTypes |= MONITORING;
         _activeFeedbackType = MONITORING;
@@ -57,7 +51,7 @@ public class TamsTurnout extends AbstractTurnout
         _validFeedbackModes = modeValues;
     }
 
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD",
+    @SuppressFBWarnings(value = "ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD",
             justification = "Only used during creation of 1st turnout")
     private void initFeedbackModes() {
         log.debug("*** initFeedbackModes ***");
@@ -83,6 +77,7 @@ public class TamsTurnout extends AbstractTurnout
     TamsTrafficController tc;
 
     // Handle a request to change state by sending a turnout command
+    @Override
     protected void forwardCommandChangeToLayout(int s) {
         log.debug("*** forwardCommandChangeToLayout ***");
         // sort out states
@@ -108,7 +103,7 @@ public class TamsTurnout extends AbstractTurnout
     /**
      * Set the turnout known state to reflect what's been observed from the
      * command station messages. A change there means that somebody commanded a
-     * state change (e.g. somebody holding a throttle), and that command has
+     * state change (by using a throttle), and that command has
      * already taken effect. Hence we use "newCommandedState" to indicate it's
      * taken place. Must be followed by "newKnownState" to complete the turnout
      * action.
@@ -118,19 +113,20 @@ public class TamsTurnout extends AbstractTurnout
     synchronized void setCommandedStateFromCS(int state) {
         log.debug("*** setCommandedStateFromCS ***");
         if ((getFeedbackMode() != MONITORING)) {
+            log.debug("Returning");
             return;
         }
-        log.debug(this + ", setting to state " + state);
+        log.debug("Setting to state " + state);
         newCommandedState(state);
     }
 
     /**
      * Set the turnout known state to reflect what's been observed from the
      * command station messages. A change there means that somebody commanded a
-     * state change (e.g. somebody holding a throttle), and that command has
+     * state change (by using a throttle), and that command has
      * already taken effect. Hence we use "newKnownState" to indicate it's taken
      * place.
-     * <P>
+     *
      * @param state Observed state, updated state from command station
      */
     synchronized void setKnownStateFromCS(int state) {
@@ -141,11 +137,12 @@ public class TamsTurnout extends AbstractTurnout
         newKnownState(state);
     }
 
+    @Override
     public void turnoutPushbuttonLockout(boolean b) {
     }
 
     /**
-     * Tams turnouts can be inverted
+     * Tams turnouts can be inverted.
      */
     @Override
     public boolean canInvert() {
@@ -159,30 +156,30 @@ public class TamsTurnout extends AbstractTurnout
      */
     protected void sendMessage(boolean closed) {
         log.debug("*** sendMessage ***");
-        if (getInverted()) {
-            closed = !closed;
-        }
         // get control
-        TamsMessage m = new TamsMessage("xT " + _number + "," + (closed ? "r" : "g"));
+        TamsMessage m = new TamsMessage("xT " + _number + "," + (closed ? "r" : "g") + ",1");
         tc.sendTamsMessage(m, this);
-
     }
 
-    // to listen for status changes from Tams system
+    // Listen for status changes from Tams system.
+    @Override
     public void reply(TamsReply m) {
         log.debug("*** TamsReply ***");
-        log.debug(Integer.toString(m.match("T")));
-        log.debug(Integer.toString(m.match("ERROR")));
+        log.debug("m.match(\"T\") = " + Integer.toString(m.match("T")));
         String msg = m.toString();
+        log.debug("Turnout Reply = " + msg);
         if (m.match("T") == 0) {
             String[] lines = msg.split(" ");
             if (lines[1].equals("" + _number)) {
                 updateReceived = true;
-                if (lines[2].equals("g") || lines[2].equals("1")) {
+                if (lines[2].equals("r") || lines[2].equals("0")) {
+                    log.debug("Turnout " + _number + " = CLOSED");
                     setCommandedStateFromCS(Turnout.CLOSED);
+                    setKnownStateFromCS(Turnout.CLOSED);
                 } else {
+                    log.debug("Turnout " + _number + " = THROWN");
                     setCommandedStateFromCS(Turnout.THROWN);
-
+                    setKnownStateFromCS(Turnout.THROWN);
                 }
             }
         }
@@ -190,7 +187,7 @@ public class TamsTurnout extends AbstractTurnout
 
     boolean updateReceived = false;
 
-    protected void pollForStatus() {
+    /*protected void pollForStatus() {
         if (_activeFeedbackType == MONITORING) {
             log.debug("*** pollForStatus ***");
             //if we received an update last time we send a request again, but if we did not we shall skip it once and try again next time.
@@ -203,25 +200,26 @@ public class TamsTurnout extends AbstractTurnout
                 updateReceived = true;
             }
         }
-    }
+    }*/
 
     @Override
     public void setFeedbackMode(int mode) throws IllegalArgumentException {
         log.debug("*** setFeedbackMode ***");
-        //TamsMessage m = new TamsMessage("xT " + _number + ",,1");
+        TamsMessage m = new TamsMessage("xT " + _number + ",,1");
         if (mode == MONITORING) {
-            //tc.addPollMessage(m, this);//The actual polling is done from TamsTurnoutManager
-        } else {
-            //tc.removePollMessage(m, this);//Since we don't poll from here there is no need to remove the message either
+            tc.sendTamsMessage(m, this);//Only send a message once
+            //The rest gets done via polling from TamsTurnoutManager
         }
         super.setFeedbackMode(mode);
     }
 
+    @Override
     public void message(TamsMessage m) {
         log.debug("*** message ***");
         // messages are ignored
     }
 
+    @Override
     public void dispose() {
         log.debug("*** dispose ***");
         TamsMessage m = new TamsMessage("xT " + _number + ",,1");
@@ -229,7 +227,6 @@ public class TamsTurnout extends AbstractTurnout
         super.dispose();
     }
 
-    private final static Logger log = LoggerFactory.getLogger(TamsTurnout.class.getName());
-}
+    private final static Logger log = LoggerFactory.getLogger(TamsTurnout.class);
 
-/* @(#)TamsTurnout.java */
+}

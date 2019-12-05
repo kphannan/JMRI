@@ -1,17 +1,21 @@
 package jmri;
 
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * Tests for the Path class
  *
  * @author	Bob Jacobsen Copyright (C) 2006
  */
-public class PathTest extends TestCase {
+public class PathTest {
 
+    @Test
     @SuppressWarnings("all")
     public void testCreate() {
         Path p = new Path();
@@ -23,20 +27,23 @@ public class PathTest extends TestCase {
 
     }
 
+    @Test
     public void testLoad() {
         Path p = new Path();
 
-        TurnoutManager sm = new jmri.managers.InternalTurnoutManager();
+        TurnoutManager sm = jmri.InstanceManager.turnoutManagerInstance();
         Turnout s = sm.provideTurnout("IT12");
 
         p.addSetting(new BeanSetting(s, "IT12", Turnout.CLOSED));
 
         Block b = new Block("IB1");
         p.setBlock(b);
+        Assert.assertEquals("block added",b,p.getBlock());
     }
 
+    @Test
     public void testEquals() {
-        TurnoutManager sm = new jmri.managers.InternalTurnoutManager();
+        TurnoutManager sm = jmri.InstanceManager.turnoutManagerInstance();
         Turnout s1 = sm.provideTurnout("IT12");
         Turnout s2 = sm.provideTurnout("IT14");
         
@@ -71,6 +78,7 @@ public class PathTest extends TestCase {
         assertFalse(p1.equals(p2));
     }
     
+    @Test
     public void testBlockRetrieve() {
         Path p = new Path();
 
@@ -81,10 +89,11 @@ public class PathTest extends TestCase {
                 p.getBlock().getSystemName());
     }
 
+    @Test
     public void testCheck() throws JmriException {
         Path p = new Path();
 
-        TurnoutManager sm = new jmri.managers.InternalTurnoutManager();
+        TurnoutManager sm = jmri.InstanceManager.turnoutManagerInstance();
         Turnout s = sm.provideTurnout("IT12");
 
         p.addSetting(new BeanSetting(s, "IT12", Turnout.CLOSED));
@@ -96,6 +105,7 @@ public class PathTest extends TestCase {
 
     }
 
+    @Test
     public void testShortPathCheck() {
         Path p = new Path();
         // no elements; always true
@@ -103,44 +113,41 @@ public class PathTest extends TestCase {
 
     }
 
+    @Test
     public void testFormat() {
         //Path p = new Path();
         // default direction
-        Assert.assertTrue("None", Path.decodeDirection(Path.NONE).equals("None"));
-        Assert.assertTrue("Left", Path.decodeDirection(Path.LEFT).equals("Left"));
-        Assert.assertTrue("Right", Path.decodeDirection(Path.RIGHT).equals("Right"));
-        Assert.assertTrue("Up", Path.decodeDirection(Path.UP).equals("Up"));
-        Assert.assertTrue("Down", Path.decodeDirection(Path.DOWN).equals("Down"));
-        Assert.assertTrue("CW", Path.decodeDirection(Path.CW).equals("CW"));
-        Assert.assertTrue("CCW", Path.decodeDirection(Path.CCW).equals("CCW"));
-        Assert.assertTrue("East", Path.decodeDirection(Path.EAST).equals("East"));
-        Assert.assertTrue("West", Path.decodeDirection(Path.WEST).equals("West"));
-        Assert.assertTrue("North", Path.decodeDirection(Path.NORTH).equals("North"));
-        Assert.assertTrue("South", Path.decodeDirection(Path.SOUTH).equals("South"));
-        Assert.assertTrue("Unknown", Path.decodeDirection(0x100000).equals("Unknown: 0x100000"));
-        Assert.assertEquals("South|Up", Path.decodeDirection(Path.SOUTH | Path.UP), "South, Up");
+        Assert.assertEquals("None", "None", Path.decodeDirection(Path.NONE));
+        Assert.assertEquals("Left", "Left", Path.decodeDirection(Path.LEFT));
+        Assert.assertEquals("Right", "Right", Path.decodeDirection(Path.RIGHT));
+        Assert.assertEquals("Up", "Up", Path.decodeDirection(Path.UP));
+        Assert.assertEquals("Down", "Down", Path.decodeDirection(Path.DOWN));
+        Assert.assertEquals("CW", "CW", Path.decodeDirection(Path.CW));
+        Assert.assertEquals("CCW", "CCW", Path.decodeDirection(Path.CCW));
+        Assert.assertEquals("North", "North", Path.decodeDirection(Path.NORTH));
+        Assert.assertEquals("East", "East", Path.decodeDirection(Path.EAST));
+        Assert.assertEquals("West", "West", Path.decodeDirection(Path.WEST));
+        Assert.assertEquals("South", "South", Path.decodeDirection(Path.SOUTH));
+        Assert.assertEquals("North-East", "Northeast", Path.decodeDirection(Path.NORTH_EAST));
+        Assert.assertEquals("South-East", "Southeast", Path.decodeDirection(Path.SOUTH_EAST));
+        Assert.assertEquals("South-West", "Southwest", Path.decodeDirection(Path.SOUTH_WEST));
+        Assert.assertEquals("North-West", "Northwest", Path.decodeDirection(Path.NORTH_WEST));
+        Assert.assertEquals("Unknown", "Unknown: 0x100000", Path.decodeDirection(0x100000));
+        Assert.assertEquals("South and Up", "South, Up", Path.decodeDirection(Path.SOUTH | Path.UP));
 
     }
 
-    // from here down is testing infrastructure
-    public PathTest(String s) {
-        super(s);
-    }
-
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {PathTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(PathTest.class);
-        return suite;
-    }
-
-    protected void setUp() {
+    @Before
+    public void setUp() {
+        jmri.util.JUnitUtil.setUp();
+        
+        jmri.util.JUnitUtil.resetInstanceManager();
         jmri.InstanceManager.store(new jmri.NamedBeanHandleManager(), jmri.NamedBeanHandleManager.class);
+    }
+
+    @After
+    public void tearDown() {
+        jmri.util.JUnitUtil.tearDown();
     }
 
 }

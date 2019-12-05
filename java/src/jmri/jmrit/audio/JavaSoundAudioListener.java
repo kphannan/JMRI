@@ -74,8 +74,7 @@ public class JavaSoundAudioListener extends AbstractAudioListener {
     private void recalculateSources() {
         // Loop through each AudioSource and recalculate their gain & pan
         AudioManager am = InstanceManager.getDefault(jmri.AudioManager.class);
-        for (String sysName : am.getSystemNameList()) {
-            Audio audio = am.getBySystemName(sysName);
+        for (Audio audio : am.getNamedBeanSet()) {
             if (audio.getSubType() == Audio.SOURCE
                     && audio instanceof JavaSoundAudioSource) {
                 ((JavaSoundAudioSource) audio).calculateGain();
@@ -88,7 +87,7 @@ public class JavaSoundAudioListener extends AbstractAudioListener {
     }
 
     @Override
-    protected void cleanUp() {
+    protected void cleanup() {
         // no clean-up needed for Listener
         if (log.isDebugEnabled()) {
             log.debug("Cleanup JavaSoundAudioListener (" + this.getSystemName() + ")");
@@ -96,6 +95,6 @@ public class JavaSoundAudioListener extends AbstractAudioListener {
         this.dispose();
     }
 
-    private static final Logger log = LoggerFactory.getLogger(JavaSoundAudioListener.class.getName());
+    private static final Logger log = LoggerFactory.getLogger(JavaSoundAudioListener.class);
 
 }

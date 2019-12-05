@@ -1,9 +1,8 @@
 package jmri.jmrix.lenz.swing.liusb;
 
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import java.awt.GraphicsEnvironment;
+import jmri.util.JUnitUtil;
+import org.junit.*;
 
 /**
  * LIUSBConfigFrameTest.java
@@ -12,40 +11,32 @@ import junit.framework.TestSuite;
  *
  * @author	Paul Bender
  */
-public class LIUSBConfigFrameTest extends TestCase {
+public class LIUSBConfigFrameTest extends jmri.util.JmriJFrameTestBase {
 
-    public void testCtor() {
-        jmri.jmrix.lenz.XNetInterfaceScaffold t = new jmri.jmrix.lenz.XNetInterfaceScaffold(new jmri.jmrix.lenz.LenzCommandStation());
-        jmri.jmrix.lenz.XNetSystemConnectionMemo memo = new jmri.jmrix.lenz.XNetSystemConnectionMemo(t);
-
-        LIUSBConfigFrame f = new LIUSBConfigFrame(memo);
-        Assert.assertNotNull(f);
-    }
-
-    // from here down is testing infrastructure
-    public LIUSBConfigFrameTest(String s) {
-        super(s);
-    }
-
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading", LIUSBConfigFrameTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(LIUSBConfigFrameTest.class);
-        return suite;
-    }
+    private jmri.jmrix.lenz.XNetInterfaceScaffold t = null;
+    private jmri.jmrix.lenz.XNetSystemConnectionMemo memo = null;
 
     // The minimal setup for log4J
-    protected void setUp() {
-        apps.tests.Log4JFixture.setUp();
+    @Before
+    @Override
+    public void setUp() {
+        JUnitUtil.setUp();
+        jmri.util.JUnitUtil.resetProfileManager();
+        t = new jmri.jmrix.lenz.XNetInterfaceScaffold(new jmri.jmrix.lenz.LenzCommandStation());
+        memo = new jmri.jmrix.lenz.XNetSystemConnectionMemo(t);
+        if(!GraphicsEnvironment.isHeadless()){
+           frame = new LIUSBConfigFrame(memo);
+        }
     }
 
-    protected void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
+    @After
+    @Override
+    public void tearDown() {
+        memo = null;
+        t = null;
+        JUnitUtil.clearShutDownManager(); // put in place because AbstractMRTrafficController implementing subclass was not terminated properly
+        super.tearDown();
     }
+
 
 }

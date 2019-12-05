@@ -12,9 +12,16 @@ import java.awt.event.ComponentListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import net.coobird.thumbnailator.ThumbnailParameter;
+import net.coobird.thumbnailator.builders.ThumbnailParameterBuilder;
+import net.coobird.thumbnailator.filters.ImageFilter;
+import net.coobird.thumbnailator.tasks.io.FileImageSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,17 +46,16 @@ public class ResizableImagePanel extends JPanel implements ComponentListener {
     private BufferedImage scaledImage = null;
     private boolean _resizeContainer = false;
     private boolean _respectAspectRatio = true;
-    static private Color BackGroundColor = Color.BLACK;
+    static private Color backgroundColor = Color.BLACK;
     boolean toResize = false;
-    final static Dimension smallDim = new Dimension(10, 10);
+    final static Dimension SMALL_DIM = new Dimension(10, 10);
 
     /**
      * Default constructor.
-     *
      */
     public ResizableImagePanel() {
         super();
-        super.setBackground(BackGroundColor);
+        super.setBackground(backgroundColor);
         setVisible(false);
     }
 
@@ -62,7 +68,7 @@ public class ResizableImagePanel extends JPanel implements ComponentListener {
      */
     public ResizableImagePanel(String imagePath) {
         super();
-        super.setBackground(BackGroundColor);
+        super.setBackground(backgroundColor);
         setImagePath(imagePath);
     }
 
@@ -77,7 +83,7 @@ public class ResizableImagePanel extends JPanel implements ComponentListener {
         super();
         setPreferredSize(new Dimension(w, h));
         setSize(w, h);
-        super.setBackground(BackGroundColor);
+        super.setBackground(backgroundColor);
         setImagePath(imagePath);
     }
 
@@ -90,6 +96,7 @@ public class ResizableImagePanel extends JPanel implements ComponentListener {
     /**
      * Allows this ResizableImagePanel to force resize of its container
      *
+     * @param b true if this instance can resize its container; false otherwise
      */
     public void setResizingContainer(boolean b) {
         _resizeContainer = b;
@@ -115,8 +122,9 @@ public class ResizableImagePanel extends JPanel implements ComponentListener {
 
     /**
      * Allow this ResizableImagePanel to respect aspect ratio when resizing
-     * content
+     * content.
      *
+     * @param b true if aspect ratio should be respected; false otherwise
      */
     public void setRespectAspectRatio(boolean b) {
         _respectAspectRatio = b;
@@ -132,9 +140,35 @@ public class ResizableImagePanel extends JPanel implements ComponentListener {
     }
 
     /**
+     * Read image and handle exif information if it exists in the file.
+     * 
+     * @param file the image file
+     * @return the image
+     * @throws IOException in case of an I/O error
+     */
+    private BufferedImage readImage(File file) throws IOException {
+        ThumbnailParameterBuilder builder = new ThumbnailParameterBuilder();
+        builder.scale(1.0);
+        ThumbnailParameter param = builder.build();
+        
+        FileImageSource fileImageSource = new FileImageSource(file);
+        fileImageSource.setThumbnailParameter(param);
+        
+        BufferedImage img = fileImageSource.read();
+        
+        // Perform the image filters
+        for (ImageFilter filter : param.getImageFilters()) {
+            img = filter.apply(img);
+        }
+        
+        return img;
+    }
+
+    /**
      * Set image file path, display will be updated if passed value is null,
      * blank image
      *
+     * @param s path to image file
      */
     public void setImagePath(String s) {
         String old = _imagePath;
@@ -148,7 +182,7 @@ public class ResizableImagePanel extends JPanel implements ComponentListener {
         log.debug("Image path is now : {}", _imagePath);
         if (_imagePath != null) {
             try {
-                image = ImageIO.read(new File(_imagePath));
+                image = readImage(new File(_imagePath));
             } catch (IOException ex) {
                 log.error("{} is not a valid image file, exception: ", _imagePath, ex);
                 image = null;
@@ -210,7 +244,7 @@ public class ResizableImagePanel extends JPanel implements ComponentListener {
     public void componentHidden(ComponentEvent e) {
         log.debug("Component hidden");
         if (isResizingContainer()) {
-            resizeContainer(smallDim);
+            resizeContainer(SMALL_DIM);
         }
     }
 
@@ -222,8 +256,9 @@ public class ResizableImagePanel extends JPanel implements ComponentListener {
             setSize(d);
             p1.setPreferredSize(d);
             p1.setSize(d);
-            if ((getTopLevelAncestor() != null) && (getTopLevelAncestor() instanceof Window)) {
-                ((Window) getTopLevelAncestor()).pack(); // yes, lucky hack, possibly dirty
+            Container c = getTopLevelAncestor();
+            if (c != null && c instanceof Window) {
+                ((Window) c).pack();
             }
         }
     }
@@ -287,5 +322,5 @@ public class ResizableImagePanel extends JPanel implements ComponentListener {
         }
     }
 
-    static private Logger log = LoggerFactory.getLogger(ResizableImagePanel.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(ResizableImagePanel.class);
 }

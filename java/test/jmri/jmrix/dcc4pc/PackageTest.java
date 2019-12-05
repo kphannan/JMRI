@@ -1,30 +1,32 @@
 package jmri.jmrix.dcc4pc;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+   jmri.jmrix.dcc4pc.serialdriver.PackageTest.class,
+   jmri.jmrix.dcc4pc.configurexml.PackageTest.class,
+   jmri.jmrix.dcc4pc.swing.PackageTest.class,
+   Dcc4PcReporterManagerTest.class,
+   Dcc4PcSystemConnectionMemoTest.class,
+   Dcc4PcPortControllerTest.class,
+   Dcc4PcTrafficControllerTest.class,
+   Dcc4PcConnectionTypeListTest.class,
+   Dcc4PcReplyTest.class,
+   Dcc4PcMessageTest.class,
+   Dcc4PcProgrammerManagerTest.class,
+   Dcc4PcOpsModeProgrammerTest.class,
+   Dcc4PcSensorTest.class,
+   Dcc4PcSensorManagerTest.class,
+   Dcc4PcReporterTest.class,
+   Dcc4PcBoardManagerTest.class,
+   BundleTest.class
+})
 /**
- * Tests for the jmri.jmrix.dcc4pcpackage
+ * Tests for the jmri.jmrix.pi package
  *
- * @author  Paul Bender	
+ * @author Paul Bender Copyright (C) 2016
  */
-public class PackageTest extends TestCase {
-
-    // from here down is testing infrastructure
-    public PackageTest(String s) {
-        super(s);
-    }
-
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {PackageTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite("jmri.jmrix.dcc4pc.PackageTest");  // no tests in this class itself
-        return suite;
-    }
+public class PackageTest {
 }

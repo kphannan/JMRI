@@ -2,55 +2,59 @@ package jmri.jmrix.cmri.serial;
 
 import jmri.Sensor;
 import jmri.jmrix.AbstractMRMessage;
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import jmri.util.JUnitUtil;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * JUnit tests for the SerialNode class
  *
  * @author	Bob Jacobsen Copyright 2003
  * @author	Dave Duchamp multi-node extensions 2003
- * @version	$Revision$
  */
-public class SerialNodeTest extends TestCase {
+public class SerialNodeTest {
 
     private jmri.jmrix.cmri.CMRISystemConnectionMemo memo = null;
     private SerialTrafficControlScaffold stcs = null;
 
-
+    @Test
     public void testCountInput1() {
         SerialNode a = new SerialNode(1, SerialNode.USIC_SUSIC,stcs);
         a.cardTypeLocation = new byte[]{SerialNode.INPUT_CARD, SerialNode.NO_CARD, SerialNode.OUTPUT_CARD};
         Assert.assertEquals("check 1 cards, not in order", 1, a.numInputCards());
     }
 
+    @Test
     public void testCountInput2() {
         SerialNode a = new SerialNode(1, SerialNode.USIC_SUSIC,stcs);
         a.cardTypeLocation = new byte[]{SerialNode.INPUT_CARD, SerialNode.NO_CARD, SerialNode.INPUT_CARD};
         Assert.assertEquals("check 2 cards, not in order", 2, a.numInputCards());
     }
 
+    @Test
     public void testCountOutput0() {
         SerialNode a = new SerialNode(1, SerialNode.USIC_SUSIC,stcs);
         a.cardTypeLocation = new byte[]{SerialNode.INPUT_CARD, SerialNode.NO_CARD, SerialNode.INPUT_CARD};
         Assert.assertEquals("check 0 cards", 0, a.numOutputCards());
     }
 
+    @Test
     public void testCountOutput2() {
         SerialNode a = new SerialNode(1, SerialNode.USIC_SUSIC,stcs);
         a.cardTypeLocation = new byte[]{SerialNode.OUTPUT_CARD, SerialNode.OUTPUT_CARD, SerialNode.INPUT_CARD};
         Assert.assertEquals("check 2 cards", 2, a.numOutputCards());
     }
 
-
+    @Test
     public void testConstructor1() {
         SerialNode b = new SerialNode(stcs);
         Assert.assertEquals("check default ctor type", SerialNode.SMINI, b.getNodeType());
         Assert.assertEquals("check default ctor address", 0, b.getNodeAddress());
     }
 
+    @Test
     public void testConstructor2() {
         SerialNode c = new SerialNode(3, SerialNode.SMINI,stcs);
         Assert.assertEquals("check ctor type", SerialNode.SMINI, c.getNodeType());
@@ -63,8 +67,9 @@ public class SerialNodeTest extends TestCase {
         Assert.assertEquals("check ctor default inputLocation", 0, c.getInputCardIndex(2));
     }
 
+    @Test
     public void testConstructor3() {
-        SerialNode d = new SerialNode(4, SerialNode.USIC_SUSIC,stcs);;
+        SerialNode d = new SerialNode(4, SerialNode.USIC_SUSIC,stcs);
         Assert.assertEquals("check ctor type", SerialNode.USIC_SUSIC, d.getNodeType());
         Assert.assertEquals("check ctor address", 4, d.getNodeAddress());
         Assert.assertEquals("check ctor default bitsPerCard", 24, d.getNumBitsPerCard());
@@ -73,6 +78,7 @@ public class SerialNodeTest extends TestCase {
         Assert.assertEquals("check ctor default numInputCards", 0, d.numInputCards());
     }
 
+    @Test
     public void testAccessors() {
         SerialNode n = new SerialNode(2, SerialNode.USIC_SUSIC,stcs);
         n.setNodeAddress(7);
@@ -96,6 +102,7 @@ public class SerialNodeTest extends TestCase {
         Assert.assertTrue("check input card type", n.isInputCard(0));
     }
 
+    @Test
     public void testInitialization1() {
         SerialNode b = new SerialNode(stcs);
         // simple SMINI - no oscillating 2-lead searchlights
@@ -109,6 +116,7 @@ public class SerialNodeTest extends TestCase {
         Assert.assertEquals("NS", 0, m.getElement(5));            // No Searchlights
     }
 
+    @Test
     public void testInitialization2() {
         // SMINI with searchlights - similar to CMRI User Manual, page B10
         SerialNode e = new SerialNode(9, SerialNode.SMINI,stcs);
@@ -144,6 +152,7 @@ public class SerialNodeTest extends TestCase {
         Assert.assertEquals("sl code 6", 48, (m.getElement(11) & 0xff));
     }
 
+    @Test
     public void testInitialization3() {
         // USIC_SUSIC with delay and 6 32-bit cards
         SerialNode p = new SerialNode(10, SerialNode.USIC_SUSIC,stcs);
@@ -168,6 +177,7 @@ public class SerialNodeTest extends TestCase {
         Assert.assertEquals("2nd group", 9, (m.getElement(8) & 0xff)); // IOXX
     }
 
+    @Test
     public void testOutputBits1() {
         // SMINI with several output bits set
         SerialNode g = new SerialNode(5, SerialNode.SMINI,stcs);
@@ -188,7 +198,7 @@ public class SerialNodeTest extends TestCase {
         AbstractMRMessage m = g.createOutPacket();
         Assert.assertEquals("packet size", 8, m.getNumDataElements());
         Assert.assertEquals("node address", 70, m.getElement(0));
-        Assert.assertEquals("packet type", 84, m.getElement(1));  // 'T'        
+        Assert.assertEquals("packet type", 84, m.getElement(1));  // 'T'
         Assert.assertEquals("out byte 1", 17, (m.getElement(2) & 0xff));
         Assert.assertEquals("out byte 2", 0, (m.getElement(3) & 0xff));
         Assert.assertEquals("out byte 3", 68, (m.getElement(4) & 0xff));
@@ -197,10 +207,11 @@ public class SerialNodeTest extends TestCase {
         Assert.assertEquals("out byte 6", 129, (m.getElement(7) & 0xff));
     }
 
+    @Test
     public void testMarkChangesInitial() {
         SerialNode b = new SerialNode(stcs);
         SerialSensor s1 = new SerialSensor("CS1", "a");
-        Assert.assertEquals("check bit number", 1, SerialAddress.getBitFromSystemName("CS1"));
+        Assert.assertEquals("check bit number", 1, memo.getBitFromSystemName("CS1"));
         SerialSensor s2 = new SerialSensor("CS2", "ab");
         SerialSensor s3 = new SerialSensor("CS3", "abc");
         b.registerSensor(s1, 0);
@@ -216,10 +227,11 @@ public class SerialNodeTest extends TestCase {
         Assert.assertEquals("check s3", Sensor.INACTIVE, s3.getKnownState());
     }
 
+    @Test
     public void testMarkChanges2ndByte() {
         SerialNode b = new SerialNode(stcs);
         SerialSensor s1 = new SerialSensor("CS9", "a");
-        Assert.assertEquals("check bit number", 1, SerialAddress.getBitFromSystemName("CS1"));
+        Assert.assertEquals("check bit number", 1, memo.getBitFromSystemName("CS1"));
         SerialSensor s2 = new SerialSensor("CS10", "ab");
         SerialSensor s3 = new SerialSensor("CS11", "abc");
         b.registerSensor(s1, 8);
@@ -236,10 +248,11 @@ public class SerialNodeTest extends TestCase {
         Assert.assertEquals("check s3", Sensor.INACTIVE, s3.getKnownState());
     }
 
+    @Test
     public void testMarkChangesShortReply() {
         SerialNode b = new SerialNode(stcs);
         SerialSensor s1 = new SerialSensor("CS9", "a");
-        Assert.assertEquals("check bit number", 1, SerialAddress.getBitFromSystemName("CS1"));
+        Assert.assertEquals("check bit number", 1, memo.getBitFromSystemName("CS1"));
         SerialSensor s2 = new SerialSensor("CS10", "ab");
         SerialSensor s3 = new SerialSensor("CS11", "abc");
         b.registerSensor(s1, 8);
@@ -262,10 +275,11 @@ public class SerialNodeTest extends TestCase {
         Assert.assertEquals("check s3", Sensor.INACTIVE, s3.getKnownState());
     }
 
+    @Test
     public void testMarkChangesEmptyReply() {
         SerialNode b = new SerialNode(stcs);
         SerialSensor s1 = new SerialSensor("CS9", "a");
-        Assert.assertEquals("check bit number", 1, SerialAddress.getBitFromSystemName("CS1"));
+        Assert.assertEquals("check bit number", 1, memo.getBitFromSystemName("CS1"));
         SerialSensor s2 = new SerialSensor("CS10", "ab");
         SerialSensor s3 = new SerialSensor("CS11", "abc");
         b.registerSensor(s1, 8);
@@ -294,6 +308,7 @@ public class SerialNodeTest extends TestCase {
         Assert.assertEquals("check s3", Sensor.ACTIVE, s3.getKnownState());
     }
 
+    @Test
     public void testMarkChangesDebounce() {
         SerialNode b = new SerialNode(stcs);
         SerialSensor s1 = new SerialSensor("CS1", "a");
@@ -347,37 +362,22 @@ public class SerialNodeTest extends TestCase {
         Assert.assertEquals("poll4 s4", Sensor.INACTIVE, s4.getKnownState());
     }
 
-    // from here down is testing infrastructure
-    public SerialNodeTest(String s) {
-        super(s);
-    }
-
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading", SerialNodeTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(SerialNodeTest.class);
-        return suite;
-    }
-
-    // The minimal setup for log4J
-    protected void setUp() {
-        apps.tests.Log4JFixture.setUp();
-        jmri.util.JUnitUtil.resetInstanceManager();
+    @Before
+    public void setUp() {
+        JUnitUtil.setUp();
         // replace the SerialTrafficController
         stcs = new SerialTrafficControlScaffold();
         memo = new jmri.jmrix.cmri.CMRISystemConnectionMemo();
         memo.setTrafficController(stcs);
     }
 
-    protected void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
-        jmri.util.JUnitUtil.resetInstanceManager();
+    @After
+    public void tearDown() {
+        if (stcs != null) stcs.terminateThreads();
         stcs = null;
         memo = null;
+        
+	    JUnitUtil.clearShutDownManager(); // put in place because AbstractMRTrafficController implementing subclass was not terminated properly
+        JUnitUtil.tearDown();
     }
 }

@@ -4,7 +4,7 @@ import jmri.implementation.AbstractSensor;
 
 /**
  * Implement a Sensor via Tams communications.
- * <P>
+ * <p>
  * This object doesn't listen to the Tams communications. This is because the
  * sensor manager will handle all the messages as some sensor updates will come
  * bundled together in one message. It also saves having multiple sensor beans
@@ -14,11 +14,6 @@ import jmri.implementation.AbstractSensor;
  * @author Kevin Dickerson (C) 2009
  */
 public class TamsSensor extends AbstractSensor {
-
-    /**
-     * 
-     */
-    private static final long serialVersionUID = 1L;
     
     public TamsSensor(String systemName, String userName) {
         super(systemName, userName);
@@ -33,10 +28,8 @@ public class TamsSensor extends AbstractSensor {
     private void init(String id) {
     }
 
+    @Override
     public void requestUpdateFromLayout() {
     }
-
-    static String[] modeNames = null;
-    static int[] modeValues = null;
 
 }

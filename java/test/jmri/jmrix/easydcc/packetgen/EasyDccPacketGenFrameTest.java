@@ -1,39 +1,30 @@
+package jmri.jmrix.easydcc.packetgen;
+
+import jmri.jmrix.easydcc.EasyDccSystemConnectionMemo;
+import java.awt.GraphicsEnvironment;
+import org.junit.*;
+
 /**
- * EasyDccPacketGenFrameTest.java
- *
- * Description:	tests for the jmri.jmrix.nce.packetgen.EasyDccPacketGenFrame
+ * Tests for the jmri.jmrix.easydcc.packetgen.EasyDccPacketGenFrame
  * class
  *
  * @author	Bob Jacobsen
- * @version	$Revision$
  */
-package jmri.jmrix.easydcc.packetgen;
+public class EasyDccPacketGenFrameTest extends jmri.util.JmriJFrameTestBase {
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
-
-public class EasyDccPacketGenFrameTest extends TestCase {
-
-    public void testFrameCreate() {
-        new EasyDccPacketGenFrame();
+    @Before
+    @Override
+    public void setUp() {
+        jmri.util.JUnitUtil.setUp();
+        if(!GraphicsEnvironment.isHeadless()){
+           frame = new EasyDccPacketGenFrame(new EasyDccSystemConnectionMemo("E", "EasyDCC via Serial"));
+        } 
     }
 
-    // from here down is testing infrastructure
-    public EasyDccPacketGenFrameTest(String s) {
-        super(s);
+    @After
+    @Override
+    public void tearDown() {
+        jmri.util.JUnitUtil.clearShutDownManager(); // put in place because AbstractMRTrafficController implementing subclass was not terminated properly
+        super.tearDown();
     }
-
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {EasyDccPacketGenFrameTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(EasyDccPacketGenFrameTest.class);
-        return suite;
-    }
-
 }

@@ -1,16 +1,16 @@
-// Bundle.java
 package jmri.jmrix.mrc.swing.packetgen;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.util.Locale;
 import javax.annotation.CheckReturnValue;
-import javax.annotation.Nullable;
+import javax.annotation.CheckForNull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 @ParametersAreNonnullByDefault
 @CheckReturnValue
 @SuppressFBWarnings(value = "NM_SAME_SIMPLE_NAME_AS_SUPERCLASS", justification = "Desired pattern is repeated class names with package-level access to members")
 
-@net.jcip.annotations.Immutable
+@javax.annotation.concurrent.Immutable
 
 /**
  * Provides standard access for resource bundles in a package.
@@ -19,12 +19,12 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * the local resource bundle name.
  *
  * @author Bob Jacobsen Copyright (C) 2012
- * @version $Revision: 17977 $
  * @since 3.3.1
  */
 public class Bundle extends jmri.jmrix.mrc.swing.Bundle {
 
-    private final static String name = "jmri.jmrix.mrc.swing.packetgen.MrcPacketGenBundle"; // NOI18N
+    @CheckForNull
+    private static final String name = "jmri.jmrix.mrc.swing.packetgen.MrcPacketGenBundle"; // NOI18N
 
     //
     // below here is boilerplate to be copied exactly
@@ -39,7 +39,7 @@ public class Bundle extends jmri.jmrix.mrc.swing.Bundle {
      * @return Internationalized text
      */
     static String getMessage(String key) {
-        return b.handleGetMessage(key);
+        return getBundle().handleGetMessage(key);
     }
 
     /**
@@ -56,27 +56,42 @@ public class Bundle extends jmri.jmrix.mrc.swing.Bundle {
      * @return Internationalized text
      */
     static String getMessage(String key, Object... subs) {
-        return b.handleGetMessage(key, subs);
+        return getBundle().handleGetMessage(key, subs);
+    }
+
+    /**
+     * Merges user data with a translated string for a given key in a given
+     * locale from the package resource bundle or parent.
+     * <p>
+     * Uses the transformation conventions of the Java MessageFormat utility.
+     * <p>
+     * Note that this is intentionally package-local access.
+     *
+     * @see java.text.MessageFormat
+     * @param locale The locale to be used
+     * @param key    Bundle key to be translated
+     * @param subs   One or more objects to be inserted into the message
+     * @return Internationalized text
+     */
+    static String getMessage(Locale locale, String key, Object... subs) {
+        return getBundle().handleGetMessage(locale, key, subs);
     }
 
     private final static Bundle b = new Bundle();
 
     @Override
-    @Nullable
+    @CheckForNull
     protected String bundleName() {
         return name;
     }
 
-    @Override
-    protected jmri.Bundle getBundle() {
+    protected static jmri.Bundle getBundle() {
         return b;
     }
 
     @Override
-    protected String retry(String key) {
-        return super.getBundle().handleGetMessage(key);
+    protected String retry(Locale locale, String key) {
+        return super.getBundle().handleGetMessage(locale,key);
     }
 
 }
-
-/* @(#)Bundle.java */

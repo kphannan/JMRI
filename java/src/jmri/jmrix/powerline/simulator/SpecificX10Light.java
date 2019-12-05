@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Implementation of the Light Object for X10 receivers on Insteon 2412S
  * interfaces.
- * <P>
+ * <p>
  * Uses X10 dimming commands to set intensity unless the value is 0.0 or 1.0, in
  * which case it uses on/off commands only.
  * <p>
@@ -31,8 +31,10 @@ public class SpecificX10Light extends jmri.jmrix.powerline.SerialX10Light {
 
     /**
      * Create a Light object, with only system name.
-     * <P>
+     * <p>
      * 'systemName' was previously validated in SerialLightManager
+     * @param systemName text for systemName of light
+     * @param tc         tc for connection
      */
     public SpecificX10Light(String systemName, SerialTrafficController tc) {
         super(systemName, tc);
@@ -43,8 +45,11 @@ public class SpecificX10Light extends jmri.jmrix.powerline.SerialX10Light {
 
     /**
      * Create a Light object, with both system and user names.
-     * <P>
+     * <p>
      * 'systemName' was previously validated in SerialLightManager
+     * @param systemName text for systemName of light
+     * @param tc         tc for connection
+     * @param userName   text for userName of light
      */
     public SpecificX10Light(String systemName, SerialTrafficController tc, String userName) {
         super(systemName, tc, userName);
@@ -61,6 +66,7 @@ public class SpecificX10Light extends jmri.jmrix.powerline.SerialX10Light {
      * <p>
      * This sends "Extended Cmd Dim" commands.
      */
+    @Override
     protected void sendIntensity(double intensity) {
         if (log.isDebugEnabled()) {
             log.debug("sendIntensity(" + intensity + ")" + " lastOutputStep: " + lastOutputStep + " maxDimStep: " + maxDimStep);
@@ -97,5 +103,5 @@ public class SpecificX10Light extends jmri.jmrix.powerline.SerialX10Light {
         }
     }
 
-    private final static Logger log = LoggerFactory.getLogger(SpecificX10Light.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(SpecificX10Light.class);
 }

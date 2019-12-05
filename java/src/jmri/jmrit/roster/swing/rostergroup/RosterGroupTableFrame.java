@@ -1,7 +1,6 @@
 package jmri.jmrit.roster.swing.rostergroup;
 
 import java.awt.Component;
-import java.util.ResourceBundle;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JMenuBar;
@@ -11,7 +10,7 @@ import javax.swing.table.TableRowSorter;
 
 /**
  * Provide a JFrame to display the Roster Data Based upon BeanTableFrame.
- * <P>
+ * <p>
  * This frame includes the table itself at the top, plus a "bottom area" for
  * things like an Add... button and checkboxes that control display options.
  * <p>
@@ -21,23 +20,20 @@ import javax.swing.table.TableRowSorter;
  * they provide, and by providing a {@link #extras} implementation that can in
  * turn invoke {@link #addToBottomBox} as needed.
  *
- * @author	Bob Jacobsen Copyright (C) 2003
- * @author	Kevin Dickerson Copyright (C) 2009
- * @version	$Revision$
+ * @author Bob Jacobsen Copyright (C) 2003
+ * @author Kevin Dickerson Copyright (C) 2009
  */
 public class RosterGroupTableFrame extends jmri.util.JmriJFrame {
 
     RosterGroupTableModel dataModel;
     JTable dataTable;
     JScrollPane dataScroll;
-    Box bottomBox;		// panel at bottom for extra buttons etc
-    int bottomBoxIndex;	// index to insert extra stuff
+    Box bottomBox;  // panel at bottom for extra buttons etc
+    int bottomBoxIndex; // index to insert extra stuff
     static final int bottomStrutWidth = 20;
-    Box topBox;		// panel at bottom for extra buttons etc
-    int topBoxIndex;	// index to insert extra stuff
+    Box topBox;  // panel at bottom for extra buttons etc
+    int topBoxIndex; // index to insert extra stuff
     static final int topStrutWidth = 20;
-
-    ResourceBundle rb = ResourceBundle.getBundle("jmri.jmrit.beantable.BeanTableBundle");
 
     public RosterGroupTableFrame(RosterGroupTableModel model, String helpTarget) {
 
@@ -48,8 +44,7 @@ public class RosterGroupTableFrame extends jmri.util.JmriJFrame {
         TableRowSorter<RosterGroupTableModel> sorter = new TableRowSorter<>(dataModel);
         dataTable.setRowSorter(sorter);
 
-        // not sure I understand how to address this unchecked warning
-        sorter.setComparator(RosterGroupTableModel.IDCOL, new jmri.util.SystemNameComparator());
+        sorter.setComparator(RosterGroupTableModel.IDCOL, new jmri.util.AlphanumComparator());
         sorter.toggleSortOrder(RosterGroupTableModel.IDCOL);
         dataTable = new JTable(dataModel);
         
@@ -70,13 +65,13 @@ public class RosterGroupTableFrame extends jmri.util.JmriJFrame {
 
         // install items in GUI
         topBox = Box.createHorizontalBox();
-        topBox.add(Box.createHorizontalGlue());	// stays at beginning of box
+        topBox.add(Box.createHorizontalGlue()); // stays at beginning of box
         topBoxIndex = 0;
         getContentPane().add(topBox);
         getContentPane().add(dataScroll);
 
         bottomBox = Box.createHorizontalBox();
-        bottomBox.add(Box.createHorizontalGlue());	// stays at end of box
+        bottomBox.add(Box.createHorizontalGlue()); // stays at end of box
         bottomBoxIndex = 0;
 
         getContentPane().add(bottomBox);
@@ -94,11 +89,10 @@ public class RosterGroupTableFrame extends jmri.util.JmriJFrame {
         // set preferred scrolling options
         dataScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
         dataScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-
     }
 
     /**
-     * Hook to allow sub-types to install more items in GUI
+     * Hook to allow sub-types to install more items in GUI.
      */
     void extras() {
     }
@@ -125,7 +119,7 @@ public class RosterGroupTableFrame extends jmri.util.JmriJFrame {
 
     /**
      * Add a component to the bottom box. Takes care of organising glue, struts
-     * etc
+     * etc.
      *
      */
     protected void addToTopBox(Component comp) {
@@ -135,6 +129,7 @@ public class RosterGroupTableFrame extends jmri.util.JmriJFrame {
         ++topBoxIndex;
     }
 
+    @Override
     public void dispose() {
         if (dataModel != null) {
             dataModel.dispose();
@@ -144,4 +139,5 @@ public class RosterGroupTableFrame extends jmri.util.JmriJFrame {
         dataScroll = null;
         super.dispose();
     }
+
 }

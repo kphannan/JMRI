@@ -1,17 +1,20 @@
 package jmri;
 
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import jmri.util.JUnitUtil;
+
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * Tests for the PushbuttonPacket class
  *
  * @author	Bob Jacobsen Copyright (C) 2010
  */
-public class PushbuttonPacketTest extends TestCase {
+public class PushbuttonPacketTest {
 
+    @Test
     public void testImmutableNames() {
         String[] c1 = PushbuttonPacket.getValidDecoderNames();
         String[] c2 = PushbuttonPacket.getValidDecoderNames();
@@ -22,30 +25,14 @@ public class PushbuttonPacketTest extends TestCase {
         Assert.assertTrue(!c1[0].equals(c2[0]));
     }
 
-    // from here down is testing infrastructure
-    public PushbuttonPacketTest(String s) {
-        super(s);
+    @Before
+    public void setUp() {
+        JUnitUtil.setUp();
     }
 
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {PushbuttonPacketTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(PushbuttonPacketTest.class);
-        return suite;
-    }
-
-    // The minimal setup for log4J
-    protected void setUp() {
-        apps.tests.Log4JFixture.setUp();
-    }
-
-    protected void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
+    @After
+    public void tearDown() {
+        JUnitUtil.tearDown();
     }
 
 }

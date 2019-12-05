@@ -7,19 +7,12 @@ import org.slf4j.LoggerFactory;
 
 /**
  * JMRIClient implementation of the Light interface.
- * <P>
  *
- * Description:	extend jmri.AbstractLight for JMRIClient layouts
- *
- * @author	Bob Jacobsen Copyright (C) 2001, 2008
- * @author	Paul Bender Copyright (C) 2010
+ * @author Bob Jacobsen Copyright (C) 2001, 2008
+ * @author Paul Bender Copyright (C) 2010
  */
 public class JMRIClientLight extends AbstractLight implements JMRIClientListener {
 
-    /**
-     *
-     */
-    private static final long serialVersionUID = -3236146021088496281L;
     // data members
     private int _number;   // light number
     private JMRIClientTrafficController tc = null;
@@ -44,7 +37,8 @@ public class JMRIClientLight extends AbstractLight implements JMRIClientListener
     }
 
     //request a status update from the layout
-    protected void requestUpdateFromLayout() {
+    @Override
+    public void requestUpdateFromLayout() {
         // create the message
         String text = "LIGHT " + transmitName + "\n";
         // create and send the message
@@ -53,10 +47,11 @@ public class JMRIClientLight extends AbstractLight implements JMRIClientListener
 
     // Handle a request to change state by sending a formatted packet
     // to the server.
+    @Override
     public synchronized void doNewState(int oldState, int s) {
         if (oldState == s) {
             return; //no change, just quit.
-        }		// sort out states
+        }  // sort out states
         if ((s & Light.ON) != 0) {
             // first look for the double case, which we can't handle
             if ((s & Light.OFF) != 0) {
@@ -91,6 +86,7 @@ public class JMRIClientLight extends AbstractLight implements JMRIClientListener
     }
 
     // to listen for status changes from JMRIClient system
+    @Override
     public synchronized void reply(JMRIClientReply m) {
         String message = m.toString();
         if (!message.contains(transmitName + " ")) {
@@ -105,12 +101,13 @@ public class JMRIClientLight extends AbstractLight implements JMRIClientListener
         }
     }
 
+    @Override
     public void message(JMRIClientMessage m) {
     }
 
-    private final static Logger log = LoggerFactory.getLogger(JMRIClientLight.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(JMRIClientLight.class);
 
 }
 
 
-/* @(#)JMRIClientLight.java */
+

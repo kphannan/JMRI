@@ -2,18 +2,17 @@ package jmri.jmrix.sprog;
 
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nonnull;
+
 import jmri.AddressedProgrammer;
 import jmri.ProgListener;
 import jmri.ProgrammerException;
 import jmri.ProgrammingMode;
-import jmri.managers.DefaultProgrammerManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Provide an Ops Mode Programmer via a wrapper what works with the SPROG
  * command station object.
- * <P>
+ * <p>
  * Functionally, this just creates packets to send via the command station.
  *
  * @see jmri.Programmer
@@ -23,70 +22,87 @@ public class SprogOpsModeProgrammer extends SprogProgrammer implements Addressed
 
     int mAddress;
     boolean mLongAddr;
+    private SprogSystemConnectionMemo _memo = null;
 
-    public SprogOpsModeProgrammer(int pAddress, boolean pLongAddr) {
-
+    public SprogOpsModeProgrammer(int pAddress, boolean pLongAddr, SprogSystemConnectionMemo memo) {
+        super(memo);
         mAddress = pAddress;
         mLongAddr = pLongAddr;
+        _memo = memo;
     }
 
-    /**
+    /** 
+     * {@inheritDoc}
+     *
      * Forward a write request to an ops-mode write operation
      */
-    synchronized public void writeCV(int CV, int val, ProgListener p) throws ProgrammerException {
+    @Override
+    synchronized public void writeCV(String CVname, int val, ProgListener p) throws ProgrammerException {
+        final int CV = Integer.parseInt(CVname);
         log.debug("write CV=" + CV + " val=" + val);
 
         // record state.  COMMANDSENT is just waiting for a reply...
         useProgrammer(p);
-        _progRead = false;
         progState = COMMANDSENT;
         _val = val;
-        _cv = CV;
 
         // Add the packet to the queue rather than send it directly
         // [AC 23/01/16] Check that there is a free slot for the ops mode packet.
         // Delay the reply to allow time for the ops mode packet to be sent and prevent all slots from filling up
         // when writing multiple CVs, e.g. writing a sheet in the comprehensive programmer.
-        if (SprogCommandStation.instance().opsModepacket(mAddress, mLongAddr, CV, val) != null) {
+        if (_memo.getCommandStation().opsModepacket(mAddress, mLongAddr, CV, val) != null) {
             javax.swing.Timer t = new javax.swing.Timer(250, (java.awt.event.ActionEvent evt)->{notifyProgListenerEnd(_val, jmri.ProgListener.OK);});
             t.setRepeats(false);
             t.start();
         } else {
+            progState = NOTPROGRAMMING;
             notifyProgListenerEnd(_val, jmri.ProgListener.FailedTimeout);
         }
     }
 
-    synchronized public void readCV(int CV, ProgListener p) throws ProgrammerException {
-        if (log.isDebugEnabled()) {
-            log.debug("read CV=" + CV);
-        }
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
+    synchronized public void readCV(String CVname, ProgListener p) throws ProgrammerException {
+        // final int CV = Integer.parseInt(CVname);
         log.error("readCV not available in this protocol");
         throw new ProgrammerException();
     }
 
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
     synchronized public void confirmCV(String CV, int val, ProgListener p) throws ProgrammerException {
-        if (log.isDebugEnabled()) {
-            log.debug("confirm CV={}", CV);
-        }
         log.error("confirmCV not available in this protocol");
         throw new ProgrammerException();
     }
 
-    /**
+    /** 
+     * {@inheritDoc}
+     *
      * Types implemented here.
      */
     @Override
+    @Nonnull
     public List<ProgrammingMode> getSupportedModes() {
         List<ProgrammingMode> ret = new ArrayList<ProgrammingMode>();
-        ret.add(DefaultProgrammerManager.OPSBYTEMODE);
+        ret.add(ProgrammingMode.OPSBYTEMODE);
         return ret;
     }
 
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
     synchronized public void notifyReply(SprogReply m) {
         // We will not see any replies
     }
 
-    /**
+    /** 
+     * {@inheritDoc}
+     *
      * Can this ops-mode programmer read back values? For now, no, but maybe
      * later.
      *
@@ -97,14 +113,26 @@ public class SprogOpsModeProgrammer extends SprogProgrammer implements Addressed
         return false;
     }
 
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
     public boolean getLongAddress() {
         return mLongAddr;
     }
 
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
     public int getAddressNumber() {
         return mAddress;
     }
 
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
     public String getAddress() {
         return "" + getAddressNumber() + " " + getLongAddress();
     }
@@ -119,6 +147,6 @@ public class SprogOpsModeProgrammer extends SprogProgrammer implements Addressed
     }
 
     // initialize logging
-    private final static Logger log = LoggerFactory.getLogger(SprogOpsModeProgrammer.class.getName());
+    private final static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(SprogOpsModeProgrammer.class);
 
 }

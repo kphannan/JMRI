@@ -2,45 +2,46 @@ package jmri;
 
 import java.io.File;
 import java.net.URL;
-import java.util.ArrayList;
+import java.util.List;
+import jmri.jmrit.XmlFile;
 
 /**
  * Provide load/store capabilities for general configuration.
- * <P>
+ * <p>
  * Areas of responsibility:
- * <UL>
- * <LI>Register and deregister configuration objects so they can eventually be
+ * <ul>
+ * <li>Register and deregister configuration objects so they can eventually be
  * stored.
- * <LI>Invoke the load and store operations as needed
- * <LI>Give access to the configuration objects for independent GUIs
- * </UL>
- * <P>
+ * <li>Invoke the load and store operations as needed
+ * <li>Give access to the configuration objects for independent GUIs
+ * </ul>
+ * <p>
  * The managed items are divided into four types:
- * <OL>
- * <LI>"Prefs" - handled first on read, these are the general preferences
+ * <ol>
+ * <li>"Prefs" - handled first on read, these are the general preferences
  * controlling how the program starts up
- * <LI>"Config" - layout configuration information, e.g. turnout, signal, etc
- * <LI>"Tool" - (Not really clear yet, but present)
- * <LI>"User" - typically information about panels and windows, these are
+ * <li>"Config" - layout configuration information, e.g. turnout, signal, etc
+ * <li>"Tool" - (Not really clear yet, but present)
+ * <li>"User" - typically information about panels and windows, these are
  * handled last during startup
- * </OL>
- * <P>
+ * </ol>
+ * <p>
  * The configuration manager is generally located through the InstanceManager.
- * <P>
+ * <p>
  * The original implementation was via the {@link jmri.configurexml} package.
  *
  * <hr>
  * This file is part of JMRI.
- * <P>
+ * <p>
  * JMRI is free software; you can redistribute it and/or modify it under the
  * terms of version 2 of the GNU General Public License as published by the Free
  * Software Foundation. See the "COPYING" file for a copy of this license.
- * <P>
+ * <p>
  * JMRI is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
  * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- * <P>
- * @author	Bob Jacobsen Copyright (C) 2002
+ *
+ * @author Bob Jacobsen Copyright (C) 2002
  * @see jmri.InstanceManager
  * @see jmri.configurexml.ConfigXmlManager
  */
@@ -69,7 +70,7 @@ public interface ConfigureManager {
      * Note that the index of an object can change when other objects are stored
      * or removed. The index is for indexing over the objects stored at a
      * moment, not for use as an identification number.
-     * <P>
+     * <p>
      * There may be synchronization issues associated with this, although they
      * are expected to be rare in practice.
      *
@@ -83,9 +84,9 @@ public interface ConfigureManager {
      * Returns a list of instances stored for a given class.
      *
      * @param c Class of the desired objects
-     * @return an ArrayList of objects of class c or null
+     * @return an List of objects of class c or null
      */
-    public ArrayList<Object> getInstanceList(Class<?> c);
+    public List<Object> getInstanceList(Class<?> c);
 
     /**
      * Stores prefs, config, tools and user information.
@@ -104,11 +105,15 @@ public interface ConfigureManager {
 
     /**
      * Stores just preferences information.
+     *
+     * @param file the to store preferences into
      */
     public void storePrefs(File file);
 
     /**
      * Stores just user preferences information.
+     *
+     * @param file the file to store user preferences into
      */
     public void storeUserPrefs(File file);
 
@@ -116,6 +121,7 @@ public interface ConfigureManager {
      * Stores just configuration information.
      *
      * @param file Output file
+     * @return true if successful; false otherwise
      */
     public boolean storeConfig(File file);
 
@@ -132,6 +138,7 @@ public interface ConfigureManager {
      *
      * @param file Input file
      * @return true if succeeded
+     * @throws jmri.JmriException if unable to load file due to internal error
      */
     public boolean load(File file) throws JmriException;
 
@@ -140,6 +147,7 @@ public interface ConfigureManager {
      *
      * @param file Input URL
      * @return true if succeeded
+     * @throws jmri.JmriException if unable to load URL due to internal error
      */
     public boolean load(URL file) throws JmriException;
 
@@ -206,5 +214,17 @@ public interface ConfigureManager {
      */
     public boolean makeBackup(File file);
 
-}
+    /**
+     * Control the scope of validation of XML files when loading.
+     *
+     * @param validate the validation scope
+     */
+    public void setValidate(XmlFile.Validate validate);
 
+    /**
+     * Get the scope of validation of XML files when loading.
+     *
+     * @return the validation scope
+     */
+    public XmlFile.Validate getValidate();
+}

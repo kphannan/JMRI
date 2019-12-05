@@ -1,9 +1,10 @@
 package jmri.jmrix.dccpp;
 
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import jmri.util.JUnitUtil;
+import org.junit.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Assert;
 
 /**
  * DCCppProgrammerManagerTest.java
@@ -13,8 +14,9 @@ import junit.framework.TestSuite;
  * @author	Paul Bender
  * @author	Mark Underwood (C) 2015
  */
-public class DCCppProgrammerManagerTest extends TestCase {
+public class DCCppProgrammerManagerTest {
 
+    @Test
     public void testCtor() {
         // infrastructure objects
         DCCppInterfaceScaffold tc = new DCCppInterfaceScaffold(new DCCppCommandStation());
@@ -23,30 +25,16 @@ public class DCCppProgrammerManagerTest extends TestCase {
         Assert.assertNotNull(t);
     }
 
-    // from here down is testing infrastructure
-    public DCCppProgrammerManagerTest(String s) {
-        super(s);
+    @Before
+    public void setUp() {
+        JUnitUtil.setUp();
     }
 
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading", DCCppProgrammerManagerTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
+    @After
+    public void tearDown() {
+        JUnitUtil.clearShutDownManager(); // put in place because AbstractMRTrafficController implementing subclass was not terminated properly
+        JUnitUtil.tearDown();
 
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(DCCppProgrammerManagerTest.class);
-        return suite;
-    }
-
-    // The minimal setup for log4J
-    protected void setUp() {
-        apps.tests.Log4JFixture.setUp();
-    }
-
-    protected void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
     }
 
 }

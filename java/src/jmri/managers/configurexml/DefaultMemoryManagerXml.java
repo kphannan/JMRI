@@ -4,12 +4,11 @@ import jmri.InstanceManager;
 import org.jdom2.Element;
 
 /**
- * Persistency implementation for the default MemoryManager persistance.
- * <P>
- * The state of memory objects is not persisted, just their existance.
+ * Persistency implementation for the default MemoryManager persistence.
+ * <p>
+ * The state of memory objects is not persisted, just their existence.
  *
  * @author Bob Jacobsen Copyright: Copyright (c) 2002
- * @version $Revision$
  */
 public class DefaultMemoryManagerXml extends AbstractMemoryManagerConfigXML {
 
@@ -23,6 +22,7 @@ public class DefaultMemoryManagerXml extends AbstractMemoryManagerConfigXML {
      *
      * @param memories The top-level element being created
      */
+    @Override
     public void setStoreElementClass(Element memories) {
         memories.setAttribute("class", this.getClass().getName());
     }
@@ -34,6 +34,7 @@ public class DefaultMemoryManagerXml extends AbstractMemoryManagerConfigXML {
      * @param sharedMemories Top level Element to unpack.
      * @return true if successful
      */
+    @Override
     public boolean load(Element sharedMemories, Element perNodeMemories) {
         // ensure the master object exists
         InstanceManager.memoryManagerInstance();
@@ -41,4 +42,5 @@ public class DefaultMemoryManagerXml extends AbstractMemoryManagerConfigXML {
         loadMemories(sharedMemories);
         return true;
     }
+
 }

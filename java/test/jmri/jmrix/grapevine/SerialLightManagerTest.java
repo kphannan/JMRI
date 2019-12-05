@@ -1,45 +1,48 @@
 package jmri.jmrix.grapevine;
 
 import jmri.Light;
-import jmri.jmrix.AbstractMRListener;
-import jmri.jmrix.AbstractMRMessage;
-import junit.framework.Test;
-import junit.framework.TestSuite;
+import jmri.util.JUnitUtil;
+
+import java.beans.PropertyVetoException;
+
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 /**
- * SerialTurnoutManagerTest.java
- *
- * Description:	tests for the SerialLightManager class
+ * Tests for the SerialLightManager class
  *
  * @author	Bob Jacobsen Copyright 2004, 2007, 2008
  */
-public class SerialLightManagerTest extends jmri.managers.AbstractLightMgrTest {
+public class SerialLightManagerTest extends jmri.managers.AbstractLightMgrTestBase {
 
+    private GrapevineSystemConnectionMemo memo = null; 
+
+    @Before
+    @Override
     public void setUp() {
-        apps.tests.Log4JFixture.setUp();
+        jmri.util.JUnitUtil.setUp();
 
         // replace the SerialTrafficController
-        SerialTrafficController t = new SerialTrafficController() {
-            SerialTrafficController test() {
-                setInstance();
-                return this;
-            }
-
-            synchronized protected void sendMessage(AbstractMRMessage m, AbstractMRListener reply) {
-            }
-        }.test();
-        t.registerNode(new SerialNode(1, SerialNode.NODE2002V6));
+        memo = new GrapevineSystemConnectionMemo();
+        SerialTrafficController t = new SerialTrafficControlScaffold(memo);
+        memo.setTrafficController(t);
+        t.registerNode(new SerialNode(1, SerialNode.NODE2002V6, t));
         // create and register the manager object
-        l = new SerialLightManager();
+        l = new SerialLightManager(memo);
         jmri.InstanceManager.setLightManager(l);
     }
 
+    @Override
     public String getSystemName(int n) {
         return "GL" + n;
     }
 
+    @Test
     public void testAsAbstractFactory() {
         // ask for a Light, and check type
         Light o = l.newLight("GL1105", "my name");
@@ -47,7 +50,7 @@ public class SerialLightManagerTest extends jmri.managers.AbstractLightMgrTest {
         if (log.isDebugEnabled()) {
             log.debug("received light value " + o);
         }
-        assertTrue(null != (SerialLight) o);
+        Assert.assertTrue(null != (SerialLight) o);
 
         // make sure loaded into tables
         if (log.isDebugEnabled()) {
@@ -57,45 +60,50 @@ public class SerialLightManagerTest extends jmri.managers.AbstractLightMgrTest {
             log.debug("by user name:   " + l.getByUserName("my name"));
         }
 
-        assertTrue(null != l.getBySystemName("GL1105"));
-        assertTrue(null != l.getByUserName("my name"));
+        Assert.assertTrue(null != l.getBySystemName("GL1105"));
+        Assert.assertTrue(null != l.getByUserName("my name"));
 
+    }
+
+    @Override
+    @Test
+    public void testRegisterDuplicateSystemName() throws PropertyVetoException, NoSuchFieldException,
+            NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
+        testRegisterDuplicateSystemName(l,
+                l.makeSystemName("1107"),
+                l.makeSystemName("1109"));
+    }
+
+    @Override
+    @Test
+    public void testMakeSystemName() {
+        String s = l.makeSystemName("1107");
+        Assert.assertNotNull(s);
+        Assert.assertFalse(s.isEmpty());
     }
 
     /**
      * Number of light to test. Use 9th output on node 1.
      */
+    @Override
     protected int getNumToTest1() {
         return 1109;
     }
 
+    @Override
     protected int getNumToTest2() {
         return 1107;
     }
 
-    // from here down is testing infrastructure
-    public SerialLightManagerTest(String s) {
-        super(s);
-    }
-
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {SerialLightManagerTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        apps.tests.AllTest.initLogging();
-        TestSuite suite = new TestSuite(SerialLightManagerTest.class);
-        return suite;
-    }
 
     // The minimal setup for log4J
-    protected void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
+    @After
+    public void tearDown() {
+        JUnitUtil.clearShutDownManager(); // put in place because AbstractMRTrafficController implementing subclass was not terminated properly
+        JUnitUtil.tearDown();
+
     }
 
-    private final static Logger log = LoggerFactory.getLogger(SerialLightManagerTest.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(SerialLightManagerTest.class);
 
 }

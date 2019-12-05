@@ -2,6 +2,8 @@ package apps.startup;
 
 import apps.StartupActionsManager;
 import java.awt.Component;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Optional;
 import javax.swing.Action;
 import javax.swing.BoxLayout;
 import javax.swing.JComboBox;
@@ -20,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Provide an abstract StartupModelFactory with common methods for factories
- * that manipulate models that extend {@link apps.AbstractActionModel}.
+ * that manipulate models that extend {@link apps.startup.AbstractActionModel}.
  *
  * @author Randall Wood
  */
@@ -48,7 +50,7 @@ abstract public class AbstractActionModelFactory implements StartupModelFactory 
 
     @Override
     public void editModel(StartupModel model, Component parent) {
-        if (this.getModelClass().isInstance(model)) {
+        if (model instanceof AbstractActionModel && this.getModelClass().isInstance(model)) {
             JList<String> actions = new JList<>(StartupActionModelUtil.getDefault().getNames());
             JComboBox<String> connections = new JComboBox<>();
             JPanel message = this.getDialogMessage(actions, connections);
@@ -70,19 +72,19 @@ abstract public class AbstractActionModelFactory implements StartupModelFactory 
                     null);
             if (result == JOptionPane.OK_OPTION) {
                 String name = actions.getSelectedValue();
-                StartupActionsManager manager = InstanceManager.getOptionalDefault(StartupActionsManager.class);
+                Optional<StartupActionsManager> manager = InstanceManager.getOptionalDefault(StartupActionsManager.class);
                 if (!name.equals(model.getName())) {
                     model.setName(name);
-                    if (manager != null) {
-                        manager.setRestartRequired();
-                    }
+                    manager.ifPresent(sam -> {
+                        sam.setRestartRequired();
+                    });
                 }
                 if (((userName.isEmpty() && connections.getSelectedItem() != null))
                         || !userName.equals(connections.getSelectedItem())) {
                     ((AbstractActionModel) model).setSystemPrefix(ConnectionNameFromSystemName.getPrefixFromName((String) connections.getSelectedItem()));
-                    if (manager != null) {
-                        manager.setRestartRequired();
-                    }
+                    manager.ifPresent(sam -> {
+                        sam.setRestartRequired();
+                    });
                 }
             }
         }
@@ -105,7 +107,7 @@ abstract public class AbstractActionModelFactory implements StartupModelFactory 
                     String className = StartupActionModelUtil.getDefault().getClassName(name);
                     if (className != null && StartupActionModelUtil.getDefault().isSystemConnectionAction(className)) {
                         try {
-                            Action action = (Action) Class.forName(className).newInstance();
+                            Action action = (Action) Class.forName(className).getDeclaredConstructor().newInstance();
                             if (SystemConnectionAction.class.isAssignableFrom(action.getClass())) {
                                 ((SystemConnectionAction) action).getSystemConnectionMemoClasses().stream().forEach((clazz) -> {
                                     InstanceManager.getList(SystemConnectionMemo.class).stream().forEach((memo) -> {
@@ -117,7 +119,7 @@ abstract public class AbstractActionModelFactory implements StartupModelFactory 
                                     });
                                 });
                             }
-                        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException ex) {
+                        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException ex) {
                             log.error("Unable to create Action", ex);
                         }
                     }

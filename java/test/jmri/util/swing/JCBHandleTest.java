@@ -1,21 +1,25 @@
 package jmri.util.swing;
 
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import jmri.util.JUnitUtil;
+import org.junit.Test;
+
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
 
 /**
  *
  * @author	Bob Jacobsen Copyright 2014
  */
-public class JCBHandleTest extends TestCase {
+public class JCBHandleTest {
 
+    @Test
     public void testToStringReal() {
         JCBHandle<DummyObject> a = new JCBHandle<DummyObject>(new DummyObject());
         Assert.assertEquals("dummy output", a.toString());
     }
 
+    @Test
     public void testToStringEmpty() {
         JCBHandle<DummyObject> a = new JCBHandle<DummyObject>("no object");
         Assert.assertEquals("no object", a.toString());
@@ -23,36 +27,20 @@ public class JCBHandleTest extends TestCase {
 
     class DummyObject {
 
+        @Override
         public String toString() {
             return "dummy output";
         }
     }
 
-    // from here down is testing infrastructure
-    public JCBHandleTest(String s) {
-        super(s);
+    @Before
+    public void setUp() {
+        JUnitUtil.setUp();
     }
 
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading", JCBHandleTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(JCBHandleTest.class);
-
-        return suite;
-    }
-
-    // The minimal setup for log4J
-    protected void setUp() {
-        apps.tests.Log4JFixture.setUp();
-    }
-
-    protected void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
+    @After
+    public void tearDown() {
+        JUnitUtil.tearDown();
     }
 
 }

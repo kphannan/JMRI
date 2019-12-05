@@ -1,66 +1,47 @@
 package jmri.jmrit.operations;
 
 import java.io.File;
-import jmri.InstanceManager;
-import jmri.ShutDownTask;
+import java.io.IOException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import jmri.*;
 import jmri.implementation.QuietShutDownTask;
 import jmri.jmrit.operations.locations.LocationManager;
-import jmri.jmrit.operations.locations.ScheduleManager;
+import jmri.jmrit.operations.locations.schedules.ScheduleManager;
 import jmri.jmrit.operations.rollingstock.cars.CarManager;
 import jmri.jmrit.operations.rollingstock.engines.EngineManager;
 import jmri.jmrit.operations.routes.RouteManager;
 import jmri.jmrit.operations.setup.AutoBackup;
 import jmri.jmrit.operations.setup.Setup;
 import jmri.jmrit.operations.trains.TrainManager;
-import jmri.jmrit.operations.trains.timetable.TrainScheduleManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import jmri.jmrit.operations.trains.schedules.TrainScheduleManager;
 
 /**
  * A manager for Operations. This manager controls the Operations ShutDownTask.
  *
  * @author Randall Wood 2014
  */
-public final class OperationsManager {
+public final class OperationsManager implements InstanceManagerAutoDefault, InstanceManagerAutoInitialize {
 
     private ShutDownTask shutDownTask = null;
 
-    static private OperationsManager instance = null;
     static private final Logger log = LoggerFactory.getLogger(OperationsManager.class);
 
-    private OperationsManager() {
-        // ensure the default instance of all operations managers
-        // are initialized by calling their instance() methods
-        // Is there a different, more optimal order for this?
-        CarManager.instance();
-        EngineManager.instance();
-        TrainManager.instance();
-        LocationManager.instance();
-        RouteManager.instance();
-        ScheduleManager.instance();
-        TrainScheduleManager.instance();
-        this.setShutDownTask(this.getDefaultShutDownTask());
-        // auto backup?
-        if (Setup.isAutoBackupEnabled()) {
-            try {
-                AutoBackup backup = new AutoBackup();
-                backup.autoBackup();
-            } catch (Exception ex) {
-                log.debug("Auto backup after enabling Auto Backup flag.", ex);
-            }
-        }
+    public OperationsManager() {
     }
 
     /**
-     * Get the OperationsManager.
+     * Get the default instance of this class.
      *
-     * @return The OperationsManager default instance.
+     * @return the default instance of this class
+     * @deprecated since 4.9.2; use
+     * {@link jmri.InstanceManager#getDefault(java.lang.Class)} instead
      */
+    @Deprecated
     public synchronized static OperationsManager getInstance() {
-        if (instance == null) {
-            instance = new OperationsManager();
-        }
-        return instance;
+        return InstanceManager.getDefault(OperationsManager.class);
     }
 
     /**
@@ -100,7 +81,7 @@ public final class OperationsManager {
 
     /**
      * Register the non-default {@link jmri.ShutDownTask}.
-     *
+     * <p>
      * Replaces the existing operations ShutDownTask with the new task. Use a
      * null value to prevent an operations ShutDownTask from being run when JMRI
      * shuts down. Use {@link #getDefaultShutDownTask() } to use the default
@@ -109,14 +90,13 @@ public final class OperationsManager {
      * @param shutDownTask The new ShutDownTask or null
      */
     public void setShutDownTask(ShutDownTask shutDownTask) {
-        if (InstanceManager.getOptionalDefault(jmri.ShutDownManager.class) != null) {
-            if (this.shutDownTask != null) {
-                InstanceManager.getDefault(jmri.ShutDownManager.class).deregister(this.shutDownTask);
-            }
-            this.shutDownTask = shutDownTask;
-            if (this.shutDownTask != null) {
-                InstanceManager.getDefault(jmri.ShutDownManager.class).register(this.shutDownTask);
-            }
+        ShutDownManager manager = InstanceManager.getDefault(ShutDownManager.class);
+        if (this.shutDownTask != null) {
+            manager.deregister(this.shutDownTask);
+        }
+        this.shutDownTask = shutDownTask;
+        if (this.shutDownTask != null) {
+            manager.register(this.shutDownTask);
         }
     }
 
@@ -127,18 +107,42 @@ public final class OperationsManager {
      *
      * @return A new ShutDownTask
      */
-    public ShutDownTask getDefaultShutDownTask() {
+    public static ShutDownTask getDefaultShutDownTask() {
         return new QuietShutDownTask("Save Operations State") { // NOI18N
             @Override
             public boolean execute() {
                 try {
                     OperationsXml.save();
                 } catch (Exception ex) {
-                    log.warn("Error saving operations state: {}", ex);
+                    log.warn("Error saving operations state: {}", ex.getMessage());
                     log.debug("Details follow: ", ex);
                 }
                 return true;
             }
         };
+    }
+
+    @Override
+    public void initialize() {
+        // ensure the default instance of all operations managers
+        // are initialized by calling their instance() methods
+        // Is there a different, more optimal order for this?
+        InstanceManager.getDefault(CarManager.class);
+        InstanceManager.getDefault(EngineManager.class);
+        InstanceManager.getDefault(TrainManager.class);
+        InstanceManager.getDefault(LocationManager.class);
+        InstanceManager.getDefault(RouteManager.class);
+        InstanceManager.getDefault(ScheduleManager.class);
+        InstanceManager.getDefault(TrainScheduleManager.class);
+        this.setShutDownTask(OperationsManager.getDefaultShutDownTask());
+        // auto backup?
+        if (Setup.isAutoBackupEnabled()) {
+            try {
+                AutoBackup backup = new AutoBackup();
+                backup.autoBackup();
+            } catch (IOException ex) {
+                log.debug("Auto backup after enabling Auto Backup flag.", ex);
+            }
+        }
     }
 }

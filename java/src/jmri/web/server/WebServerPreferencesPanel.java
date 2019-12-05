@@ -22,11 +22,12 @@ import jmri.InstanceManager;
 import jmri.swing.PreferencesPanel;
 import org.jdesktop.beansbinding.AutoBinding;
 import org.jdesktop.beansbinding.BeanProperty;
-import org.jdesktop.beansbinding.Binding;
 import org.jdesktop.beansbinding.BindingGroup;
 import org.jdesktop.beansbinding.Bindings;
 import org.jdesktop.beansbinding.ELProperty;
+import org.openide.util.lookup.ServiceProvider;
 
+@ServiceProvider(service = PreferencesPanel.class)
 public class WebServerPreferencesPanel extends JPanel implements PreferencesPanel {
 
     private JSpinner port;
@@ -54,8 +55,7 @@ public class WebServerPreferencesPanel extends JPanel implements PreferencesPane
         port.setEditor(new JSpinner.NumberEditor(port, "#"));
         port.setToolTipText(Bundle.getMessage("ToolTipPort")); // NOI18N
 
-        Binding binding = Bindings.createAutoBinding(AutoBinding.UpdateStrategy.READ_WRITE, preferences, ELProperty.create("${port}"), port, BeanProperty.create("value"));
-        bindingGroup.addBinding(binding);
+        bindingGroup.addBinding(Bindings.createAutoBinding(AutoBinding.UpdateStrategy.READ_WRITE, preferences, ELProperty.create("${port}"), port, BeanProperty.create("value")));
 
         portLabel.setText(Bundle.getMessage("LabelPort")); // NOI18N
         portLabel.setToolTipText(Bundle.getMessage("ToolTipPort")); // NOI18N
@@ -64,9 +64,8 @@ public class WebServerPreferencesPanel extends JPanel implements PreferencesPane
         readonlyPower.addActionListener((ActionEvent e) -> {
             readonlyPower.setToolTipText(Bundle.getMessage(readonlyPower.isSelected() ? "ToolTipReadonlyPowerTrue" : "ToolTipReadonlyPowerFalse"));
         });
-        
-        binding = Bindings.createAutoBinding(AutoBinding.UpdateStrategy.READ_WRITE, preferences, ELProperty.create("${readonlyPower}"), readonlyPower, BeanProperty.create("selected"));
-        bindingGroup.addBinding(binding);
+
+        bindingGroup.addBinding(Bindings.createAutoBinding(AutoBinding.UpdateStrategy.READ_WRITE, preferences, ELProperty.create("${readonlyPower}"), readonlyPower, BeanProperty.create("selected")));
 
         startup.setSelected(this.isStartupAction());
         startup.setText(Bundle.getMessage("LabelStartup")); // NOI18N
@@ -82,7 +81,7 @@ public class WebServerPreferencesPanel extends JPanel implements PreferencesPane
                     manager.setActions(this.startupActionPosition, model);
                 }
             } else {
-                manager.getActions(PerformActionModel.class).stream().filter((model) -> (model.getClassName().equals(WebServerAction.class.getName()))).forEach((model) -> {
+                manager.getActions(PerformActionModel.class).stream().filter((model) -> (WebServerAction.class.getName().equals(model.getClassName()))).forEach((model) -> {
                     this.startupActionPosition = Arrays.asList(manager.getActions()).indexOf(model);
                     manager.removeAction(model);
                 });
@@ -176,8 +175,13 @@ public class WebServerPreferencesPanel extends JPanel implements PreferencesPane
         return true; // no validity checking performed
     }
 
+    @Override
+    public int getSortOrder() {
+        return 1100;
+    }
+    
     private boolean isStartupAction() {
         return InstanceManager.getDefault(StartupActionsManager.class).getActions(PerformActionModel.class).stream()
-                .anyMatch((model) -> (model.getClassName().equals(WebServerAction.class.getName())));
+                .anyMatch((model) -> (WebServerAction.class.getName().equals(model.getClassName())));
     }
 }

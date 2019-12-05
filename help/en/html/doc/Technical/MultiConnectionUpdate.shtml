@@ -1,14 +1,13 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
 "http://www.w3.org/TR/html4/strict.dtd">
-
 <html lang="en">
 <head>
   <meta name="generator" content=
   "HTML Tidy for Mac OS X (vers 31 October 2006 - Apple Inc. build 15.17), see www.w3.org">
-  <!-- Copyright ($Author$) 2009 -->
-  <!-- $Id$ -->
 
-  <title>JMRI: Multi-connection Update</title><!-- Style -->
+  <title>JMRI: Multi-connection Update</title>
+  <meta name="keywords" content="JMRI jmrix connections hardware">
+  <!-- Style -->
   <meta http-equiv="Content-Type" content=
   "text/html; charset=us-ascii">
   <link rel="stylesheet" type="text/css" href="/css/default.css"
@@ -16,19 +15,20 @@
   <link rel="stylesheet" type="text/css" href="/css/print.css"
   media="print">
   <link rel="icon" href="/images/jmri.ico" type="image/png">
-  <link rel="home" title="Home" href="/"><!-- /Style -->
+  <link rel="home" title="Home" href="/">
+  <!-- /Style -->
 </head>
 
 <body>
-  <!--#include virtual="/Header" -->
-
+  <!--#include virtual="/Header.shtml" -->
   <div id="mBody">
-    <!--#include virtual="Sidebar" -->
-
+    <!--#include virtual="Sidebar.shtml" -->
     <div id="mainContent">
-      <h1>JMRI: Multi-connection Update</h1>This page is a list of
-      hints for adapting systems (jmri.jmrix subdirectories) to the
-      new multi-system format. It's clearly a work in progress!
+
+    <h1>JMRI Code: Multi-connection Update</h1>
+      This page is a list of hints for adapting systems (jmri.jmrix
+      subdirectories) to the new multi-system format.<br>
+      It's clearly a work in progress!
 
       <p>Basically, you have to get all the static variables and
       instance() methods out of the code. In their place, you put
@@ -52,14 +52,12 @@
       reference to a SerialPortAdapter object, and to return it
       from the getAdapter() method. Also, remove the instance()
       method and its implementation.</p>
-      <pre>
-<code>
+      <pre style="font-family: monospace">
     protected void setInstance() { 
         if (adapter == null) {
             adapter = new PR3Adapter();
         }
     }
-</code>
 </pre>
 
       <p>Edit the adapter class (e.g. PR3Adapter) to remove the
@@ -67,31 +65,25 @@
 
       <p>The configurexml/ConnectionConfigXml class needs to have a
       method added:</p>
-      <pre>
-<code>
+      <pre style="font-family: monospace">
     protected void getInstance(Object object) {
         adapter = ((ConnectionConfig)object).getAdapter();
     }
-</code>
 </pre>We should probably refactor this later, but this is the
 current form to make sure the correct ConnectionConfig class is
 used. We're leaving it unchanged for now to avoid competition with
 the serial/network refactoring.
 
       <p>Also, change this</p>
-      <pre>
-<code>
+      <pre style="font-family: monospace">
     protected void getInstance() {
         adapter = LnHexFilePort.instance();
     }
-</code>
 </pre>to this
       <pre>
-<code>
     protected void getInstance() {
         adapter = new LnHexFilePort();
     }
-</code>
 </pre>
 
       <h3>Managers and Beans</h3>For each manager and bean
@@ -125,8 +117,7 @@ the serial/network refactoring.
       create and register a *SystemConnectionMemo, you also
       register the ComponentFactory)</p>
 
-      <h3>To keep startup actions working</h3>(We're going to
-      refactor this code soon)
+      <h3>Keep startup actions working</h3>
 
       <p>To keep things working, it's best to convert to JmriPane
       subclasses. Temporarily, the system connection is then
@@ -135,7 +126,15 @@ the serial/network refactoring.
 
       <p>This does require people to reset their preferences for
       startup actions, buttons, etc. We're not going to migrate
-      those for them. <!--#include virtual="/Footer" --></p>
+      those for them.</p>
+
+      <p>To make startup actions work with more than one connection of their type, 
+        they should implement the 
+        <a href="http://jmri.org/JavaDoc/doc/jmri/jmrix/swing/SystemConnectionAction.html">jmri.jmrix.SystemConnectionAction</a>
+        interface. This will connected them to their specific 
+        <a href="http://jmri.org/JavaDoc/doc/jmri/jmrix/SystemConnectionMemo.html">SystemConnectionMemo</a>.
+        
+      <!--#include virtual="/Footer.shtml" -->
     </div>
   </div>
 </body>

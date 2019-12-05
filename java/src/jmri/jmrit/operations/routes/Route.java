@@ -5,9 +5,9 @@ import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.List;
 import javax.swing.JComboBox;
+import jmri.InstanceManager;
 import jmri.jmrit.operations.locations.Location;
 import jmri.jmrit.operations.setup.Control;
-import jmri.jmrit.operations.setup.Setup;
 import jmri.jmrit.operations.trains.Train;
 import jmri.jmrit.operations.trains.TrainManager;
 import org.jdom2.Attribute;
@@ -19,7 +19,6 @@ import org.slf4j.LoggerFactory;
  * Represents a route on the layout
  *
  * @author Daniel Boudreau Copyright (C) 2008, 2010
- * @version $Revision$
  */
 public class Route implements java.beans.PropertyChangeListener {
 
@@ -30,7 +29,7 @@ public class Route implements java.beans.PropertyChangeListener {
     protected String _comment = NONE;
 
     // stores location names for this route
-    protected Hashtable<String, RouteLocation> _routeHashTable = new Hashtable<String, RouteLocation>();
+    protected Hashtable<String, RouteLocation> _routeHashTable = new Hashtable<>();
     protected int _IdNumber = 0; // each location in a route gets its own id
     protected int _sequenceNum = 0; // each location has a unique sequence number
 
@@ -40,11 +39,15 @@ public class Route implements java.beans.PropertyChangeListener {
     public static final int SOUTH = 8;
 
     public static final String LISTCHANGE_CHANGED_PROPERTY = "routeListChange"; // NOI18N
+    public static final String ROUTE_STATUS_CHANGED_PROPERTY = "routeStatusChange"; // NOI18N
     public static final String DISPOSE = "routeDispose"; // NOI18N
 
-    public static final String OKAY = Bundle.getMessage("Okay");
+    public static final String OKAY = Bundle.getMessage("ButtonOK");
+    public static final String TRAIN_BUILT = Bundle.getMessage("TrainBuilt");
     public static final String ORPHAN = Bundle.getMessage("Orphan");
-    public static final String ERROR = Bundle.getMessage("Error");
+    public static final String ERROR = Bundle.getMessage("ErrorTitle");
+
+    public static final int START = 1; // add location at start of route
 
     public Route(String id, String name) {
         log.debug("New route ({}) id: {}", name, id);
@@ -87,11 +90,14 @@ public class Route implements java.beans.PropertyChangeListener {
     }
 
     public void dispose() {
+        removeTrainListeners();
         setDirtyAndFirePropertyChange(DISPOSE, null, DISPOSE);
     }
 
     /**
      * Adds a location to the end of this route
+     * 
+     * @param location The Location.
      *
      * @return RouteLocation created for the location added
      */
@@ -101,7 +107,7 @@ public class Route implements java.beans.PropertyChangeListener {
         String id = _id + "r" + Integer.toString(_IdNumber);
         log.debug("adding new location to ({}) id: {}", getName(), id);
         RouteLocation rl = new RouteLocation(id, location);
-        rl.setSequenceId(_sequenceNum);
+        rl.setSequenceNumber(_sequenceNum);
         Integer old = Integer.valueOf(_routeHashTable.size());
         _routeHashTable.put(rl.getId(), rl);
 
@@ -112,17 +118,20 @@ public class Route implements java.beans.PropertyChangeListener {
     }
 
     /**
-     * Add a route location at a specific place (sequence) in the route
-     * Allowable sequence numbers are 0 to max size of route;
+     * Add a location at a specific place (sequence) in the route Allowable
+     * sequence numbers are 1 to max size of route. 1 = start of route, or Route.START
+     * 
+     * @param location The Location to add.
+     * @param sequence Where in the route to add the location.
      *
      * @return route location
      */
     public RouteLocation addLocation(Location location, int sequence) {
         RouteLocation rl = addLocation(location);
-        if (sequence < 0 || sequence > _routeHashTable.size()) {
+        if (sequence < 1 || sequence > _routeHashTable.size()) {
             return rl;
         }
-        for (int i = 0; i < _routeHashTable.size() - sequence - 1; i++) {
+        for (int i = 0; i < _routeHashTable.size() - sequence; i++) {
             moveLocationUp(rl);
         }
         return rl;
@@ -130,6 +139,7 @@ public class Route implements java.beans.PropertyChangeListener {
 
     /**
      * Remember a NamedBean Object created outside the manager.
+     * @param rl The RouteLocation to add to this route.
      */
     public void register(RouteLocation rl) {
         Integer old = Integer.valueOf(_routeHashTable.size());
@@ -141,9 +151,9 @@ public class Route implements java.beans.PropertyChangeListener {
         if (id > _IdNumber) {
             _IdNumber = id;
         }
-        // find highest sequence number
-        if (rl.getSequenceId() > _sequenceNum) {
-            _sequenceNum = rl.getSequenceId();
+        // find and save the highest sequence number
+        if (rl.getSequenceNumber() > _sequenceNum) {
+            _sequenceNum = rl.getSequenceNumber();
         }
         setDirtyAndFirePropertyChange(LISTCHANGE_CHANGED_PROPERTY, old, Integer.valueOf(_routeHashTable.size()));
         // listen for drop and pick up changes to forward
@@ -152,6 +162,7 @@ public class Route implements java.beans.PropertyChangeListener {
 
     /**
      * Delete a RouteLocation
+     * @param rl The RouteLocation to remove from the route.
      *
      */
     public void deleteLocation(RouteLocation rl) {
@@ -162,7 +173,7 @@ public class Route implements java.beans.PropertyChangeListener {
             rl.dispose();
             Integer old = Integer.valueOf(_routeHashTable.size());
             _routeHashTable.remove(id);
-            resequenceIds();
+            resequence();
             setDirtyAndFirePropertyChange(LISTCHANGE_CHANGED_PROPERTY, old, Integer.valueOf(_routeHashTable.size()));
         }
     }
@@ -174,11 +185,11 @@ public class Route implements java.beans.PropertyChangeListener {
     /**
      * Reorder the location sequence numbers for this route
      */
-    private void resequenceIds() {
+    private void resequence() {
         List<RouteLocation> routeList = getLocationsBySequenceList();
         for (int i = 0; i < routeList.size(); i++) {
-            routeList.get(i).setSequenceId(i + 1); // start sequence numbers at 1
-            _sequenceNum = i;
+            _sequenceNum = i + 1; // start sequence numbers at 1
+            routeList.get(i).setSequenceNumber(_sequenceNum);
         }
     }
 
@@ -227,6 +238,7 @@ public class Route implements java.beans.PropertyChangeListener {
 
     /**
      * Get location by name (gets last route location with name)
+     * @param name The string location name.
      *
      * @return route location
      */
@@ -245,6 +257,7 @@ public class Route implements java.beans.PropertyChangeListener {
 
     /**
      * Get a RouteLocation by id
+     * @param id The string id.
      *
      * @return route location
      */
@@ -253,7 +266,7 @@ public class Route implements java.beans.PropertyChangeListener {
     }
 
     private List<RouteLocation> getLocationsByIdList() {
-        List<RouteLocation> out = new ArrayList<RouteLocation>();
+        List<RouteLocation> out = new ArrayList<>();
         Enumeration<RouteLocation> en = _routeHashTable.elements();
         while (en.hasMoreElements()) {
             out.add(en.nextElement());
@@ -268,10 +281,10 @@ public class Route implements java.beans.PropertyChangeListener {
      */
     public List<RouteLocation> getLocationsBySequenceList() {
         // now re-sort
-        List<RouteLocation> out = new ArrayList<RouteLocation>();
+        List<RouteLocation> out = new ArrayList<>();
         for (RouteLocation rl : getLocationsByIdList()) {
             for (int j = 0; j < out.size(); j++) {
-                if (rl.getSequenceId() < out.get(j).getSequenceId()) {
+                if (rl.getSequenceNumber() < out.get(j).getSequenceNumber()) {
                     out.add(j, rl);
                     break;
                 }
@@ -285,51 +298,58 @@ public class Route implements java.beans.PropertyChangeListener {
 
     /**
      * Places a RouteLocation earlier in the route.
+     * @param rl The RouteLocation to move.
      *
      */
     public void moveLocationUp(RouteLocation rl) {
-        int sequenceId = rl.getSequenceId();
-        if (sequenceId - 1 <= 0) {
-            rl.setSequenceId(_sequenceNum + 1); // move to the end of the list
-            resequenceIds();
+        int sequenceNum = rl.getSequenceNumber();
+        if (sequenceNum - 1 <= 0) {
+            rl.setSequenceNumber(_sequenceNum + 1); // move to the end of the list
+            resequence();
         } else {
             // adjust the other item taken by this one
-            RouteLocation replaceRl = getItemBySequenceId(sequenceId - 1);
+            RouteLocation replaceRl = getRouteLocationBySequenceNumber(sequenceNum - 1);
             if (replaceRl != null) {
-                replaceRl.setSequenceId(sequenceId);
-                rl.setSequenceId(sequenceId - 1);
+                replaceRl.setSequenceNumber(sequenceNum);
+                rl.setSequenceNumber(sequenceNum - 1);
             } else {
-                resequenceIds(); // error the sequence number is missing
+                resequence(); // error the sequence number is missing
             }
         }
-        setDirtyAndFirePropertyChange(LISTCHANGE_CHANGED_PROPERTY, null, Integer.toString(sequenceId));
+        setDirtyAndFirePropertyChange(LISTCHANGE_CHANGED_PROPERTY, null, Integer.toString(sequenceNum));
     }
 
     /**
      * Moves a RouteLocation later in the route.
+     * @param rl The RouteLocation to move.
      *
      */
     public void moveLocationDown(RouteLocation rl) {
-        int sequenceId = rl.getSequenceId();
-        if (sequenceId + 1 > _sequenceNum) {
-            rl.setSequenceId(0); // move to the start of the list
-            resequenceIds();
+        int sequenceNum = rl.getSequenceNumber();
+        if (sequenceNum + 1 > _sequenceNum) {
+            rl.setSequenceNumber(0); // move to the start of the list
+            resequence();
         } else {
             // adjust the other item taken by this one
-            RouteLocation replaceRl = getItemBySequenceId(sequenceId + 1);
+            RouteLocation replaceRl = getRouteLocationBySequenceNumber(sequenceNum + 1);
             if (replaceRl != null) {
-                replaceRl.setSequenceId(sequenceId);
-                rl.setSequenceId(sequenceId + 1);
+                replaceRl.setSequenceNumber(sequenceNum);
+                rl.setSequenceNumber(sequenceNum + 1);
             } else {
-                resequenceIds(); // error the sequence number is missing
+                resequence(); // error the sequence number is missing
             }
         }
-        setDirtyAndFirePropertyChange(LISTCHANGE_CHANGED_PROPERTY, null, Integer.toString(sequenceId));
+        setDirtyAndFirePropertyChange(LISTCHANGE_CHANGED_PROPERTY, null, Integer.toString(sequenceNum));
     }
 
-    public RouteLocation getItemBySequenceId(int sequenceId) {
+    /**
+     * 1st RouteLocation in a route starts at 1.
+     * @param sequence selects which RouteLocation is to be returned
+     * @return RouteLocation selected
+     */
+    public RouteLocation getRouteLocationBySequenceNumber(int sequence) {
         for (RouteLocation rl : getLocationsByIdList()) {
-            if (rl.getSequenceId() == sequenceId) {
+            if (rl.getSequenceNumber() == sequence) {
                 return rl;
             }
         }
@@ -337,11 +357,13 @@ public class Route implements java.beans.PropertyChangeListener {
     }
 
     /**
-     * Gets the status of the route: OKAY ORPHAN ERROR
+     * Gets the status of the route: OKAY ORPHAN ERROR TRAIN_BUILT
      *
      * @return string with status of route.
      */
     public String getStatus() {
+        removeTrainListeners();
+        addTrainListeners(); // and add them right back in
         List<RouteLocation> routeList = getLocationsByIdList();
         if (routeList.size() == 0) {
             return ERROR;
@@ -351,8 +373,14 @@ public class Route implements java.beans.PropertyChangeListener {
                 return ERROR;
             }
         }
+        // check to see if this route is used by a train that is built
+        for (Train train : InstanceManager.getDefault(TrainManager.class).getTrainsByIdList()) {
+            if (train.getRoute() == this && train.isBuilt()) {
+                return TRAIN_BUILT;
+            }
+        }
         // check to see if this route is used by a train
-        for (Train train : TrainManager.instance().getTrainsByIdList()) {
+        for (Train train : InstanceManager.getDefault(TrainManager.class).getTrainsByIdList()) {
             if (train.getRoute() == this) {
                 return OKAY;
             }
@@ -360,21 +388,37 @@ public class Route implements java.beans.PropertyChangeListener {
         return ORPHAN;
     }
     
+    private void addTrainListeners() {
+        for (Train train : InstanceManager.getDefault(TrainManager.class).getTrainsByIdList()) {
+            if (train.getRoute() == this) {
+                train.addPropertyChangeListener(this);
+            }
+        }
+    }
+    
+    private void removeTrainListeners() {
+        for (Train train : InstanceManager.getDefault(TrainManager.class).getTrainsByIdList()) {
+            train.removePropertyChangeListener(this);
+        }
+    }
+
     /**
      * Gets the shortest train length specified in the route.
+     * 
      * @return the minimum scale train length for this route.
      */
     public int getRouteMinimumTrainLength() {
-        int min = Setup.getMaxTrainLength();
+        int min = getRouteMaximumTrainLength();
         for (RouteLocation rl : getLocationsByIdList()) {
             if (rl.getMaxTrainLength() < min)
                 min = rl.getMaxTrainLength();
         }
         return min;
     }
-    
+
     /**
      * Gets the longest train length specified in the route.
+     * 
      * @return the maximum scale train length for this route.
      */
     public int getRouteMaximumTrainLength() {
@@ -409,7 +453,6 @@ public class Route implements java.beans.PropertyChangeListener {
      * @param e Consist XML element
      */
     public Route(Element e) {
-        // if (log.isDebugEnabled()) log.debug("ctor from element "+e);
         Attribute a;
         if ((a = e.getAttribute(Xml.ID)) != null) {
             _id = a.getValue();
@@ -423,11 +466,8 @@ public class Route implements java.beans.PropertyChangeListener {
             _comment = a.getValue();
         }
         if (e.getChildren(Xml.LOCATION) != null) {
-            @SuppressWarnings("unchecked")
             List<Element> eRouteLocations = e.getChildren(Xml.LOCATION);
-            if (log.isDebugEnabled()) {
-                log.debug("route: ({}) has {} locations", getName(), eRouteLocations.size());
-            }
+            log.debug("route: ({}) has {} locations", getName(), eRouteLocations.size());
             for (Element eRouteLocation : eRouteLocations) {
                 register(new RouteLocation(eRouteLocation));
             }
@@ -458,12 +498,15 @@ public class Route implements java.beans.PropertyChangeListener {
                     .getNewValue());
         }
         // forward drops, pick ups, train direction, max moves, and max length as a list change
-        if (e.getPropertyName().equals(RouteLocation.DROP_CHANGED_PROPERTY)
-                || e.getPropertyName().equals(RouteLocation.PICKUP_CHANGED_PROPERTY)
-                || e.getPropertyName().equals(RouteLocation.TRAIN_DIRECTION_CHANGED_PROPERTY)
-                || e.getPropertyName().equals(RouteLocation.MAX_MOVES_CHANGED_PROPERTY)
-                || e.getPropertyName().equals(RouteLocation.MAX_LENGTH_CHANGED_PROPERTY)) {
+        if (e.getPropertyName().equals(RouteLocation.DROP_CHANGED_PROPERTY) ||
+                e.getPropertyName().equals(RouteLocation.PICKUP_CHANGED_PROPERTY) ||
+                e.getPropertyName().equals(RouteLocation.TRAIN_DIRECTION_CHANGED_PROPERTY) ||
+                e.getPropertyName().equals(RouteLocation.MAX_MOVES_CHANGED_PROPERTY) ||
+                e.getPropertyName().equals(RouteLocation.MAX_LENGTH_CHANGED_PROPERTY)) {
             setDirtyAndFirePropertyChange(LISTCHANGE_CHANGED_PROPERTY, null, "RouteLocation"); // NOI18N
+        }
+        if (e.getPropertyName().equals(Train.BUILT_CHANGED_PROPERTY)) {
+            pcs.firePropertyChange(ROUTE_STATUS_CHANGED_PROPERTY, true, false);
         }
     }
 
@@ -478,10 +521,10 @@ public class Route implements java.beans.PropertyChangeListener {
     }
 
     protected void setDirtyAndFirePropertyChange(String p, Object old, Object n) {
-        RouteManagerXml.instance().setDirty(true);
+        InstanceManager.getDefault(RouteManagerXml.class).setDirty(true);
         pcs.firePropertyChange(p, old, n);
     }
 
-    private final static Logger log = LoggerFactory.getLogger(Route.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(Route.class);
 
 }

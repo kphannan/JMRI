@@ -2,9 +2,10 @@ package jmri.jmrix.openlcb;
 
 import jmri.jmrix.can.CanMessage;
 import jmri.jmrix.can.CanReply;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import jmri.util.JUnitUtil;
+import org.junit.Test;
+import org.junit.After;
+import org.junit.Before;
 import org.openlcb.can.OpenLcbCanFrame;
 
 /**
@@ -12,8 +13,9 @@ import org.openlcb.can.OpenLcbCanFrame;
  *
  * @author Bob Jacobsen Copyright 2010
  */
-public class CanConverterTest extends TestCase {
+public class CanConverterTest {
 
+    @Test
     public void testCtors() {
         // mostly tests libraries, etc.
         new CanMessage(0x195B4000);
@@ -25,30 +27,13 @@ public class CanConverterTest extends TestCase {
         new OpenLcbCanFrame(100);
     }
 
-    // from here down is testing infrastructure
-    public CanConverterTest(String s) {
-        super(s);
+    @Before
+    public void setUp() {
+        JUnitUtil.setUp();
     }
 
-    // Main entry point
-    static public void main(String[] args) {
-        apps.tests.AllTest.initLogging();
-        String[] testCaseName = {"-noloading", CanConverterTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(CanConverterTest.class);
-        return suite;
-    }
-
-    // The minimal setup for log4J
-    protected void setUp() {
-        apps.tests.Log4JFixture.setUp();
-    }
-
-    protected void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
+    @After
+    public void tearDown() {
+        JUnitUtil.tearDown();
     }
 }

@@ -1,59 +1,53 @@
 package jmri.jmrit.display.layoutEditor;
 
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import java.awt.GraphicsEnvironment;
 import jmri.util.JUnitUtil;
+import jmri.util.junit.annotations.*;
+import org.junit.*;
 
 /**
- * Test simple functioning of MemoryIcon
+ * Test simple functioning of MemoryIcon.
  *
- * @author	Paul Bender Copyright (C) 2016
+ * @author Paul Bender Copyright (C) 2016
  */
-public class MemoryIconTest extends TestCase {
+public class MemoryIconTest extends jmri.jmrit.display.MemoryIconTest {
 
-    public void testCtor() {
-        MemoryIcon  t = new MemoryIcon("test",new LayoutEditor());
-        Assert.assertNotNull("exists", t );
-    }
-
-    // from here down is testing infrastructure
+    @Test
     @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        apps.tests.Log4JFixture.setUp();
-        // dispose of the single PanelMenu instance
-        jmri.jmrit.display.PanelMenu.dispose();
-        // reset the instance manager.
-        JUnitUtil.resetInstanceManager();
+    @Ignore("Superclass method assumes graphical icon (red X)")
+    @ToDo("rewrite superclass test so it works in this case.")
+    public void testShowEmpty() {
     }
- 
+
+    @Test
     @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
-        // dispose of the single PanelMenu instance
-        jmri.jmrit.display.PanelMenu.dispose();
-        JUnitUtil.resetInstanceManager();
-        apps.tests.Log4JFixture.tearDown();
+    @Ignore("When test from superclass is run, Scale is not set")
+    @ToDo("rewrite superclass test so it works in this case.")
+    public void testGetAndSetScale(){
     }
 
-
-
-    public MemoryIconTest(String s) {
-        super(s);
+    @Before
+    @Override
+    public void setUp() {
+        JUnitUtil.setUp();
+        jmri.util.JUnitUtil.resetProfileManager();
+        if (!GraphicsEnvironment.isHeadless()) {
+            editor = new LayoutEditor();
+            p = to = new MemoryIcon("MemoryTest1", (LayoutEditor)editor );
+            to.setMemory("IM1");
+        }
     }
 
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading", MemoryIconTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(MemoryIconTest.class);
-        return suite;
+    @After
+    @Override
+    public void tearDown() {
+        if (to != null) {
+           to.getEditor().dispose();
+           to = null;
+           p = null;
+        }
+        JUnitUtil.resetWindows(false,false);
+        JUnitUtil.tearDown();
     }
 
 }

@@ -3,6 +3,9 @@ package jmri.jmrit.blockboss;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.List;
+import javax.annotation.Nonnull;
+import jmri.ConfigureManager;
 import jmri.InstanceManager;
 import jmri.NamedBean;
 import jmri.NamedBeanHandle;
@@ -11,53 +14,49 @@ import jmri.SignalHead;
 import jmri.Turnout;
 import jmri.jmrit.automat.Siglet;
 
-import javax.annotation.Nonnull;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * Drives the "simple signal" logic for one signal.
- * <P>
+ * <p>
  * Signals "protect" by telling the engineer about the conditions ahead. The
  * engineer controls the speed of the train based on what the signals show, and
  * the signals in turn react to whether the track ahead is occupied, what
  * signals further down the line show, etc.
- * <P>
+ * <p>
  * There are four situations that this logic can handle:
- * <OL>
- * <LI>SINGLEBLOCK - A simple block, without a turnout.
- * <P>
+ * <ol>
+ * <li>SINGLEBLOCK - A simple block, without a turnout.
+ * <p>
  * In this case, there is only a single set of sensors and a single next signal
  * to protect.
- * <LI>TRAILINGMAIN - This signal is protecting a trailing point turnout, which
+ * <li>TRAILINGMAIN - This signal is protecting a trailing point turnout, which
  * can only be passed when the turnout is closed. It can also be used for the
  * upper head of a two head signal on the facing end of the turnout.
- * <P>
+ * <p>
  * In this case, the signal is forced red if the specified turnout is THROWN.
  * When the turnout is CLOSED, there is a single set of sensors and next
  * signal(s) to protect.
- * <LI>TRAILINGDIVERGING - This signal is protecting a trailing point turnout,
+ * <li>TRAILINGDIVERGING - This signal is protecting a trailing point turnout,
  * which can only be passed when the turnout is thrown. It can also be used for
  * the lower head of a two head signal on the facing end of the turnout.
- * <P>
+ * <p>
  * In this case, the signal is forced red if the specified turnout is CLOSED.
  * When the turnout is THROWN, there is a single set of sensors and next
  * signal(s) to protect.
- * <LI>FACING - This single head signal protects a facing point turnout, which
+ * <li>FACING - This single head signal protects a facing point turnout, which
  * may therefore have two next signals and two sets of next sensors for the
  * closed and thrown states of the turnout.
- * <P>
+ * <p>
  * If the turnout is THROWN, one set of sensors and next signal(s) is protected.
  * If the turnout is CLOSED, another set of sensors and next signal(s) is
  * protected.
- * </OL><P>
+ * </ol>
+ * <p>
  * Note that these four possibilities logically require that certain information
  * be configured consistently; e.g. not specifying a turnout in TRAILINGMAIN
  * doesn't make any sense. That's not enforced explicitly, but violating it can
  * result in confusing behavior.
  *
- * <P>
+ * <p>
  * The protected sensors should cover the track to the next signal. If any of
  * the protected sensors show ACTIVE, the signal will be dropped to red.
  * Normally, the protected sensors cover the occupancy of the track to the next
@@ -65,40 +64,40 @@ import org.slf4j.LoggerFactory;
  * entering an occupied stretch of track (often called a "block"). But the
  * actual source of the sensors can be anything useful, for example a
  * microswitch on a local turnout, etc.
- * <P>
- * There are several varients to how a next signal is protected. In the simplest
+ * <p>
+ * There are several variants to how a next signal is protected. In the simplest
  * form, the controlled signal provides a warning to the engineer of what the
  * signal being protected will show when it becomes visible:
- * <UL>
- * <LI>If the next signal is red, the engineer needs to be told to slow down;
+ * <ul>
+ * <li>If the next signal is red, the engineer needs to be told to slow down;
  * this signal will be set to yellow.
- * <LI>If the next signal is green, the engineer can proceed at track speed;
+ * <li>If the next signal is green, the engineer can proceed at track speed;
  * this signal will be set to green.
- * </UL>
- * If the next signal is yellow, there are two possible varients that can be
+ * </ul>
+ * If the next signal is yellow, there are two possible variants that can be
  * configured:
- * <UL>
- * <LI>For the common "three-aspect" signaling system, an engineer doesn't need
+ * <ul>
+ * <li>For the common "three-aspect" signaling system, an engineer doesn't need
  * any warning before a yellow signal. In this case, this signal is set to green
  * when the protected signal is yellow.
- * <LI>For lines where track speed is very fast or braking distances are very
+ * <li>For lines where track speed is very fast or braking distances are very
  * long, it can be useful to give engineers warning that the next signal is
  * yellow (and the one after that is red) so that slowing the train can start
  * early. Usually flashing yellow preceeds the yellow signal, and the system is
  * called "four-aspect" signaling.
- * </UL>
+ * </ul>
  *
- * <P>
+ * <p>
  * In some cases, you want a signal to show <i>exactly</I> what the next signal
  * shows, instead of one speed faster. E.g. if the (protected) next signal is
  * red, this one should be red, instead of yellow. In this case, this signal is
  * called a "distant signal", as it provides a "distant" view of the protected
- * signal's appearance. Note that when in this mode, this signal still protects
+ * signal heads's appearance. Note that when in this mode, this signal still protects
  * the interveneing track, etc.
- * <P>
+ * <p>
  * The "hold" unbound parameter can be used to set this logic to show red,
  * regardless of input. That's intended for use with CTC logic, etc.
- * <P>
+ * <p>
  * "Approach lit" signaling sets the signal head to dark (off) unless the
  * specified sensor(s) are ACTIVE. Normally, those sensors are in front of
  * (before) the signal head. The signal heads then only light when a train is
@@ -106,7 +105,7 @@ import org.slf4j.LoggerFactory;
  * reduce engineer workload) on prototype railroads, but is uncommon on model
  * railroads; once the layout owner has gone to the trouble and expense of
  * installing signals, he usually wants them lit up.
- * <P>
+ * <p>
  * Two signal heads can be protected. For example, if the next signal has two
  * heads to control travel onto a main track or siding, then both heads should
  * be provided here. The <i>faster</i> signal aspect will control the appearance
@@ -115,10 +114,9 @@ import org.slf4j.LoggerFactory;
  * proceed at track speed when it reaches that next signal (along the track with
  * the green signal).
  *
- * @author	Bob Jacobsen Copyright (C) 2003, 2005
- *
- * Revisions to add facing point sensors, approach lighting, and check box to
- * limit speed. Dick Bronosn (RJB) 2006
+ * @author Bob Jacobsen Copyright (C) 2003, 2005
+ * @author Dick Bronson 2006 Revisions to add facing point sensors, approach lighting
+ * and check box to limit speed.
  */
 public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeListener {
 
@@ -130,52 +128,45 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
     int mode = 0;
 
     /**
-     * Create a default object, without contents.
-     */
-    public BlockBossLogic() {
-        jmri.InstanceManager.getDefault(jmri.SignalHeadManager.class).addVetoableChangeListener(this);
-        jmri.InstanceManager.turnoutManagerInstance().addVetoableChangeListener(this);
-        jmri.InstanceManager.sensorManagerInstance().addVetoableChangeListener(this);
-    }
-
-    /**
-     * Create an object to drive a specific signal.
+     * Create an object to drive a specific signal head.
      *
-     * @param name System or user name of the driven signal.
+     * @param name System or user name of the driven signal head, which must exist
      */
-    public BlockBossLogic(String name) {
-        super(name + rb.getString("_BlockBossLogic"));
+    public BlockBossLogic(@Nonnull String name) {
+        super(name + Bundle.getMessage("_BlockBossLogic"));
         this.name = name;
-        if (log.isTraceEnabled()) {
-            log.trace("Create BBL " + name);
-        }
+        log.trace("Create BBL {}", name);
+
         jmri.InstanceManager.getDefault(jmri.SignalHeadManager.class).addVetoableChangeListener(this);
         jmri.InstanceManager.turnoutManagerInstance().addVetoableChangeListener(this);
         jmri.InstanceManager.sensorManagerInstance().addVetoableChangeListener(this);
-        driveSignal = nbhm.getNamedBeanHandle(name, InstanceManager.getDefault(jmri.SignalHeadManager.class).getSignalHead(name));
-        if (driveSignal.getBean() == null) {
-            log.warn(rb.getString("Signal_") + name + rb.getString("_was_not_found!"));
+        SignalHead driveHead = InstanceManager.getDefault(jmri.SignalHeadManager.class).getSignalHead(name);
+        if (driveHead == null) {
+            log.warn(Bundle.getMessage("BeanXNotFound", Bundle.getMessage("BeanNameSignalHead"), name));
+            throw new IllegalArgumentException("SignalHead \"" + name + "\" does not exist");
         }
+        driveSignal = nbhm.getNamedBeanHandle(name, driveHead);
+        java.util.Objects.requireNonNull(driveSignal, "driveSignal should not have been null");
     }
 
     /**
      * The "driven signal" is controlled by this element.
      *
-     * @return system name of the driven signal
+     * @return system name of the driven signal head
      */
-    public String getDrivenSignal() {
-        if (driveSignal != null) {
-            return driveSignal.getName();
-        }
-        return "Unknown";
+    public @Nonnull String getDrivenSignal() {
+        java.util.Objects.requireNonNull(driveSignal, "driveSignal should not have been null");
+        String retVal = driveSignal.getName();
+        java.util.Objects.requireNonNull(retVal, "driveSignal system name should not have been null");
+        return retVal;
     }
 
-    public NamedBeanHandle<SignalHead> getDrivenSignalNamedBean() {
+    public @Nonnull NamedBeanHandle<SignalHead> getDrivenSignalNamedBean() {
+        java.util.Objects.requireNonNull(driveSignal, "driveSignal should have been null");
         return driveSignal;
     }
 
     protected jmri.NamedBeanHandleManager nbhm = jmri.InstanceManager.getDefault(jmri.NamedBeanHandleManager.class);
-    protected static final java.util.ResourceBundle rb = java.util.ResourceBundle.getBundle("jmri.jmrit.blockboss.BlockBossBundle");
 
     public void setSensor1(String name) {
         if (name == null || name.equals("")) {
@@ -185,7 +176,7 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
         try {
             watchSensor1 = nbhm.getNamedBeanHandle(name, InstanceManager.sensorManagerInstance().provideSensor(name));
         } catch (IllegalArgumentException ex) {
-            log.warn(rb.getString("Sensor1_") + name + rb.getString("_was_not_found!"));
+            log.warn(Bundle.getMessage("BeanXNotFound", Bundle.getMessage("BeanNameSensor") + "1", name));
         }
     }
 
@@ -197,7 +188,7 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
         try {
             watchSensor2 = nbhm.getNamedBeanHandle(name, InstanceManager.sensorManagerInstance().provideSensor(name));
         } catch (IllegalArgumentException ex) {
-            log.warn(rb.getString("Sensor2_") + name + rb.getString("_was_not_found!"));
+            log.warn(Bundle.getMessage("BeanXNotFound", Bundle.getMessage("BeanNameSensor") + "2", name));
         }
     }
 
@@ -209,7 +200,7 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
         try {
             watchSensor3 = nbhm.getNamedBeanHandle(name, InstanceManager.sensorManagerInstance().provideSensor(name));
         } catch (IllegalArgumentException ex) {
-            log.warn(rb.getString("Sensor3_") + name + rb.getString("_was_not_found!"));
+            log.warn(Bundle.getMessage("BeanXNotFound", Bundle.getMessage("BeanNameSensor") + "3", name));
         }
     }
 
@@ -221,7 +212,7 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
         try {
             watchSensor4 = nbhm.getNamedBeanHandle(name, InstanceManager.sensorManagerInstance().provideSensor(name));
         } catch (IllegalArgumentException ex) {
-            log.warn(rb.getString("Sensor4_") + name + rb.getString("_was_not_found!"));
+            log.warn(Bundle.getMessage("BeanXNotFound", Bundle.getMessage("BeanNameSensor") + "4", name));
         }
     }
 
@@ -233,12 +224,12 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
         try {
             watchSensor5 = nbhm.getNamedBeanHandle(name, InstanceManager.sensorManagerInstance().provideSensor(name));
         } catch (IllegalArgumentException ex) {
-            log.warn(rb.getString("Sensor5_") + name + rb.getString("_was_not_found!"));
+            log.warn(Bundle.getMessage("BeanXNotFound", Bundle.getMessage("BeanNameSensor") + "5", name));
         }
     }
 
     /**
-     * Return the system name of the sensor being monitored
+     * Return the system name of the sensors 1-5 being monitored.
      *
      * @return system name; null if no sensor configured
      */
@@ -285,12 +276,12 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
         try {
             watchTurnout = nbhm.getNamedBeanHandle(name, InstanceManager.turnoutManagerInstance().provideTurnout(name));
         } catch (IllegalArgumentException ex) {
-            log.warn(rb.getString("Turnout_") + name + rb.getString("_was_not_found!"));
+            log.warn(Bundle.getMessage("BeanXNotFound", Bundle.getMessage("BeanNameTurnout"), name));
         }
     }
 
     /**
-     * Return the system name of the turnout being monitored
+     * Return the system name of the turnout being monitored.
      *
      * @return system name; null if no turnout configured
      */
@@ -324,17 +315,20 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
             watchedSignal1 = null;
             return;
         }
-        watchedSignal1 = nbhm.getNamedBeanHandle(name, InstanceManager.getDefault(jmri.SignalHeadManager.class).getSignalHead(name));
-        if (watchedSignal1.getBean() == null) {
-            log.warn(rb.getString("Signal_") + name + rb.getString("_was_not_found!"));
+        SignalHead head = InstanceManager.getDefault(jmri.SignalHeadManager.class).getSignalHead(name);
+        if (head != null) {
+            watchedSignal1 = nbhm.getNamedBeanHandle(name, head);
+        } else {
+            log.warn(Bundle.getMessage("BeanXNotFound", Bundle.getMessage("BeanNameSignalHead"), name));
+            watchedSignal1 = null;
         }
         protectWithFlashing = useFlash;
     }
 
     /**
-     * Return the system name of the signal being monitored for first route
+     * Return the system name of the signal head being monitored for first route.
      *
-     * @return system name; null if no primary signal configured
+     * @return system name; null if no primary signal head is configured
      */
     public String getWatchedSignal1() {
         if (watchedSignal1 == null) {
@@ -348,17 +342,20 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
             watchedSignal1Alt = null;
             return;
         }
-        watchedSignal1Alt = nbhm.getNamedBeanHandle(name, InstanceManager.getDefault(jmri.SignalHeadManager.class).getSignalHead(name));
-        if (watchedSignal1Alt.getBean() == null) {
-            log.warn(rb.getString("Signal_") + name + rb.getString("_was_not_found!"));
+        SignalHead head = InstanceManager.getDefault(jmri.SignalHeadManager.class).getSignalHead(name);
+        if (head != null) {
+            watchedSignal1Alt = nbhm.getNamedBeanHandle(name, head);
+        } else {
+            log.warn(Bundle.getMessage("BeanXNotFound", Bundle.getMessage("BeanNameSignalHead"), name));
+            watchedSignal1Alt = null;
         }
     }
 
     /**
-     * Return the system name of the alternate signal being monitored for first
-     * route
+     * Return the system name of the alternate signal head being monitored for first
+     * route.
      *
-     * @return system name; null if no signal configured
+     * @return system name; null if no signal head is configured
      */
     public String getWatchedSignal1Alt() {
         if (watchedSignal1Alt == null) {
@@ -372,16 +369,19 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
             watchedSignal2 = null;
             return;
         }
-        watchedSignal2 = nbhm.getNamedBeanHandle(name, InstanceManager.getDefault(jmri.SignalHeadManager.class).getSignalHead(name));
-        if (watchedSignal2.getBean() == null) {
-            log.warn(rb.getString("Signal_") + name + rb.getString("_was_not_found!"));
+        SignalHead head = InstanceManager.getDefault(jmri.SignalHeadManager.class).getSignalHead(name);
+        if (head != null) {
+            watchedSignal2 = nbhm.getNamedBeanHandle(name, head);
+        } else {
+            log.warn(Bundle.getMessage("BeanXNotFound", Bundle.getMessage("BeanNameSignalHead"), name));
+            watchedSignal2 = null;
         }
     }
 
     /**
-     * Return the system name of the signal being monitored for the 2nd route
+     * Return the system name of the signal head being monitored for the 2nd route.
      *
-     * @return system name; null if no signal configured
+     * @return system name; null if no signal head is configured
      */
     public String getWatchedSignal2() {
         if (watchedSignal2 == null) {
@@ -395,17 +395,20 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
             watchedSignal2Alt = null;
             return;
         }
-        watchedSignal2Alt = nbhm.getNamedBeanHandle(name, InstanceManager.getDefault(jmri.SignalHeadManager.class).getSignalHead(name));
-        if (watchedSignal2Alt.getBean() == null) {
-            log.warn(rb.getString("Signal_") + name + rb.getString("_was_not_found!"));
+        SignalHead head = InstanceManager.getDefault(jmri.SignalHeadManager.class).getSignalHead(name);
+        if (head != null) {
+            watchedSignal2Alt = nbhm.getNamedBeanHandle(name, head);
+        } else {
+            log.warn(Bundle.getMessage("BeanXNotFound", Bundle.getMessage("BeanNameSignalHead"), name));
+            watchedSignal2Alt = null;
         }
     }
 
     /**
-     * Return the system name of the secondary signal being monitored for the
-     * 2nd route
+     * Return the system name of the secondary signal head being monitored for the
+     * 2nd route.
      *
-     * @return system name; null if no secondary signal configured
+     * @return system name; null if no secondary signal head is configured
      */
     public String getWatchedSignal2Alt() {
         if (watchedSignal2Alt == null) {
@@ -422,15 +425,15 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
         try {
             watchedSensor1 = nbhm.getNamedBeanHandle(name, InstanceManager.sensorManagerInstance().provideSensor(name));
         } catch (IllegalArgumentException ex) {
-            log.warn(rb.getString("Sensor1_") + name + rb.getString("_was_not_found!"));
+            log.warn(Bundle.getMessage("BeanXNotFound", Bundle.getMessage("BeanNameSensor") + "1", name));
+            watchedSensor1 = null;
         }
-
     }
 
     /**
-     * Return the original name of the sensor being monitored
+     * Return the original name of the sensor1 being monitored.
      *
-     * @return original name; null if no sensor configured
+     * @return original name; null if no sensor is configured
      */
     public String getWatchedSensor1() {
         if (watchedSensor1 == null) {
@@ -447,15 +450,15 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
         try {
             watchedSensor1Alt = nbhm.getNamedBeanHandle(name, InstanceManager.sensorManagerInstance().provideSensor(name));
         } catch (IllegalArgumentException ex) {
-            log.warn(rb.getString("Sensor1Alt_") + name + rb.getString("_was_not_found!"));
+            log.warn(Bundle.getMessage("BeanXNotFound", Bundle.getMessage("BeanNameSensor") + "1Alt", name));
+            watchedSensor1Alt = null;
         }
-
     }
 
     /**
-     * Return the system name of the sensor being monitored
+     * Return the system name of the sensor1Alt being monitored.
      *
-     * @return system name; null if no sensor configured
+     * @return system name; null if no sensor is configured
      */
     public String getWatchedSensor1Alt() {
         if (watchedSensor1Alt == null) {
@@ -472,15 +475,15 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
         try {
             watchedSensor2 = nbhm.getNamedBeanHandle(name, InstanceManager.sensorManagerInstance().provideSensor(name));
         } catch (IllegalArgumentException ex) {
-            log.warn(rb.getString("Sensor2_") + name + rb.getString("_was_not_found!"));
+            log.warn(Bundle.getMessage("BeanXNotFound", Bundle.getMessage("BeanNameSensor") + "2", name));
+            watchedSensor2 = null;
         }
-
     }
 
     /**
-     * Return the system name of the sensor being monitored
+     * Return the system name of the sensor2 being monitored.
      *
-     * @return system name; null if no sensor configured
+     * @return system name; null if no sensor is configured
      */
     public String getWatchedSensor2() {
         if (watchedSensor2 == null) {
@@ -497,15 +500,15 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
         try {
             watchedSensor2Alt = nbhm.getNamedBeanHandle(name, InstanceManager.sensorManagerInstance().provideSensor(name));
         } catch (IllegalArgumentException ex) {
-            log.warn(rb.getString("Sensor2Alt_") + name + rb.getString("_was_not_found!"));
+            log.warn(Bundle.getMessage("BeanXNotFound", Bundle.getMessage("BeanNameSensor") + "2Alt", name));
+            watchedSensor2Alt = null;
         }
-
     }
 
     /**
-     * Return the system name of the sensor being monitored
+     * Return the system name of the sensor2Alt being monitored.
      *
-     * @return system name; null if no sensor configured
+     * @return system name; null if no sensor is configured
      */
     public String getWatchedSensor2Alt() {
         if (watchedSensor2Alt == null) {
@@ -522,12 +525,28 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
         return limitSpeed1;
     }
 
+    public void setRestrictingSpeed1(boolean d) {
+        restrictingSpeed1 = d;
+    }
+
+    public boolean getRestrictingSpeed1() {
+        return restrictingSpeed1;
+    }
+
     public void setLimitSpeed2(boolean d) {
         limitSpeed2 = d;
     }
 
     public boolean getLimitSpeed2() {
         return limitSpeed2;
+    }
+
+    public void setRestrictingSpeed2(boolean d) {
+        restrictingSpeed2 = d;
+    }
+
+    public boolean getRestrictingSpeed2() {
+        return restrictingSpeed2;
     }
 
     public boolean getUseFlash() {
@@ -545,27 +564,35 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
     boolean mHold = false;
 
     /**
-     * Provide the current value of the "hold" parameter. If true, the output is
-     * forced to a RED "stop" aspect. This allows CTC and other higher-level
-     * functions to control permission to enter this section of track.
+     * Provide the current value of the "hold" parameter.
+     * <p>
+     * If true, the output is forced to a RED "stop" appearance.
+     * This allows CTC and other higher-level functions to control
+     * permission to enter this section of track.
+     *
+     * @return true if this Logic currently is Held
      */
     public boolean getHold() {
         return mHold;
     }
-    /*
-     * Set the current value of the "hold" parameter.
-     * If true, the output is forced to a RED "stop" aspect.
-     * This allows CTC and other higher-level functions to 
-     * control permission to enter this section of track.
-     */
 
+    /**
+     * Set the current value of the "hold" parameter.
+     * If true, the output is forced to a RED "stop" appearance.
+     * This allows CTC and other higher-level functions to
+     * control permission to enter this section of track.
+     *
+     * @param m true to set Logic to Held
+     */
     public void setHold(boolean m) {
         mHold = m;
         setOutput();  // to invoke the new state
     }
 
     String name;
-    NamedBeanHandle<SignalHead> driveSignal = null;
+
+    @Nonnull NamedBeanHandle<SignalHead> driveSignal;
+
     NamedBeanHandle<Sensor> watchSensor1 = null;
     NamedBeanHandle<Sensor> watchSensor2 = null;
     NamedBeanHandle<Sensor> watchSensor3 = null;
@@ -583,9 +610,12 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
     NamedBeanHandle<Sensor> approachSensor1 = null;
 
     boolean limitSpeed1 = false;
+    boolean restrictingSpeed1 = false;
     boolean limitSpeed2 = false;
+    boolean restrictingSpeed2 = false;
     boolean protectWithFlashing = false;
     boolean distantSignal = false;
+    boolean restricting = false;
 
     public void setApproachSensor1(String name) {
         if (name == null || name.equals("")) {
@@ -594,13 +624,13 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
         }
         approachSensor1 = nbhm.getNamedBeanHandle(name, InstanceManager.sensorManagerInstance().provideSensor(name));
         if (approachSensor1.getBean() == null) {
-            log.warn(rb.getString("Approach_Sensor1_") + name + rb.getString("_was_not_found!"));
+            log.warn(Bundle.getMessage("BeanXNotFound", Bundle.getMessage("Approach_Sensor1_"), name));
         }
 
     }
 
     /**
-     * Return the system name of the sensor being monitored
+     * Return the system name of the sensor being monitored.
      *
      * @return system name; null if no sensor configured
      */
@@ -614,6 +644,7 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
     /**
      * Define the siglet's input and output.
      */
+    @Override
     public void defineIO() {
         NamedBean[] tempArray = new NamedBean[10];
         int n = 0;
@@ -688,13 +719,14 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
         outputs = new NamedBean[]{driveSignal.getBean()};
 
         // also need to act if the _signal's_ "held"
-        // parameter changes, but we don't want to 
-        // act if the signals appearance changes (to 
+        // parameter changes, but we don't want to
+        // act if the signals appearance changes (to
         // avoid a loop, or avoid somebody changing appearance
         // manually and having it instantly recomputed & changed back
         driveSignal.getBean().addPropertyChangeListener(new java.beans.PropertyChangeListener() {
+            @Override
             public void propertyChange(java.beans.PropertyChangeEvent e) {
-                if (e.getPropertyName().equals(rb.getString("Held"))) {
+                if (e.getPropertyName().equals(Bundle.getMessage("Held"))) {
                     setOutput();
                 }
             }
@@ -704,10 +736,11 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
     /**
      * Recompute new output state and apply it.
      */
+    @Override
     public void setOutput() {
-        if (log.isTraceEnabled()) {
-            log.trace("setOutput for " + name);
-        }
+
+        log.trace("setOutput for {}", name);
+
         // make sure init is complete
         if ((outputs == null) || (outputs[0] == null)) {
             return;
@@ -716,9 +749,7 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
         // if "hold" is true, must show red
         if (getHold()) {
             ((SignalHead) outputs[0]).setAppearance(SignalHead.RED);
-            if (log.isDebugEnabled()) {
-                log.debug("setOutput red due to held for " + name);
-            }
+            log.debug("setOutput red due to held for {}", name);
             return;
         }
 
@@ -737,7 +768,7 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
                 doFacing();
                 break;
             default:
-                log.error(rb.getString("Unexpected_mode:_") + mode + "_Signal_" + getDrivenSignal());
+                log.error(Bundle.getMessage("UnexpectedMode") + mode + "_Signal_" + getDrivenSignal());
         }
     }
 
@@ -792,8 +823,12 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
     }
 
     /**
-     * Given two {@link SignalHead} color constants, returns the one
+     * Given two {@link SignalHead} color constants, return the one
      * corresponding to the slower speed.
+     *
+     * @param a color constant 1 to compare with
+     * @param b color constant 2
+     * @return the lowest of the two values entered
      */
     static int slowerOf(int a, int b) {
         // DARK is smallest, FLASHING GREEN is largest
@@ -801,8 +836,12 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
     }
 
     /**
-     * Given two {@link SignalHead} color constants, returns the one
+     * Given two {@link SignalHead} color constants, return the one
      * corresponding to the faster speed.
+     *
+     * @param a color constant 1 to compare with
+     * @param b color constant 2
+     * @return the highest of the two values entered
      */
     static int fasterOf(int a, int b) {
         // DARK is smallest, FLASHING GREEN is largest
@@ -830,6 +869,11 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
             appearance = slowerOf(appearance, SignalHead.YELLOW);
         }
 
+        // if restricting, limit to flashing red
+        if (restrictingSpeed1) {
+            appearance = slowerOf(appearance, SignalHead.FLASHRED);
+        }
+
         // check for red overriding yellow or green
         if (watchSensor1 != null && watchSensor1.getBean().getKnownState() != Sensor.INACTIVE) {
             appearance = SignalHead.RED;
@@ -847,7 +891,7 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
             appearance = SignalHead.RED;
         }
 
-        // check if signal if held, forcing a red aspect by this calculation
+        // check if signal if held, forcing a red appearance by this calculation
         if (((SignalHead) outputs[0]).getHeld()) {
             appearance = SignalHead.RED;
         }
@@ -858,9 +902,7 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
         // show result if changed
         if (appearance != oldAppearance) {
             ((SignalHead) outputs[0]).setAppearance(appearance);
-            if (log.isDebugEnabled()) {
-                log.debug("Change appearance of " + name + " to " + appearance);
-            }
+            log.debug("Change appearance of {} to: {}", name, appearance);
         }
     }
 
@@ -883,6 +925,10 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
         // if limited speed and green, reduce to yellow
         if (limitSpeed1) {
             appearance = slowerOf(appearance, SignalHead.YELLOW);
+        }
+        // if restricting, limit to flashing red
+        if (restrictingSpeed1) {
+            appearance = slowerOf(appearance, SignalHead.FLASHRED);
         }
 
         // check for red overriding yellow or green
@@ -909,7 +955,7 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
             appearance = SignalHead.RED;
         }
 
-        // check if signal if held, forcing a red aspect by this calculation
+        // check if signal if held, forcing a red appearance by this calculation
         if (((SignalHead) outputs[0]).getHeld()) {
             appearance = SignalHead.RED;
         }
@@ -920,9 +966,7 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
         // show result if changed
         if (appearance != oldAppearance) {
             ((SignalHead) outputs[0]).setAppearance(appearance);
-            if (log.isDebugEnabled()) {
-                log.debug("Change appearance of " + name + " to " + appearance);
-            }
+            log.debug("Change appearance of {} to:{}", name, appearance);
         }
     }
 
@@ -945,6 +989,10 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
         // if limited speed and green, reduce to yellow
         if (limitSpeed2) {
             appearance = slowerOf(appearance, SignalHead.YELLOW);
+        }
+        // if restricting, limit to flashing red
+        if (restrictingSpeed2) {
+            appearance = slowerOf(appearance, SignalHead.FLASHRED);
         }
 
         // check for red overriding yellow or green
@@ -971,7 +1019,7 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
             appearance = SignalHead.RED;
         }
 
-        // check if signal if held, forcing a red aspect by this calculation
+        // check if signal if held, forcing a red appearance by this calculation
         if (((SignalHead) outputs[0]).getHeld()) {
             appearance = SignalHead.RED;
         }
@@ -983,7 +1031,7 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
         if (appearance != oldAppearance) {
             ((SignalHead) outputs[0]).setAppearance(appearance);
             if (log.isDebugEnabled()) {
-                log.debug("Change appearance of " + name + " to " + appearance);
+                log.debug("Change appearance of {} to: {}", name, appearance);
             }
         }
     }
@@ -1017,9 +1065,15 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
         if (watchTurnout != null && limitSpeed1 && watchTurnout.getBean().getKnownState() != Turnout.THROWN) {
             appearance = slowerOf(appearance, SignalHead.YELLOW);
         }
-
         if (watchTurnout != null && limitSpeed2 && watchTurnout.getBean().getKnownState() != Turnout.CLOSED) {
             appearance = slowerOf(appearance, SignalHead.YELLOW);
+        }
+        // if restricting, limit to flashing red
+        if (watchTurnout != null && restrictingSpeed1 && watchTurnout.getBean().getKnownState() != Turnout.THROWN) {
+            appearance = slowerOf(appearance, SignalHead.FLASHRED);
+        }
+        if (watchTurnout != null && restrictingSpeed2 && watchTurnout.getBean().getKnownState() != Turnout.CLOSED) {
+            appearance = slowerOf(appearance, SignalHead.FLASHRED);
         }
 
         // check for red overriding yellow or green
@@ -1062,7 +1116,7 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
             appearance = SignalHead.RED;
         }
 
-        // check if signal if held, forcing a red aspect by this calculation
+        // check if signal if held, forcing a red appearance by this calculation
         if (((SignalHead) outputs[0]).getHeld()) {
             appearance = SignalHead.RED;
         }
@@ -1077,7 +1131,7 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
     }
 
     /**
-     * Handle the approach lighting logic for all modes
+     * Handle the approach lighting logic for all modes.
      */
     void doApproach() {
         if (approachSensor1 != null && approachSensor1.getBean().getKnownState() == Sensor.INACTIVE) {
@@ -1094,46 +1148,69 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
         return;
     }
 
-    static ArrayList<BlockBossLogic> bblList = null;
+    // Due to an older configuration & storage paradigm, this class
+    // has to add itself to the configuration manager, but only once.
+    // We do that the first time an instance is created and added to the active list
+    private static volatile boolean addedToConfig = false;
+    
+    // The list of existing instances. When the first is added,
+    // the configuration connection is made.
+    static List<BlockBossLogic> bblList = Collections.synchronizedList(
+                        new ArrayList<BlockBossLogic>() {
+                            @Override
+                            public boolean add(BlockBossLogic bbl) {
+                                if (!addedToConfig) {
+                                    addedToConfig = true;
+                                    ConfigureManager cm = InstanceManager.getNullableDefault(jmri.ConfigureManager.class);
+                                    if (cm != null) {
+                                        cm.registerConfig(bbl, jmri.Manager.BLOCKBOSS);
+                                    }
+                                    log.debug("added to config for {}", bbl.name);
+                                }
+                                return super.add(bbl);
+                            }
+                        }
+            );
 
     public static Enumeration<BlockBossLogic> entries() {
-        setup(); // ensure we've been registered
         return Collections.enumeration(bblList);
     }
 
-    private static void setup() {
-        if (bblList == null) {
-            bblList = new ArrayList<BlockBossLogic>();
-            InstanceManager.getOptionalDefault(jmri.ConfigureManager.class).registerConfig(new BlockBossLogic(), jmri.Manager.BLOCKBOSS);
-        }
-    }
-
     /**
-     * Ensure that this BlockBossLogic object is available for later retrieval
+     * Ensure that this BlockBossLogic object is available for later retrieval.
      */
     public void retain() {
         bblList.add(this);
     }
 
     /**
-     * Return the BlockBossLogic item governing a specific signal, having
-     * removed it from use.
+     * Return the BlockBossLogic item governing a specific signal head by its name,
+     * having removed it from use.
      *
+     * @param signal name of the signal head object
      * @return never null
      */
+    @Nonnull
+    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE",
+                        justification="enforced dynamically, too hard to prove statically")
     public static BlockBossLogic getStoppedObject(String signal) {
-        return getStoppedObject(InstanceManager.getDefault(jmri.SignalHeadManager.class).getSignalHead(signal));
+        // As a static requirement, the signal head must exist, but 
+        // we can't express that statically.  We test it dynamically.
+        SignalHead sh = InstanceManager.getDefault(jmri.SignalHeadManager.class).getSignalHead(signal);
+        java.util.Objects.requireNonNull(sh, "signal head must exist");
+        return getStoppedObject(sh);
     }
 
     /**
-     * Return the BlockBossLogic item governing a specific signal, having
+     * Return the BlockBossLogic item governing a specific signal head, having
      * removed it from use.
      *
+     * @param sh signal head object
      * @return never null
      */
-    public static BlockBossLogic getStoppedObject(SignalHead sh) {
+    @Nonnull
+    public static BlockBossLogic getStoppedObject(@Nonnull SignalHead sh) {
         BlockBossLogic b = null;
-        setup();
 
         for (BlockBossLogic bbl : bblList) {
             if (bbl.getDrivenSignalNamedBean().getBean() == sh) {
@@ -1155,7 +1232,7 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
 
     /**
      * Return the BlockBossLogic item governing a specific signal head located from its name.
-     * <P>
+     * <p>
      * Unlike {@link BlockBossLogic#getStoppedObject(String signal)} this does
      * not remove the object from being used.
      *
@@ -1164,12 +1241,17 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
      */
     @Nonnull
     public static BlockBossLogic getExisting(@Nonnull String signal) {
-        return getExisting(InstanceManager.getDefault(jmri.SignalHeadManager.class).getSignalHead(signal));
+        SignalHead head = InstanceManager.getDefault(jmri.SignalHeadManager.class).getSignalHead(signal);
+        if (head == null) {
+            log.error("SignalHead {} doesn't exist, BlockBossLogic.getExisting(\"{}\") cannot continue", signal, signal);
+            throw new IllegalArgumentException("Requested signal head doesn't exist");
+        }
+        return getExisting(head);
     }
 
     /**
      * Return the BlockBossLogic item governing a specific signal head object.
-     * <P>
+     * <p>
      * Unlike {@link BlockBossLogic#getStoppedObject(String signal)} this does
      * not remove the object from being used.
      *
@@ -1178,8 +1260,6 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
      */
     @Nonnull
     public static BlockBossLogic getExisting(@Nonnull SignalHead sh) {
-        setup();
-
         for (BlockBossLogic bbl : bblList) {
             if (bbl.getDrivenSignalNamedBean().getBean() == sh) {
                 return bbl;
@@ -1189,16 +1269,20 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
         return (new BlockBossLogic(sh.getDisplayName()));
     }
 
+    @Override
     public void vetoableChange(java.beans.PropertyChangeEvent evt) throws java.beans.PropertyVetoException {
         NamedBean nb = (NamedBean) evt.getOldValue();
-        if ("CanDelete".equals(evt.getPropertyName())) { //IN18N
+        if ("CanDelete".equals(evt.getPropertyName())) { // NOI18N
+            log.debug("name: {} got {} from {}", name, evt, evt.getSource());
+
             StringBuilder message = new StringBuilder();
-            message.append(Bundle.getMessage("InUseBlockBossHeader", getDrivenSignal())); //IN18N
+            message.append(Bundle.getMessage("InUseBlockBossHeader", getDrivenSignal()));
+
             boolean found = false;
 
             if (nb instanceof SignalHead) {
-                if (getDrivenSignalNamedBean() != null && getDrivenSignalNamedBean().getBean().equals(nb)) {
-                    message.append("<br><b>This SSL will be deleted</b>");
+                if (nb.equals(getDrivenSignalNamedBean().getBean())) {
+                    message.append("<br><b>" + Bundle.getMessage("InUseThisSslWillBeDeleted") + "</b>");
                     throw new java.beans.PropertyVetoException(message.toString(), evt);
                 }
                 if ((watchedSignal1 != null && watchedSignal1.getBean().equals(nb))
@@ -1250,12 +1334,12 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
                 message.append("</ul>");
             }
             if (found) {
-                message.append(Bundle.getMessage("InUseBlockBossFooter")); //IN18N
+                message.append(Bundle.getMessage("InUseBlockBossFooter")); // NOI18N
                 throw new java.beans.PropertyVetoException(message.toString(), evt);
             }
-        } else if ("DoDelete".equals(evt.getPropertyName())) { //IN18N
+        } else if ("DoDelete".equals(evt.getPropertyName())) { // NOI18N
             if (nb instanceof SignalHead) {
-                if (getDrivenSignalNamedBean() != null && getDrivenSignalNamedBean().getBean().equals(nb)) {
+                if (nb.equals(getDrivenSignalNamedBean().getBean())) {
                     stop();
                     bblList.remove(this);
                 }
@@ -1340,5 +1424,18 @@ public class BlockBossLogic extends Siglet implements java.beans.VetoableChangeL
         }
     }
 
-    private final static Logger log = LoggerFactory.getLogger(BlockBossLogic.class.getName());
+    /**
+     * Stop() all existing objects and clear the list.
+     * <p>
+     * Intended to be only used during testing.
+     */
+    public static void stopAllAndClear() {
+        for (BlockBossLogic b : bblList) {
+            b.stop();
+        }
+        bblList.clear();
+    }
+    
+    private final static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(BlockBossLogic.class);
+
 }

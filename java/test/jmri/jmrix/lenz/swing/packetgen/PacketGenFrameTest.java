@@ -1,33 +1,28 @@
 package jmri.jmrix.lenz.swing.packetgen;
 
+import java.awt.GraphicsEnvironment;
 import jmri.jmrix.AbstractMRMessage;
 import jmri.jmrix.lenz.XNetMessage;
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import org.junit.*;
 
 /**
  * Tests for the jmri.jmrix.lenz.packetgen.PacketGenFrame class
  *
  * @author	Bob Jacobsen Copyright (c) 2001, 2002
- * @version	$Revision$
  */
-public class PacketGenFrameTest extends TestCase {
+public class PacketGenFrameTest extends jmri.util.JmriJFrameTestBase {
 
-    public void testFrameCreate() {
-        new PacketGenFrame();
-    }
-
+    @Test
     public void testPacketNull() {
-        PacketGenFrame t = new PacketGenFrame();
-        XNetMessage m = t.createPacket("");
+        Assume.assumeFalse(GraphicsEnvironment.isHeadless());
+        XNetMessage m = ((PacketGenFrame)frame).createPacket("");
         Assert.assertEquals("null pointer", null, m);
     }
 
+    @Test
     public void testPacketCreate() {
-        PacketGenFrame t = new PacketGenFrame();
-        AbstractMRMessage m = t.createPacket("12 34 AB 3 19 6 B B1");
+        Assume.assumeFalse(GraphicsEnvironment.isHeadless());
+        XNetMessage m = ((PacketGenFrame)frame).createPacket("12 34 AB 3 19 6 B B1");
         Assert.assertEquals("length", 8, m.getNumDataElements());
         Assert.assertEquals("0th byte", 0x12, m.getElement(0) & 0xFF);
         Assert.assertEquals("1st byte", 0x34, m.getElement(1) & 0xFF);
@@ -39,21 +34,19 @@ public class PacketGenFrameTest extends TestCase {
         Assert.assertEquals("7th byte", 0xB1, m.getElement(7) & 0xFF);
     }
 
-    // from here down is testing infrastructure
-    public PacketGenFrameTest(String s) {
-        super(s);
+    @Before
+    @Override
+    public void setUp() {
+        jmri.util.JUnitUtil.setUp();
+        if(!GraphicsEnvironment.isHeadless()){
+           frame = new PacketGenFrame();
+        }
     }
 
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {PacketGenFrameTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
+    @After
+    @Override
+    public void tearDown() {
+        jmri.util.JUnitUtil.clearShutDownManager(); // put in place because AbstractMRTrafficController implementing subclass was not terminated properly
+        super.tearDown();
     }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(PacketGenFrameTest.class);
-        return suite;
-    }
-
 }

@@ -1,30 +1,19 @@
 package jmri.jmrix.wangrow;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+   jmri.jmrix.wangrow.serialdriver.PackageTest.class,
+   WangrowConnectionTypeListTest.class,
+   WangrowMenuTest.class,
+   BundleTest.class,
+})
 /**
- * Tests for the jmri.jmrix.wangrow package
+ * Tests for the jmri.jmrix.wangrow package.
  *
- * @author  Paul Bender	
+ * @author Paul Bender Copyright (C) 2016
  */
-public class PackageTest extends TestCase {
-
-    // from here down is testing infrastructure
-    public PackageTest(String s) {
-        super(s);
-    }
-
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {PackageTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite("jmri.jmrix.wangrow.PackageTest");  // no tests in this class itself
-        return suite;
-    }
+public class PackageTest {
 }

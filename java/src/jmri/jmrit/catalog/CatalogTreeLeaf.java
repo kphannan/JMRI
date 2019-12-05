@@ -2,15 +2,15 @@ package jmri.jmrit.catalog;
 
 /**
  * Leaf of a CatalogTree.
- * <P>
+ * <p>
  * Name for the leaf Path to lead.
  *
- * @author	Pete Cressman Copyright 2009
+ * @author Pete Cressman Copyright 2009
  *
  */
 public class CatalogTreeLeaf {
 
-    private String _name;
+    private String _name; // non-localized
     private String _path;
     private int _size;
 
@@ -35,4 +35,5 @@ public class CatalogTreeLeaf {
     public int getSize() {
         return _size;
     }
+
 }

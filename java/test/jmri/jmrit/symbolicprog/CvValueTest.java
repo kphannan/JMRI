@@ -1,29 +1,31 @@
 package jmri.jmrit.symbolicprog;
 
 import jmri.progdebugger.ProgDebugger;
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import jmri.util.JUnitUtil;
+
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import jmri.util.JUnitUtil;
 
 /**
  * Test CvValue class
  *
  * @author	Bob Jacobsen Copyright 2004, 2006, 2015
  */
-public class CvValueTest extends TestCase {
+public class CvValueTest {
 
     ProgDebugger p = new ProgDebugger();
 
+    @Test
     public void testStart() {
         new CvValue("12", p);
     }
 
     // can we create one and manipulate info?
+    @Test
     public void testCvValCreate() {
         CvValue cv = new CvValue("19", p);
         Assert.assertTrue(cv.number() == "19");
@@ -32,6 +34,7 @@ public class CvValueTest extends TestCase {
     }
 
     // check a read operation
+    @Test
     public void testCvValRead() {
 
         // create the CV value
@@ -45,6 +48,7 @@ public class CvValueTest extends TestCase {
     }
 
     // check a confirm operation
+    @Test
     public void testCvValConfirmFail() {
 
         // create the CV value
@@ -60,6 +64,7 @@ public class CvValueTest extends TestCase {
     }
 
     // check a confirm operation
+    @Test
     public void testCvValConfirmPass() {
 
         // create the CV value
@@ -78,6 +83,7 @@ public class CvValueTest extends TestCase {
     }
 
     // check a write operation
+    @Test
     public void testCvValWrite() {
         // initialize the system
         log.debug("start testCvValWrite");
@@ -95,6 +101,7 @@ public class CvValueTest extends TestCase {
     }
 
     // check the state diagram
+    @Test
     public void testCvValStates() {
         CvValue cv = new CvValue("21", p);
         Assert.assertTrue(cv.getState() == CvValue.UNKNOWN);
@@ -103,44 +110,30 @@ public class CvValueTest extends TestCase {
     }
 
     // check the initial color
+    @Test
     public void testInitialColor() {
         CvValue cv = new CvValue("21", p);
         Assert.assertEquals("initial color", CvValue.COLOR_UNKNOWN, cv.getTableEntry().getBackground());
     }
 
     // check color update for EDITED
+    @Test
     public void testEditedColor() {
         CvValue cv = new CvValue("21", p);
         cv.setValue(23);
         Assert.assertEquals("edited color", CvValue.COLOR_EDITED, cv.getTableEntry().getBackground());
     }
 
-    // from here down is testing infrastructure
-    public CvValueTest(String s) {
-        super(s);
+    private final static Logger log = LoggerFactory.getLogger(CvValueTest.class);
+
+    @Before
+    public void setUp() {
+        JUnitUtil.setUp();
     }
 
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading", CvValueTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(CvValueTest.class);
-        return suite;
-    }
-
-    private final static Logger log = LoggerFactory.getLogger(CvValueTest.class.getName());
-
-    // The minimal setup for log4J
-    protected void setUp() {
-        apps.tests.Log4JFixture.setUp();
-    }
-
-    protected void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
+    @After
+    public void tearDown() {
+        JUnitUtil.tearDown();
     }
 
 }

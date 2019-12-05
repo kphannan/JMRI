@@ -3,33 +3,30 @@ package jmri.jmrit.vsdecoder;
 /*
  * <hr>
  * This file is part of JMRI.
- * <P>
+ * <p>
  * JMRI is free software; you can redistribute it and/or modify it under 
  * the terms of version 2 of the GNU General Public License as published 
  * by the Free Software Foundation. See the "COPYING" file for a copy
  * of this license.
- * <P>
+ * <p>
  * JMRI is distributed in the hope that it will be useful, but WITHOUT 
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License 
  * for more details.
- * <P>
  *
- * @author			Mark Underwood Copyright (C) 2011
- * @version			$Revision$
+ * @author   Mark Underwood Copyright (C) 2011
  */
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import javax.swing.AbstractButton;
 import org.jdom2.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ButtonTrigger extends Trigger implements PropertyChangeListener, ActionListener, MouseListener {
+public class ButtonTrigger extends Trigger implements ActionListener, MouseListener {
 
     enum ButtonAction {
     }
@@ -78,34 +75,41 @@ public class ButtonTrigger extends Trigger implements PropertyChangeListener, Ac
     }
 
     // PropertyChangeListener functions
+    @Override
     public void propertyChange(PropertyChangeEvent event) {
         // Button triggers respond to the button methods above, not to
         // property change events.  Do nothing.
     }
 
     // ActionListener function(s)
+    @Override
     public void actionPerformed(ActionEvent e) {
         log.debug("ButtonTrigger.actionPerformed() " + this.getName());
         this.click(((AbstractButton) e.getSource()).isSelected());
     }
 
     // MouseListener functions
+    @Override
     public void mousePressed(MouseEvent e) {
         log.debug("MouseListener.mousePressed() " + this.getName());
         this.mouseDown();
     }
 
+    @Override
     public void mouseReleased(MouseEvent e) {
         log.debug("MouseListener.mouseReleased() " + this.getName());
         this.mouseUp();
     }
 
+    @Override
     public void mouseEntered(MouseEvent e) {
     }
 
+    @Override
     public void mouseExited(MouseEvent e) {
     }
 
+    @Override
     public void mouseClicked(MouseEvent e) {
     }
 
@@ -140,6 +144,6 @@ public class ButtonTrigger extends Trigger implements PropertyChangeListener, Ac
         }
     }
 
-    private static final Logger log = LoggerFactory.getLogger(ButtonTrigger.class.getName());
+    private static final Logger log = LoggerFactory.getLogger(ButtonTrigger.class);
 
 }

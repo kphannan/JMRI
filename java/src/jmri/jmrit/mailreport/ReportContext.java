@@ -1,13 +1,6 @@
 package jmri.jmrit.mailreport;
 
-import gnu.io.CommPortIdentifier;
-import java.awt.Dimension;
-import java.awt.GraphicsConfiguration;
-import java.awt.GraphicsDevice;
-import java.awt.GraphicsEnvironment;
-import java.awt.HeadlessException;
-import java.awt.Insets;
-import java.awt.Toolkit;
+import java.awt.*;
 import java.io.File;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -15,7 +8,10 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
+
 import javax.swing.JFrame;
+
+import apps.gui.GuiLafPreferencesManager;
 import jmri.InstanceManager;
 import jmri.jmrix.ConnectionConfig;
 import jmri.jmrix.ConnectionConfigManager;
@@ -23,9 +19,12 @@ import jmri.profile.Profile;
 import jmri.profile.ProfileManager;
 import jmri.util.FileUtil;
 import jmri.util.JmriInsets;
+import jmri.util.JmriJFrame;
 import jmri.util.PortNameMapper;
 import jmri.util.PortNameMapper.SerialPortFriendlyName;
 import jmri.util.zeroconf.ZeroConfService;
+import jmri.util.zeroconf.ZeroConfServiceManager;
+import purejavacomm.CommPortIdentifier;
 
 /**
  * Provide the JMRI context info.
@@ -49,28 +48,42 @@ public class ReportContext {
 
         addString("JMRI Version: " + jmri.Version.name() + "   ");
         addString("JMRI configuration file name: "
-                + System.getProperty("org.jmri.apps.Apps.configFilename") + "   ");
-        if (jmri.util.JmriJFrame.getFrameList().get(0) != null) {
+                + System.getProperty("org.jmri.apps.Apps.configFilename") + "   (from org.jmri.apps.Apps.configFilename system property)");
+        if (!jmri.util.JmriJFrame.getFrameList().isEmpty() && jmri.util.JmriJFrame.getFrameList().get(0) != null) {
             addString("JMRI main window name: "
                     + jmri.util.JmriJFrame.getFrameList().get(0).getTitle() + "   ");
+        } else {
+            addString("No main window present");
         }
 
         addString("JMRI Application: " + jmri.Application.getApplicationName() + "   ");
-        ConnectionConfig[] connList = InstanceManager.getDefault(ConnectionConfigManager.class).getConnections();
-        if (connList != null) {
-            for (int x = 0; x < connList.length; x++) {
-                ConnectionConfig conn = connList[x];
-                addString("Connection " + x + ": " + conn.getManufacturer() + " connected via " + conn.name() + " on " + conn.getInfo() + " Disabled " + conn.getDisabled() + "   ");
+        ConnectionConfigManager cm = InstanceManager.getNullableDefault(ConnectionConfigManager.class);
+        if (cm != null) {
+            ConnectionConfig[] connList = cm.getConnections();
+            if (connList != null) {
+                for (int x = 0; x < connList.length; x++) {
+                    ConnectionConfig conn = connList[x];
+                    addString("Connection " + x + ": " + conn.getManufacturer() + " connected via " + conn.name() + " on " + conn.getInfo() + " Disabled " + conn.getDisabled() + "   ");
+                }
             }
+        } else {
+            addString("No connections present");
         }
-
+        
         addString("Available Communication Ports:");
         addCommunicationPortInfo();
 
-        Profile profile = ProfileManager.defaultManager().getActiveProfile();
-        addString("Active profile: " + profile.getName() + "   ");
-        addString("Profile location: " + profile.getPath().getPath() + "   ");
-        addString("Profile ID: " + profile.getId() + "   ");
+        Profile profile = ProfileManager.getDefault().getActiveProfile();
+        if (profile != null) {
+            addString("Active profile: " + profile.getName() + "   ");
+            addString("Profile location: " + profile.getPath().getPath() + "   ");
+            addString("Profile ID: " + profile.getId() + "   ");
+        } else {
+            addString("No active profile");
+        }
+        
+        addString("JMRI Network ID: " + jmri.util.node.NodeIdentity.networkIdentity());
+        addString("JMRI Storage ID: " + jmri.util.node.NodeIdentity.storageIdentity(profile));
 
         String prefs = FileUtil.getUserFilesPath();
         addString("Preferences directory: " + prefs + "   ");
@@ -83,10 +96,12 @@ public class ReportContext {
 
         File panel = jmri.configurexml.LoadXmlUserAction.getCurrentFile();
         addString("Current panel file: " + (panel == null ? "[none]" : panel.getPath()) + "   ");
+        
+        addString("Locale: " + InstanceManager.getDefault(GuiLafPreferencesManager.class).getLocale());
 
         //String operations = jmri.jmrit.operations.setup.OperationsSetupXml.getFileLocation();
         //addString("Operations files location: "+operations+"  ");
-        jmri.jmrit.audio.AudioFactory af = jmri.InstanceManager.getDefault(jmri.AudioManager.class).getActiveAudioFactory();
+        jmri.jmrit.audio.AudioFactory af = jmri.InstanceManager.getNullableDefault(jmri.AudioManager.class).getActiveAudioFactory();
         String audio = af != null ? af.toString() : "[not initialised]";
         addString("Audio factory type: " + audio + "   ");
 
@@ -128,6 +143,10 @@ public class ReportContext {
         addProperty("user.language");
         addProperty("user.timezone");
         addProperty("jmri.log.path");
+        
+        addString("FileSystemView#getDefaultDirectory(): "+javax.swing.filechooser.FileSystemView.getFileSystemView().getDefaultDirectory().getPath() );
+        addString("FileSystemView#getHomeDirectory(): "+javax.swing.filechooser.FileSystemView.getFileSystemView().getHomeDirectory().getPath() );
+        addString("Default JFileChooser(): "+(new javax.swing.JFileChooser()).getCurrentDirectory().getPath() );
 
         addScreenSize();
 
@@ -182,21 +201,14 @@ public class ReportContext {
         }
 
         // look at context
-        //Rectangle virtualBounds = new Rectangle();
         try {
             GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
             addString("Environment max bounds: " + ge.getMaximumWindowBounds());
 
             try {
-                GraphicsDevice[] gs = ge.getScreenDevices();
-                for (GraphicsDevice gd : gs) {
-                    GraphicsConfiguration[] gc = gd.getConfigurations();
-                    for (int i = 0; i < gc.length; i++) {
-                        addString("bounds[" + i + "] = " + gc[i].getBounds());
-                        // virtualBounds = virtualBounds.union(gc[i].getBounds());
-                    }
-                    addString("Device: " + gd.getIDstring() + " bounds = " + gd.getDefaultConfiguration().getBounds()
-                            + " " + gd.getDefaultConfiguration().toString());
+                for (JmriJFrame.ScreenDimensions sd: JmriJFrame.getScreenDimensions()) {
+                    addString("Device: " + sd.getGraphicsDevice().getIDstring() + " bounds = " + sd.getBounds());
+                    addString("Device: " + sd.getGraphicsDevice().getIDstring() + " insets = " + sd.getInsets());
                 }
             } catch (HeadlessException ex) {
                 addString("Exception getting device bounds " + ex.getMessage());
@@ -211,7 +223,7 @@ public class ReportContext {
             Insets jmriInsets = JmriInsets.getInsets();
             addString("JmriInsets t:" + jmriInsets.top + ", b:" + jmriInsets.bottom
                     + "; l:" + jmriInsets.left + ", r:" + jmriInsets.right);
-        } catch (Throwable ex) {
+        } catch (Exception ex) {
             addString("Exception getting JmriInsets" + ex.getMessage());
         }
     }
@@ -242,26 +254,26 @@ public class ReportContext {
             addString("Unable to enumerate Network Interfaces");
         }
 
-        Collection<ZeroConfService> services = ZeroConfService.allServices();
-        for (InetAddress address : ZeroConfService.netServices().keySet()) {
-            addString("ZeroConfService host: " + ZeroConfService.hostName(address) + " running " + services.size() + " service(s)");
+        Collection<ZeroConfService> services = InstanceManager.getDefault(ZeroConfServiceManager.class).allServices();
+        for (InetAddress address : InstanceManager.getDefault(ZeroConfServiceManager.class).getAddresses()) {
+            addString("ZeroConfService host: " + InstanceManager.getDefault(ZeroConfServiceManager.class).hostName(address) + " running " + services.size() + " service(s)");
         }
         if (services.size() > 0) {
             for (ZeroConfService service : services) {
-                addString("ZeroConfService: " + service.serviceInfo().getQualifiedName() + "  ");
-                addString(" Name: " + service.name() + "   ");
+                addString("ZeroConfService: " + service.getServiceInfo().getQualifiedName() + "  ");
+                addString(" Name: " + service.getName() + "   ");
                 try {
-                    for (String address : service.serviceInfo().getHostAddresses()) {
+                    for (String address : service.getServiceInfo().getHostAddresses()) {
                         addString(" Address:" + address + "   ");
                     }
                 } catch (NullPointerException ex) {
                     addString(" Address: [unknown due to NPE]");
                 }
-                addString(" Port: " + service.serviceInfo().getPort() + "   ");
-                addString(" Server: " + service.serviceInfo().getServer() + "   ");
-                addString(" Type: " + service.type() + "   ");
+                addString(" Port: " + service.getServiceInfo().getPort() + "   ");
+                addString(" Server: " + service.getServiceInfo().getServer() + "   ");
+                addString(" Type: " + service.getType() + "   ");
                 try {
-                    for (String url : service.serviceInfo().getURLs()) {
+                    for (String url : service.getServiceInfo().getURLs()) {
                         addString(" URL: " + url + "   ");
                     }
                 } catch (NullPointerException ex) {
@@ -276,10 +288,9 @@ public class ReportContext {
      * Add communication port information
      */
     private void addCommunicationPortInfo() {
-        @SuppressWarnings("unchecked")
         Enumeration<CommPortIdentifier> portIDs = CommPortIdentifier.getPortIdentifiers();
 
-        ArrayList<CommPortIdentifier> ports = new ArrayList<CommPortIdentifier>();
+        ArrayList<CommPortIdentifier> ports = new ArrayList<>();
 
         // find the names of suitable ports
         while (portIDs.hasMoreElements()) {
@@ -309,4 +320,4 @@ public class ReportContext {
 
 }
 
-/* @(#)ReportContext.java */
+

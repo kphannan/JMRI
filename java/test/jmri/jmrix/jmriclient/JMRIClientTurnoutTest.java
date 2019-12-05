@@ -1,55 +1,65 @@
 package jmri.jmrix.jmriclient;
 
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import org.junit.*;
+import jmri.Turnout;
+import jmri.util.JUnitUtil;
 
 /**
- * JMRIClientTurnoutTest.java
- *
- * Description:	tests for the jmri.jmrix.jmriclient.JMRIClientTurnout class
+ * Tests for the jmri.jmrix.jmriclient.JMRIClientTurnout class
  *
  * @author	Bob Jacobsen
- * @version $Revision: 17977 $
+ * @author  Paul Bender Copyright (C) 2017
  */
-public class JMRIClientTurnoutTest extends TestCase {
+public class JMRIClientTurnoutTest extends jmri.implementation.AbstractTurnoutTestBase  {
 
-    public void testCtor() {
-        JMRIClientTrafficController tc = new JMRIClientTrafficController() {
-            public void sendJMRIClientMessage(JMRIClientMessage m, JMRIClientListener reply) {
-                // do nothing to avoid null pointer when sending to non-existant
-                // connection durring test.
-            }
-        };
-        JMRIClientTurnout m = new JMRIClientTurnout(3, new JMRIClientSystemConnectionMemo(tc));
-        Assert.assertNotNull(m);
+    @Override
+    public int numListeners() {
+        return jcins.numListeners();
     }
 
-    // from here down is testing infrastructure
-    public JMRIClientTurnoutTest(String s) {
-        super(s);
+    protected JMRIClientTrafficControlScaffold jcins;
+
+    @Override
+    public void checkClosedMsgSent() {
+        Assert.assertEquals("closed message", "TURNOUT "+ t.getSystemName()+ " CLOSED\n",
+                jcins.outbound.elementAt(jcins.outbound.size() - 1).toString());
     }
 
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading", JMRIClientTurnoutTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
+    @Override
+    public void checkThrownMsgSent() {
+        Assert.assertEquals("thrown message", "TURNOUT "+ t.getSystemName() + " THROWN\n",
+                jcins.outbound.elementAt(jcins.outbound.size() - 1).toString());
     }
 
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(JMRIClientTurnoutTest.class);
-        return suite;
+    @Override
+    @Test
+    public void testDispose() {
+        t.setCommandedState(jmri.Turnout.CLOSED);    // in case registration with TrafficController
+
+        // is deferred to after first use
+        t.dispose();
+        Assert.assertEquals("controller listeners remaining", 1, numListeners());
     }
 
     // The minimal setup for log4J
-    protected void setUp() {
-        apps.tests.Log4JFixture.setUp();
+    @Override
+    @Before
+    public void setUp() {
+        JUnitUtil.setUp();
+        JUnitUtil.resetInstanceManager();
+        JUnitUtil.initInternalSensorManager();
+        JUnitUtil.initInternalTurnoutManager();
+        
+        jcins = new JMRIClientTrafficControlScaffold();
+        t = new JMRIClientTurnout(3, new JMRIClientSystemConnectionMemo(jcins));
     }
 
-    protected void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
+    @After
+    public void tearDown() {
+        JUnitUtil.clearShutDownManager(); // put in place because AbstractMRTrafficController implementing subclass was not terminated properly
+        JUnitUtil.tearDown();
+
+        jcins = null;
     }
 
 }

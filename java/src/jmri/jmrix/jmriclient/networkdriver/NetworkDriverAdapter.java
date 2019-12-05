@@ -9,10 +9,10 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Implements NetworkPortAdapter for the jmriclient system network connection.
- * <P>
- * This connects a JMRI server (daemon) via a telnet connection.
+ * <p>
+ * This connects a JMRI Simple Server (daemon) via a telnet connection.
  *
- * @author	Paul Bender Copyright (C) 2010
+ * @author Paul Bender Copyright (C) 2010
  */
 public class NetworkDriverAdapter extends JMRIClientPortController {
 
@@ -24,9 +24,10 @@ public class NetworkDriverAdapter extends JMRIClientPortController {
     }
 
     /**
-     * set up all of the other objects to operate with an JMRI server connected
+     * set up all of the other objects to operate with an JMRI Simple server connected
      * to this port
      */
+    @Override
     public void configure() {
         // connect to the traffic controller
         JMRIClientTrafficController control = new JMRIClientTrafficController();
@@ -35,6 +36,7 @@ public class NetworkDriverAdapter extends JMRIClientPortController {
         this.getSystemConnectionMemo().configureManagers();
     }
 
+    @Override
     public boolean status() {
         return opened;
     }
@@ -44,8 +46,7 @@ public class NetworkDriverAdapter extends JMRIClientPortController {
 
     @Deprecated
     static public NetworkDriverAdapter instance() {
-        log.error("Deprecated method instance Called");
-        new java.lang.Exception().printStackTrace();
+        log.error("Deprecated method instance Called", new Exception());
         return null;
     }
 
@@ -128,6 +129,6 @@ public class NetworkDriverAdapter extends JMRIClientPortController {
         return rb.getString("defaultMDNSServiceType");
     }
 
-    private final static Logger log = LoggerFactory.getLogger(NetworkDriverAdapter.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(NetworkDriverAdapter.class);
 
 }

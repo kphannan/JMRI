@@ -10,9 +10,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Provides a context-specific menu for handling the Roster.
- * <P>
  *
- * @author	Bob Jacobsen Copyright (C) 2001, 2002
+ * @author Bob Jacobsen Copyright (C) 2001, 2002
  * @author Dennis Miller Copyright (C) 2005
  * @author Daniel Boudreau Copyright (C) 2007
  * @see NceConsistRosterEntry
@@ -51,22 +50,20 @@ public class NceConsistRosterMenu extends JMenu {
     public NceConsistRosterMenu(String pMenuName, int pMenuType, Component pWho) {
         super(pMenuName);
 
-        ResourceBundle rb = ResourceBundle.getBundle("jmri.jmrit.roster.JmritRosterBundle");
-
         // create the menu
-        //       AbstractAction importAction = new ImportRosterItemAction(rb.getString("MenuItemImport"), pWho);
+        //       AbstractAction importAction = new ImportRosterItemAction(Bundle.getMessage("MenuItemImport"), pWho);
         //       importAction.setEnabled(false);
-        //       AbstractAction exportAction = new ExportRosterItemAction(rb.getString("MenuItemExport"), pWho);
+        //       AbstractAction exportAction = new ExportRosterItemAction(Bundle.getMessage("MenuItemExport"), pWho);
         //       exportAction.setEnabled(false);
-        //       AbstractAction copyAction = new CopyRosterItemAction(rb.getString("MenuItemCopy"), pWho);
+        //       AbstractAction copyAction = new CopyRosterItemAction(Bundle.getMessage("MenuItemCopy"), pWho);
         //       copyAction.setEnabled(false);
-        //       AbstractAction deleteAction = new DeleteRosterItemAction(rb.getString("MenuItemDelete"), pWho);
+        //       AbstractAction deleteAction = new DeleteRosterItemAction(Bundle.getMessage("MenuItemDelete"), pWho);
         //       deleteAction.setEnabled(false);
         // Need a frame here, but are not passed one
         Frame newFrame = new Frame();
-        AbstractAction printAction = new PrintNceConsistRosterAction(rb.getString("MenuItemPrint"), newFrame, false);
+        AbstractAction printAction = new PrintNceConsistRosterAction(Bundle.getMessage("MenuItemPrintSummary"), newFrame, false);
         printAction.setEnabled(false);
-        AbstractAction previewAction = new PrintNceConsistRosterAction(rb.getString("MenuItemPreview"), newFrame, true);
+        AbstractAction previewAction = new PrintNceConsistRosterAction(Bundle.getMessage("MenuItemPreviewSummary"), newFrame, true);
         printAction.setEnabled(false);
 //        add(copyAction);
 //        add(importAction);
@@ -75,31 +72,24 @@ public class NceConsistRosterMenu extends JMenu {
         add(printAction);
         add(previewAction);
 
-        // activate the right items
+        // activate the correct items (currently all identical)
         switch (pMenuType) {
             case MAINMENU:
 //                deleteAction.setEnabled(true);
 //                importAction.setEnabled(true);
 //                exportAction.setEnabled(true);
 //                copyAction.setEnabled(true);
-                printAction.setEnabled(true);
-                previewAction.setEnabled(true);
-                break;
             case SELECTMENU:
-                printAction.setEnabled(true);
-                previewAction.setEnabled(true);
-                break;
             case ENTRYMENU:
                 printAction.setEnabled(true);
                 previewAction.setEnabled(true);
                 break;
             default:
-                log.error("RosterMenu constructed without a valid menuType parameter: "
-                        + pMenuType);
+                log.error("RosterMenu constructed without a valid menuType parameter: {}", pMenuType);
         }
     }
 
     // initialize logging
-    private final static Logger log = LoggerFactory.getLogger(NceConsistRosterMenu.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(NceConsistRosterMenu.class);
 
 }

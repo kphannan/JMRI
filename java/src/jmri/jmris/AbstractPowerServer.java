@@ -35,7 +35,7 @@ abstract public class AbstractPowerServer implements PropertyChangeListener {
 
     protected boolean mgrOK() {
         if (p == null) {
-            p = InstanceManager.getOptionalDefault(PowerManager.class);
+            p = InstanceManager.getNullableDefault(PowerManager.class);
             if (p == null) {
                 log.error("No power manager instance found");
                 try {
@@ -108,6 +108,6 @@ abstract public class AbstractPowerServer implements PropertyChangeListener {
 
     abstract public void parseStatus(String statusString) throws JmriException, IOException;
 
-    private final static Logger log = LoggerFactory.getLogger(AbstractPowerServer.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(AbstractPowerServer.class);
 
 }

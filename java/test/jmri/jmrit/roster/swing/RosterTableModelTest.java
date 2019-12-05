@@ -3,25 +3,28 @@ package jmri.jmrit.roster.swing;
 import jmri.InstanceManager;
 import jmri.jmrit.roster.Roster;
 import jmri.jmrit.roster.RosterEntry;
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import jmri.util.JUnitUtil;
 import org.jdom2.Element;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * Tests for the roster.swing.RosterTableModel class.
  *
  * @author	Bob Jacobsen Copyright (C) 2009
  */
-public class RosterTableModelTest extends TestCase {
+public class RosterTableModelTest {
 
+    @Test
     public void testTableLength() throws Exception {
         RosterTableModel t = new RosterTableModel();
 
         Assert.assertEquals(NENTRIES, t.getRowCount());
     }
 
+    @Test
     public void testTableWidth() throws Exception {
         RosterTableModel t = new RosterTableModel();
 
@@ -29,25 +32,27 @@ public class RosterTableModelTest extends TestCase {
         Assert.assertEquals(t.getColumnCount(), t.getColumnCount());
     }
 
+    @Test
     public void testColumnName() throws Exception {
         RosterTableModel t = new RosterTableModel();
 
         Assert.assertEquals("DCC Address", t.getColumnName(RosterTableModel.ADDRESSCOL));
     }
 
+    @Test
     public void testGetValueAt() {
         RosterTableModel t = new RosterTableModel();
 
         Assert.assertEquals("id 1", t.getValueAt(0, RosterTableModel.IDCOL));
-        Assert.assertEquals(Integer.valueOf(12), t.getValueAt(0, RosterTableModel.ADDRESSCOL));
+        Assert.assertEquals(12, t.getValueAt(0, RosterTableModel.ADDRESSCOL));
         Assert.assertEquals("33", t.getValueAt(0, RosterTableModel.DECODERCOL));
 
         Assert.assertEquals("id 2", t.getValueAt(1, RosterTableModel.IDCOL));
-        Assert.assertEquals(Integer.valueOf(13), t.getValueAt(1, RosterTableModel.ADDRESSCOL));
+        Assert.assertEquals(13, t.getValueAt(1, RosterTableModel.ADDRESSCOL));
         Assert.assertEquals("34", t.getValueAt(1, RosterTableModel.DECODERCOL));
 
         Assert.assertEquals("id 3", t.getValueAt(2, RosterTableModel.IDCOL));
-        Assert.assertEquals(Integer.valueOf(14), t.getValueAt(2, RosterTableModel.ADDRESSCOL));
+        Assert.assertEquals(14, t.getValueAt(2, RosterTableModel.ADDRESSCOL));
         Assert.assertEquals("35", t.getValueAt(2, RosterTableModel.DECODERCOL));
     }
 
@@ -55,12 +60,12 @@ public class RosterTableModelTest extends TestCase {
     static int NENTRIES = 3;
     static int NKEYS = 4;
 
+    @Before
     public void setUp() {
-        apps.tests.Log4JFixture.setUp();
+        jmri.util.JUnitUtil.setUp();
 
-        // Create empty test instance
-        InstanceManager.reset(Roster.class);
-        InstanceManager.setDefault(Roster.class, new Roster());
+        jmri.util.JUnitUtil.resetProfileManager();
+        JUnitUtil.initRosterConfigManager();
 
         // first entry
         Element e;
@@ -85,10 +90,11 @@ public class RosterTableModelTest extends TestCase {
                 ); // end create element
 
         r = new RosterEntry(e) {
+            @Override
             protected void warnShortLong(String s) {
             }
         };
-        Roster.instance().addEntry(r);
+        Roster.getDefault().addEntry(r);
         r.putAttribute("key a", "value 1");
 
         e = new org.jdom2.Element("locomotive")
@@ -109,10 +115,11 @@ public class RosterTableModelTest extends TestCase {
                 ); // end create element
 
         r = new RosterEntry(e) {
+            @Override
             protected void warnShortLong(String s) {
             }
         };
-        Roster.instance().addEntry(r);
+        Roster.getDefault().addEntry(r);
         r.putAttribute("key a", "value 11");
         r.putAttribute("key b", "value 12");
         r.putAttribute("key c", "value 13");
@@ -136,33 +143,17 @@ public class RosterTableModelTest extends TestCase {
                 ); // end create element
 
         r = new RosterEntry(e) {
+            @Override
             protected void warnShortLong(String s) {
             }
         };
-        Roster.instance().addEntry(r);
+        Roster.getDefault().addEntry(r);
 
     }
 
-    // from here down is testing infrastructure
-    public RosterTableModelTest(String s) {
-        super(s);
-    }
-
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading", RosterTableModelTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(RosterTableModelTest.class);
-        return suite;
-    }
-
-    // The minimal setup for log4J
-    protected void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
+    @After
+    public void tearDown() {
+        JUnitUtil.tearDown();
     }
 
 }

@@ -7,6 +7,7 @@ import jmri.Reporter;
 import jmri.jmrix.rfid.RfidMessage;
 import jmri.jmrix.rfid.RfidReply;
 import jmri.jmrix.rfid.RfidReporterManager;
+import jmri.jmrix.rfid.RfidSystemConnectionMemo;
 import jmri.jmrix.rfid.RfidTrafficController;
 import jmri.jmrix.rfid.TimeoutRfidReporter;
 import org.slf4j.Logger;
@@ -14,9 +15,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Rfid implementation of a ReporterManager.
- * <P>
- * System names are "FRpppp", where ppp is a representation of the RFID reader.
- * <P>
+ * <p>
+ * System names are "FnRpppp", where Fn is the connection prefix, ppp is a representation of the RFID reader.
+ *
  * @author Bob Jacobsen Copyright (C) 2008
  * @author Matthew Harris Copyright (C) 2011
  * @since 2.11.4
@@ -24,12 +25,10 @@ import org.slf4j.LoggerFactory;
 public class ConcentratorReporterManager extends RfidReporterManager {
 
     private final RfidTrafficController tc;
-    private final String prefix;
 
-    public ConcentratorReporterManager(RfidTrafficController tc, String prefix) {
-        super(prefix);
-        this.tc = tc;
-        this.prefix = prefix;
+    public ConcentratorReporterManager(RfidSystemConnectionMemo memo) {
+        super(memo);
+        this.tc = memo.getTrafficController();
         attach();
     }
 
@@ -40,7 +39,7 @@ public class ConcentratorReporterManager extends RfidReporterManager {
     @Override
     protected Reporter createNewReporter(String systemName, String userName) {
         log.debug("Create new Reporter: " + systemName);
-        if (!systemName.matches(prefix + typeLetter() + "[" + tc.getRange() + "]")) {
+        if (!systemName.matches(getSystemNamePrefix() + "[" + tc.getRange() + "]")) {
             log.warn("Invalid Reporter name: " + systemName + " - out of supported range " + tc.getRange());
             throw new IllegalArgumentException("Invalid Reporter name: " + systemName + " - out of supported range " + tc.getRange());
         }
@@ -76,10 +75,10 @@ public class ConcentratorReporterManager extends RfidReporterManager {
             return;
         }
         IdTag idTag = InstanceManager.getDefault(IdTagManager.class).provideIdTag(tc.getAdapterMemo().getProtocol().getTag(r));
-        TimeoutRfidReporter report = (TimeoutRfidReporter) provideReporter(prefix + typeLetter() + r.getReaderPort());
+        TimeoutRfidReporter report = (TimeoutRfidReporter) provideReporter(getSystemNamePrefix() + r.getReaderPort());
         report.notify(idTag);
     }
 
-    private static final Logger log = LoggerFactory.getLogger(ConcentratorReporterManager.class.getName());
+    private static final Logger log = LoggerFactory.getLogger(ConcentratorReporterManager.class);
 
 }

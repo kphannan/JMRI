@@ -1,8 +1,14 @@
-// EcosSystemConnectionMemo.java
 package jmri.jmrix.ecos;
 
+import java.util.Comparator;
 import java.util.ResourceBundle;
+import jmri.GlobalProgrammerManager;
 import jmri.InstanceManager;
+import jmri.NamedBean;
+import jmri.util.NamedBeanComparator;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Lightweight class to denote that a system is active, and provide general
@@ -11,8 +17,7 @@ import jmri.InstanceManager;
  * Objects of specific subtypes are registered in the instance manager to
  * activate their particular system.
  *
- * @author	Bob Jacobsen Copyright (C) 2010
- * @version $Revision$
+ * @author Bob Jacobsen Copyright (C) 2010
  */
 public class EcosSystemConnectionMemo extends jmri.jmrix.SystemConnectionMemo {
 
@@ -69,23 +74,30 @@ public class EcosSystemConnectionMemo extends jmri.jmrix.SystemConnectionMemo {
         throttleManager = new jmri.jmrix.ecos.EcosDccThrottleManager(this);
         jmri.InstanceManager.setThrottleManager(throttleManager);
 
+        reporterManager = new jmri.jmrix.ecos.EcosReporterManager(this);
+        jmri.InstanceManager.setReporterManager(reporterManager);
+
         sensorManager = new jmri.jmrix.ecos.EcosSensorManager(this);
         jmri.InstanceManager.setSensorManager(sensorManager);
 
-        reporterManager = new jmri.jmrix.ecos.EcosReporterManager(this);
-        jmri.InstanceManager.setReporterManager(reporterManager);
-        
-        jmri.InstanceManager.setProgrammerManager(getProgrammerManager());
+        jmri.InstanceManager.store(getProgrammerManager(), GlobalProgrammerManager.class);
+        jmri.InstanceManager.store(getProgrammerManager(), jmri.AddressedProgrammerManager.class);
 
     }
 
+    @Override
     protected ResourceBundle getActionModelResourceBundle() {
         return ResourceBundle.getBundle("jmri.jmrix.ecos.EcosActionListBundle");
     }
 
+    @Override
+    public <B extends NamedBean> Comparator<B> getNamedBeanComparator(Class<B> type) {
+        return new NamedBeanComparator<>();
+    }
+
     private EcosSensorManager sensorManager;
     private EcosTurnoutManager turnoutManager;
-    private EcosLocoAddressManager locoManager;
+    protected EcosLocoAddressManager locoManager;
     private EcosPreferences prefManager;
     private EcosDccThrottleManager throttleManager;
     private EcosPowerManager powerManager;
@@ -128,8 +140,9 @@ public class EcosSystemConnectionMemo extends jmri.jmrix.SystemConnectionMemo {
     }
 
     /**
-     * Tells which managers this provides by class
+     * Tell which managers this class provides.
      */
+    @Override
     public boolean provides(Class<?> type) {
         if (getDisabled()) {
             return false;
@@ -149,16 +162,17 @@ public class EcosSystemConnectionMemo extends jmri.jmrix.SystemConnectionMemo {
         if (type.equals(jmri.ReporterManager.class)) {
             return true;
         }
-        if (type.equals(jmri.ProgrammerManager.class)) {
-            return true;
-        }
         if (type.equals(jmri.GlobalProgrammerManager.class)) {
             return true;
         }
-        return false; // nothing, by default
+        if (type.equals(jmri.AddressedProgrammerManager.class)) {
+            return true;
+        }
+        return super.provides(type);
     }
 
     @SuppressWarnings("unchecked")
+    @Override
     public <T> T get(Class<?> T) {
         if (getDisabled()) {
             return null;
@@ -178,13 +192,13 @@ public class EcosSystemConnectionMemo extends jmri.jmrix.SystemConnectionMemo {
         if (T.equals(jmri.ReporterManager.class)) {
             return (T) getReporterManager();
         }
-        if (T.equals(jmri.ProgrammerManager.class)) {
-            return (T) getProgrammerManager();
-        }
         if (T.equals(jmri.GlobalProgrammerManager.class)) {
             return (T) getProgrammerManager();
         }
-        return null; // nothing, by default
+        if (T.equals(jmri.AddressedProgrammerManager.class)) {
+            return (T) getProgrammerManager();
+        }
+        return super.get(T);
     }
 
     @Override
@@ -200,6 +214,10 @@ public class EcosSystemConnectionMemo extends jmri.jmrix.SystemConnectionMemo {
         if (reporterManager != null) {
             reporterManager.dispose();
             reporterManager = null;
+        }
+        if (locoManager != null) {
+            locoManager.terminateThreads();
+            locoManager = null;
         }
         if (programmerManager != null) {
             InstanceManager.deregister(programmerManager, jmri.jmrix.ecos.EcosProgrammerManager.class);
@@ -221,7 +239,7 @@ public class EcosSystemConnectionMemo extends jmri.jmrix.SystemConnectionMemo {
 
         super.dispose();
     }
+
+    // private final static Logger log = LoggerFactory.getLogger(EcosSystemConnectionMemo.class);
+
 }
-
-
-/* @(#)InternalSystemConnectionMemo.java */

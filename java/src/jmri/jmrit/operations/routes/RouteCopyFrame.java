@@ -1,28 +1,30 @@
-// RouteCopyFrame.java
 package jmri.jmrit.operations.routes;
 
 import java.awt.Dimension;
 import java.awt.GridBagLayout;
 import java.text.MessageFormat;
+
 import javax.swing.BoxLayout;
 import javax.swing.JComboBox;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import jmri.jmrit.operations.OperationsFrame;
-import jmri.jmrit.operations.setup.Control;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import jmri.InstanceManager;
+import jmri.jmrit.operations.OperationsFrame;
+import jmri.jmrit.operations.setup.Control;
 
 /**
  * Frame for copying a route for operations.
  *
  * @author Bob Jacobsen Copyright (C) 2001
  * @author Daniel Boudreau Copyright (C) 2008, 2010
- * @version $Revision$
  */
 public class RouteCopyFrame extends OperationsFrame {
 
-    RouteManager routeManager = RouteManager.instance();
+    RouteManager routeManager = InstanceManager.getDefault(RouteManager.class);
 
     // labels
     javax.swing.JLabel textCopyRoute = new javax.swing.JLabel(Bundle.getMessage("CopyRoute"));
@@ -35,12 +37,12 @@ public class RouteCopyFrame extends OperationsFrame {
     javax.swing.JCheckBox invertCheckBox = new javax.swing.JCheckBox(Bundle.getMessage("Invert"));
 
     // major buttons
-    javax.swing.JButton copyButton = new javax.swing.JButton(Bundle.getMessage("Copy"));
+    javax.swing.JButton copyButton = new javax.swing.JButton(Bundle.getMessage("ButtonCopy"));
 
     // combo boxes
-    JComboBox<Route> routeBox = RouteManager.instance().getComboBox();
-
-    public RouteCopyFrame() {
+    JComboBox<Route> routeBox = InstanceManager.getDefault(RouteManager.class).getComboBox();
+    
+    public RouteCopyFrame(Route route) {
         super(Bundle.getMessage("TitleRouteCopy"));
         // general GUI config
 
@@ -72,10 +74,8 @@ public class RouteCopyFrame extends OperationsFrame {
 
         // setup buttons
         addButtonAction(copyButton);
-    }
-
-    public void setRouteName(String routeName) {
-        routeBox.setSelectedItem(routeManager.getRouteByName(routeName));
+        
+        routeBox.setSelectedItem(route);
     }
 
     @Override

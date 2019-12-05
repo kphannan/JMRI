@@ -6,33 +6,33 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Handle planning information for AutoAllocate
- * <P>
+ * <p>
  * An Allocation Plan involves a planned meet of two ActiveTrains in a specified
  * area of the layout.
- * <P>
+ * <p>
  * AllocationPlan objects are transient (not saved between runs).
- * <P>
+ * <p>
  * AllocationPlan objects are created and disposed by AutoAllocate as needed.
  * AutoAllocate serves as the manager of AllocationPlan objects.
- * <P>
+ * <p>
  * An ActiveTrain may be in more than one AllocationPlan of the same type,
  * provided its target Section in all active AllocationPlans is the same.
- * <P>
+ * <p>
  * An AllocationPlan is "complete" when both Active Trains have been allocated
  * their target Sections.
  *
- * <P>
+ * <p>
  * This file is part of JMRI.
- * <P>
+ * <p>
  * JMRI is open source software; you can redistribute it and/or modify it under
  * the terms of version 2 of the GNU General Public License as published by the
  * Free Software Foundation. See the "COPYING" file for a copy of this license.
- * <P>
+ * <p>
  * JMRI is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
  * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  *
- * @author	Dave Duchamp Copyright (C) 2011
+ * @author Dave Duchamp Copyright (C) 2011
  */
 public class AllocationPlan {
 
@@ -63,9 +63,9 @@ public class AllocationPlan {
     private int _tSectionOneSeq = 0;
     private int _tSectionTwoSeq = 0;
 
-    /**
-     * Access methods
-     */
+    //
+    // Access methods
+    //
     protected int getPlanNum() {
         return _planNum;
     }
@@ -127,14 +127,14 @@ public class AllocationPlan {
         return 0;
     }
 
-    /**
-     * Other Methods
-     */
+    //
+    // Other Methods
+    //
     protected boolean isComplete() {
         if ((_atOne == null) || (_atTwo == null)) {
             return false;
         }
-        java.util.ArrayList<AllocatedSection> aSections = _atOne.getAllocatedSectionList();
+        java.util.List<AllocatedSection> aSections = _atOne.getAllocatedSectionList();
         boolean complete = false;
         for (int i = 0; i < aSections.size(); i++) {
             if ((aSections.get(i).getSection() == _tSectionOne)
@@ -160,5 +160,5 @@ public class AllocationPlan {
         // does nothing for now
     }
 
-    private final static Logger log = LoggerFactory.getLogger(AllocationPlan.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(AllocationPlan.class);
 }

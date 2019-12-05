@@ -1,4 +1,3 @@
-// OpenLcbLocoAddress.java
 package jmri.jmrix.openlcb;
 
 import jmri.DccLocoAddress;
@@ -7,13 +6,12 @@ import org.openlcb.NodeID;
 /**
  * Encapsulate information for an OpenLCB Locomotive Decoder Address.
  *
- * The address information is an OpenLCB node ID
+ * The address information is an OpenLCB node ID.
  *
  * This should not be a child of DccLocoAddress, but rather of LocoAddress. But
  * the code isn't up to that right now.
  *
- * @author	Bob Jacobsen Copyright (C) 2012
- * @version	$Revision$
+ * @author Bob Jacobsen Copyright (C) 2012
  */
 public class OpenLcbLocoAddress extends DccLocoAddress {
 
@@ -22,6 +20,7 @@ public class OpenLcbLocoAddress extends DccLocoAddress {
         this.node = node;
     }
 
+    @Override
     public boolean equals(Object a) {
         if (a == null) {
             return false;
@@ -34,6 +33,7 @@ public class OpenLcbLocoAddress extends DccLocoAddress {
         }
     }
 
+    @Override
     public int hashCode() {
         return node.hashCode();
     }
@@ -45,6 +45,3 @@ public class OpenLcbLocoAddress extends DccLocoAddress {
     NodeID node;
 
 }
-
-
-/* @(#)OpenLcbLocoAddress.java */

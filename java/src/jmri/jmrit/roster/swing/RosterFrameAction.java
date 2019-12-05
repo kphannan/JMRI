@@ -2,7 +2,6 @@ package jmri.jmrit.roster.swing;
 
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
-import java.util.ResourceBundle;
 import javax.swing.Icon;
 import javax.swing.WindowConstants;
 import jmri.InstanceManager;
@@ -37,7 +36,7 @@ public class RosterFrameAction extends JmriAbstractAction {
      * configured in user preferences
      */
     public RosterFrameAction() {
-        super(ResourceBundle.getBundle("apps.ActionListBundle").getString("jmri.jmrit.roster.swing.RosterFrameAction"));
+        super(Bundle.getMessage("RosterFrameAction")); // NOI18N
         allowQuit = false;
     }
 
@@ -53,9 +52,9 @@ public class RosterFrameAction extends JmriAbstractAction {
 
     @Override
     public void actionPerformed(ActionEvent event) {
-        mainFrame = new RosterFrame();
+        RosterFrame mainFrame = new RosterFrame();
         UserPreferencesManager p = InstanceManager.getDefault(jmri.UserPreferencesManager.class);
-        if (!p.isWindowPositionSaved(mainFrame.getWindowFrameRef())) {
+        if (!p.hasProperties(mainFrame.getWindowFrameRef())) {
             mainFrame.setSize(new Dimension(1024, 600));
             mainFrame.setPreferredSize(new Dimension(1024, 600));
         }
@@ -72,6 +71,4 @@ public class RosterFrameAction extends JmriAbstractAction {
     public jmri.util.swing.JmriPanel makePanel() {
         throw new IllegalArgumentException("Should not be invoked");
     }
-
-    RosterFrame mainFrame;
 }

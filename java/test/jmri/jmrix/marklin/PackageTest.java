@@ -1,30 +1,34 @@
 package jmri.jmrix.marklin;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
 
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
+
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+   jmri.jmrix.marklin.networkdriver.PackageTest.class,
+   jmri.jmrix.marklin.configurexml.PackageTest.class,
+   jmri.jmrix.marklin.swing.PackageTest.class,
+   MarklinConnectionTypeListTest.class,
+   MarklinSystemConnectionMemoTest.class,
+   MarklinTrafficControllerTest.class,
+   MarklinPortControllerTest.class,
+   MarklinConstantsTest.class,
+   MarklinMessageTest.class,
+   MarklinReplyTest.class,
+   MarklinPowerManagerTest.class,
+   MarklinSensorManagerTest.class,
+   MarklinSensorTest.class,
+   MarklinThrottleManagerTest.class,
+   MarklinThrottleTest.class,
+   MarklinTurnoutManagerTest.class,
+   MarklinTurnoutTest.class,
+   BundleTest.class
+})
 /**
  * Tests for the jmri.jmrix.marklin package
  *
- * @author  Paul Bender	
+ * @author  Paul Bender	Copyright (C) 2016
  */
-public class PackageTest extends TestCase {
-
-    // from here down is testing infrastructure
-    public PackageTest(String s) {
-        super(s);
-    }
-
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {PackageTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite("jmri.jmrix.marklin.PackageTest");  // no tests in this class itself
-        return suite;
-    }
+public class PackageTest {
 }

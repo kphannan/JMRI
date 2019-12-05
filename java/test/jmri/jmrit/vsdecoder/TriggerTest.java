@@ -1,23 +1,22 @@
 package jmri.jmrit.vsdecoder;
 
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import org.junit.Assert;
+import org.junit.Test;
 
 /**
  * Tests for the Trigger class
  *
  * @author Mark Underwood Copyright (C) 2011
- * @version $Revision: 17977 $
  */
-public class TriggerTest extends TestCase {
+public class TriggerTest {
 
+    @Test
     public void testStateConstants() {
         // Maybe check the enums here?
     }
 
     // Note: Trigger is abstract.  Using BoolTrigger as test vehicle.
+    @Test
     public void testCreate() {
         Trigger uut = new BoolTrigger("unitUnderTest");
         Assert.assertEquals("trigger name", "unitUnderTest", uut.getName());
@@ -29,7 +28,8 @@ public class TriggerTest extends TestCase {
                 uut.getTriggerType());
     }
 
-    public void TestSetGet() {
+    @Test
+    public void testSetGet() {
         VSDSound target;
         Trigger uut = new BoolTrigger("unitUnderTest");
         uut.setName("new name");
@@ -48,34 +48,20 @@ public class TriggerTest extends TestCase {
         Assert.assertEquals("set trigger type", Trigger.TriggerType.BOOLEAN,
                 uut.getTriggerType());
         TriggerListener tl = new TriggerListener() {
+            @Override
             public void takeAction() {
             }
 
+            @Override
             public void takeAction(int i) {
             }
 
+            @Override
             public void takeAction(float f) {
             }
         };
         uut.setCallback(tl);
         Assert.assertSame("set callback", tl, uut.getCallback());
-    }
-
-    // from here down is testing infrastructure
-    public TriggerTest(String s) {
-        super(s);
-    }
-
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {TriggerTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(TriggerTest.class);
-        return suite;
     }
 
 }

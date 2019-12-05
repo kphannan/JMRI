@@ -26,13 +26,6 @@ public class SimpleServer extends JmriServer {
 
     static ResourceBundle rb = ResourceBundle.getBundle("jmri.jmris.simpleserver.SimpleServerBundle");
 
-    public static JmriServer instance() {
-        if (InstanceManager.getOptionalDefault(SimpleServer.class) == null) {
-            InstanceManager.store(new SimpleServer(),SimpleServer.class);
-        }
-        return InstanceManager.getDefault(SimpleServer.class);
-    }
-
     // Create a new server using the default port
     public SimpleServer() {
         this(Integer.parseInt(rb.getString("SimpleServerPort")));
@@ -67,8 +60,8 @@ public class SimpleServer extends JmriServer {
 
         // Start by sending a welcome message
         outStream.writeBytes("JMRI " + jmri.Version.name() + " \n");
-        outStream.writeBytes("RAILROAD " + WebServerPreferences.getDefault().getRailRoadName() + " \n");
-        outStream.writeBytes("NODE " + NodeIdentity.identity() + " \n");
+        outStream.writeBytes("RAILROAD " + InstanceManager.getDefault(WebServerPreferences.class).getRailroadName() + " \n");
+        outStream.writeBytes("NODE " + NodeIdentity.networkIdentity() + " \n");
 
         while (true) {
             inputScanner.skip("[\r\n]*");// skip any stray end of line characters.
@@ -133,5 +126,5 @@ public class SimpleServer extends JmriServer {
         }
         inputScanner.close();
     }
-    private final static Logger log = LoggerFactory.getLogger(SimpleServer.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(SimpleServer.class);
 }

@@ -1,4 +1,3 @@
-//BackupFilesAction.java
 package jmri.jmrit.operations.setup;
 
 import java.awt.event.ActionEvent;
@@ -8,18 +7,18 @@ import javax.swing.AbstractAction;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import jmri.jmrit.operations.OperationsXml;
-import org.python.jline.internal.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Swing action to backup operation files to a directory selected by the user.
  *
  * @author Daniel Boudreau Copyright (C) 2011
  * @author Gregory Madsen Copyright (C) 2012
- * @version $Revision$
  */
 public class BackupFilesAction extends AbstractAction {
 
-//    private final static Logger log = LoggerFactory.getLogger(BackupFilesAction.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(BackupFilesAction.class);
 
     public BackupFilesAction(String s) {
         super(s);
@@ -44,7 +43,7 @@ public class BackupFilesAction extends AbstractAction {
 
         // get directory to write to
         JFileChooser fc = new JFileChooser(backup.getBackupRoot());
-        fc.addChoosableFileFilter(new fileFilter());
+        fc.addChoosableFileFilter(new FileFilter());
 
         File fs = new File(backup.suggestBackupSetName());
         fc.setSelectedFile(fs);
@@ -62,11 +61,11 @@ public class BackupFilesAction extends AbstractAction {
         try {
             backup.backupFilesToDirectory(directory);
         } catch (IOException ex) {
-            Log.error("backup failed");
+            log.error("backup failed");
         }
     }
 
-    private static class fileFilter extends javax.swing.filechooser.FileFilter {
+    private static class FileFilter extends javax.swing.filechooser.FileFilter {
 
         @Override
         public boolean accept(File f) {
@@ -74,12 +73,7 @@ public class BackupFilesAction extends AbstractAction {
                 return true;
             }
             String name = f.getName();
-            if (name.matches(".*\\.xml")) // NOI18N
-            {
-                return true;
-            } else {
-                return false;
-            }
+            return name.matches(".*\\.xml"); // NOI18N
         }
 
         @Override
@@ -90,4 +84,4 @@ public class BackupFilesAction extends AbstractAction {
 
 }
 
-/* @(#)BackupFilesAction.java */
+

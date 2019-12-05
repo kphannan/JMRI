@@ -1,8 +1,10 @@
 package jmri.managers;
 
-import jmri.NamedBean;
+import javax.annotation.Nonnull;
+
 import jmri.Reporter;
 import jmri.ReporterManager;
+import jmri.SignalHead;
 
 /**
  * Implementation of a ReporterManager that can serves as a proxy for multiple
@@ -10,16 +12,18 @@ import jmri.ReporterManager;
  *
  * @author	Bob Jacobsen Copyright (C) 2003, 2010
  */
-public class ProxyReporterManager extends AbstractProxyManager implements ReporterManager {
+public class ProxyReporterManager extends AbstractProxyManager<Reporter> implements ReporterManager {
 
     public ProxyReporterManager() {
         super();
     }
 
-    protected AbstractManager makeInternalManager() {
+    @Override
+    protected AbstractManager<Reporter> makeInternalManager() {
         return jmri.InstanceManager.getDefault(jmri.jmrix.internal.InternalSystemConnectionMemo.class).getReporterManager();
     }
 
+    @Override
     public int getXMLOrder() {
         return jmri.Manager.REPORTERS;
     }
@@ -29,17 +33,24 @@ public class ProxyReporterManager extends AbstractProxyManager implements Report
      *
      * @return Null if nothing by that name exists
      */
+    @Override
     public Reporter getReporter(String name) {
-        return (Reporter) super.getNamedBean(name);
+        return super.getNamedBean(name);
     }
 
-    protected NamedBean makeBean(int i, String systemName, String userName) {
+    @Override
+    protected Reporter makeBean(int i, String systemName, String userName) {
         return ((ReporterManager) getMgr(i)).newReporter(systemName, userName);
     }
 
+    @Override
     public Reporter provideReporter(String sName) throws IllegalArgumentException {
-        return (Reporter) super.provideNamedBean(sName);
+        return super.provideNamedBean(sName);
     }
+
+    @Override
+    /** {@inheritDoc} */
+    public Reporter provide(@Nonnull String name) throws IllegalArgumentException { return provideReporter(name); }
 
     /**
      * Locate an instance based on a system name. Returns null if no instance
@@ -47,8 +58,9 @@ public class ProxyReporterManager extends AbstractProxyManager implements Report
      *
      * @return requested Reporter object or null if none exists
      */
+    @Override
     public Reporter getBySystemName(String sName) {
-        return (Reporter) super.getBeanBySystemName(sName);
+        return super.getBeanBySystemName(sName);
     }
 
     /**
@@ -57,10 +69,12 @@ public class ProxyReporterManager extends AbstractProxyManager implements Report
      *
      * @return requested Reporter object or null if none exists
      */
+    @Override
     public Reporter getByUserName(String userName) {
-        return (Reporter) super.getBeanByUserName(userName);
+        return super.getBeanByUserName(userName);
     }
 
+    @Override
     public Reporter getByDisplayName(String key) {
         // First try to find it in the user list.
         // If that fails, look it up in the system list
@@ -77,21 +91,21 @@ public class ProxyReporterManager extends AbstractProxyManager implements Report
      * two calls with the same arguments will get the same instance; there is
      * only one Reporter object representing a given physical Reporter and
      * therefore only one with a specific system or user name.
-     * <P>
+     * <p>
      * This will always return a valid object reference for a valid request; a
      * new object will be created if necessary. In that case:
-     * <UL>
-     * <LI>If a null reference is given for user name, no user name will be
+     * <ul>
+     * <li>If a null reference is given for user name, no user name will be
      * associated with the Reporter object created; a valid system name must be
      * provided
-     * <LI>If a null reference is given for the system name, a system name will
+     * <li>If a null reference is given for the system name, a system name will
      * _somehow_ be inferred from the user name. How this is done is system
      * specific. Note: a future extension of this interface will add an
      * exception to signal that this was not possible.
-     * <LI>If both names are provided, the system name defines the hardware
+     * <li>If both names are provided, the system name defines the hardware
      * access of the desired Reporter, and the user address is associated with
      * it.
-     * </UL>
+     * </ul>
      * Note that it is possible to make an inconsistent request if both
      * addresses are provided, but the given values are associated with
      * different objects. This is a problem, and we don't have a good solution
@@ -100,10 +114,12 @@ public class ProxyReporterManager extends AbstractProxyManager implements Report
      *
      * @return requested Reporter object (never null)
      */
+    @Override
     public Reporter newReporter(String systemName, String userName) {
-        return (Reporter) newNamedBean(systemName, userName);
+        return newNamedBean(systemName, userName);
     }
 
+    @Override
     public boolean allowMultipleAdditions(String systemName) {
         int i = matchTentative(systemName);
         if (i >= 0) {
@@ -112,6 +128,7 @@ public class ProxyReporterManager extends AbstractProxyManager implements Report
         return ((ReporterManager) getMgr(0)).allowMultipleAdditions(systemName);
     }
 
+    @Override
     public String getNextValidAddress(String curAddress, String prefix) {
         for (int i = 0; i < nMgrs(); i++) {
             if (prefix.equals(
@@ -123,7 +140,24 @@ public class ProxyReporterManager extends AbstractProxyManager implements Report
         return null;
     }
 
-    public String getBeanTypeHandled() {
-        return Bundle.getMessage("BeanNameReporter");
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String getEntryToolTip() {
+        return "Enter a number from 1 to 9999"; // Basic number format help
+    }
+
+    @Override
+    public String getBeanTypeHandled(boolean plural) {
+        return Bundle.getMessage(plural ? "BeanNameReporters" : "BeanNameReporter");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Class<Reporter> getNamedBeanClass() {
+        return Reporter.class;
     }
 }

@@ -1,57 +1,38 @@
 package jmri.jmrit.display.layoutEditor;
 
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import java.awt.GraphicsEnvironment;
 import jmri.util.JUnitUtil;
+import org.junit.*;
 
 /**
  * Test simple functioning of MultiSensorIconFrame
  *
  * @author	Paul Bender Copyright (C) 2016
  */
-public class MultiSensorIconFrameTest extends TestCase {
+public class MultiSensorIconFrameTest extends jmri.util.JmriJFrameTestBase {
+        
+    private LayoutEditor e;
 
-    public void testCtor() {
-        MultiSensorIconFrame  t = new MultiSensorIconFrame(new LayoutEditor());
-        Assert.assertNotNull("exists", t );
+    @Before
+    @Override
+    public void setUp() {
+        JUnitUtil.setUp();
+        jmri.util.JUnitUtil.resetProfileManager();
+        if(!GraphicsEnvironment.isHeadless()){
+           e = new LayoutEditor();
+           frame = new MultiSensorIconFrame(e);
+        }
+        
     }
 
-    // from here down is testing infrastructure
+    @After
     @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        apps.tests.Log4JFixture.setUp();
-        // dispose of the single PanelMenu instance
-        jmri.jmrit.display.PanelMenu.dispose();
-        // reset the instance manager.
-        JUnitUtil.resetInstanceManager();
-    }
- 
-    @Override
-    protected void tearDown() throws Exception {
+    public void tearDown() {
+        if(e!=null){
+           JUnitUtil.dispose(e);
+        }
+        e = null;
         super.tearDown();
-        // dispose of the single PanelMenu instance
-        jmri.jmrit.display.PanelMenu.dispose();
-        JUnitUtil.resetInstanceManager();
-        apps.tests.Log4JFixture.tearDown();
-    }
-
-    public MultiSensorIconFrameTest(String s) {
-        super(s);
-    }
-
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading", MultiSensorIconFrameTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(MultiSensorIconFrameTest.class);
-        return suite;
     }
 
 }

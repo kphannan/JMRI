@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
  * Handle XML configuration for DoubleTurnoutSignalHead objects.
  *
  * @author Bob Jacobsen Copyright: Copyright (c) 2004, 2008
- * @version $Revision$
  */
 public class DoubleTurnoutSignalHeadXml extends jmri.managers.configurexml.AbstractNamedBeanManagerConfigXML {
 
@@ -23,19 +22,18 @@ public class DoubleTurnoutSignalHeadXml extends jmri.managers.configurexml.Abstr
 
     /**
      * Default implementation for storing the contents of a
-     * DoubleTurnoutSignalHead
+     * DoubleTurnoutSignalHead.
      *
      * @param o Object to store, of type TripleTurnoutSignalHead
      * @return Element containing the complete info
      */
+    @Override
     public Element store(Object o) {
         DoubleTurnoutSignalHead p = (DoubleTurnoutSignalHead) o;
 
         Element element = new Element("signalhead");
         element.setAttribute("class", this.getClass().getName());
 
-        // include contents
-        element.setAttribute("systemName", p.getSystemName());
         element.addContent(new Element("systemName").addContent(p.getSystemName()));
 
         storeCommon(p, element);
@@ -86,13 +84,27 @@ public class DoubleTurnoutSignalHeadXml extends jmri.managers.configurexml.Abstr
 
         loadCommon(h, shared);
 
-        InstanceManager.getDefault(jmri.SignalHeadManager.class).register(h);
+        SignalHead existingBean =
+                InstanceManager.getDefault(jmri.SignalHeadManager.class)
+                        .getBeanBySystemName(sys);
+
+        if ((existingBean != null) && (existingBean != h)) {
+            log.error("systemName is already registered: {}", sys);
+        } else {
+            InstanceManager.getDefault(jmri.SignalHeadManager.class).register(h);
+        }
+
         return true;
     }
 
     /**
-     * Needs to handle two types of element: turnoutname is new form turnout is
-     * old form
+     * Process stored signal head output (turnout).
+     * <p>
+     * Needs to handle two types of element: turnoutname is new form; turnout is
+     * old form.
+     *
+     * @param o xml object defining a turnout on an SE8C signal head
+     * @return named bean for the turnout
      */
     NamedBeanHandle<Turnout> loadTurnout(Object o) {
         Element e = (Element) o;
@@ -107,7 +119,12 @@ public class DoubleTurnoutSignalHeadXml extends jmri.managers.configurexml.Abstr
             } else {
                 t = InstanceManager.turnoutManagerInstance().getBySystemName(name);
             }
-            return jmri.InstanceManager.getDefault(jmri.NamedBeanHandleManager.class).getNamedBeanHandle(name, t);
+            if (t != null) {
+                return jmri.InstanceManager.getDefault(jmri.NamedBeanHandleManager.class).getNamedBeanHandle(name, t);
+            } else {
+                log.warn("Failed to find turnout {}. Check connection and configuration", name);
+                return null;
+            }
         } else {
             String name = e.getText();
             try {
@@ -120,9 +137,11 @@ public class DoubleTurnoutSignalHeadXml extends jmri.managers.configurexml.Abstr
         }
     }
 
+    @Override
     public void load(Element element, Object o) {
         log.error("Invalid method called");
     }
 
-    private final static Logger log = LoggerFactory.getLogger(DoubleTurnoutSignalHeadXml.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(DoubleTurnoutSignalHeadXml.class);
+
 }

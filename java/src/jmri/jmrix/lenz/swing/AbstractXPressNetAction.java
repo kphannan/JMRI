@@ -10,10 +10,9 @@ import jmri.jmrix.SystemConnectionMemo;
 import jmri.jmrix.lenz.XNetSystemConnectionMemo;
 
 /**
- * Abstract action to create and register a swing object for XPressNet systems.
- * <P>
+ * Abstract action to create and register a swing object for XpressNet systems.
  *
- * @author	Paul Bender Copyright (C) 2016 
+ * @author Paul Bender Copyright (C) 2016 
  */
 abstract public class AbstractXPressNetAction extends AbstractAction implements jmri.jmrix.swing.SystemConnectionAction {
 
@@ -25,15 +24,16 @@ abstract public class AbstractXPressNetAction extends AbstractAction implements 
     }
 
     public AbstractXPressNetAction(jmri.jmrix.lenz.XNetSystemConnectionMemo memo) {
-        this("LI101 Configuration Manager", memo);
+        this(Bundle.getMessage("MenuItemLI101ConfigurationManager"), memo);
     }
 
     /**
      * Get the {@link jmri.jmrix.SystemConnectionMemo} this action is bound to.
      *
-     * @return the SystemConnectionMemo or null if not bound.
+     * @return the SystemConnectionMemo or null if not bound
      */
     @CheckForNull
+    @Override
     public SystemConnectionMemo getSystemConnectionMemo(){
        return _memo;
     }
@@ -47,6 +47,7 @@ abstract public class AbstractXPressNetAction extends AbstractAction implements 
      * @param memo the SystemConnectionMemo
      * @throws IllegalArgumentException if the SystemConnectionMemo is invalid
      */
+    @Override
     public void setSystemConnectionMemo(@Nonnull SystemConnectionMemo memo) throws IllegalArgumentException{
          if(memo == null) {
             throw new IllegalArgumentException("Attempt to set null system connection");
@@ -63,11 +64,12 @@ abstract public class AbstractXPressNetAction extends AbstractAction implements 
      * <p>
      * If the implementing class is a subclass of a class that does accept
      * SystemConnectionMemos, but the implementing class does not accept any,
-     * return an empty array instead of null.</p>
+     * return an empty array instead of null.
      *
      * @return Set of SystemConnectionMemo subclasses or empty array.
      */
     @Nonnull
+    @Override
     public Set<Class<? extends SystemConnectionMemo>> getSystemConnectionMemoClasses(){
         return new HashSet<>(Arrays.asList(XNetSystemConnectionMemo.class));
     }

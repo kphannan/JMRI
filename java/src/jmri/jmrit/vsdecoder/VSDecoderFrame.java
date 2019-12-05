@@ -3,26 +3,23 @@ package jmri.jmrit.vsdecoder;
 /*
  * <hr>
  * This file is part of JMRI.
- * <P>
+ * <p>
  * JMRI is free software; you can redistribute it and/or modify it under 
  * the terms of version 2 of the GNU General Public License as published 
  * by the Free Software Foundation. See the "COPYING" file for a copy
  * of this license.
- * <P>
+ * <p>
  * JMRI is distributed in the hope that it will be useful, but WITHOUT 
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License 
  * for more details.
- * <P>
  *
- * @author			Mark Underwood Copyright (C) 2011
- * @version			$Revision$
+ * @author   Mark Underwood Copyright (C) 2011
  */
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.ResourceBundle;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import jmri.jmrit.vsdecoder.swing.VSDPreferencesAction;
@@ -30,10 +27,7 @@ import jmri.util.JmriJFrame;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@SuppressWarnings("serial")
 class VSDecoderFrame extends JmriJFrame {
-
-    private static final ResourceBundle vsdBundle = VSDecoderBundle.bundle();
 
     VSDecoderPane decpane;
 
@@ -61,12 +55,13 @@ class VSDecoderFrame extends JmriJFrame {
     }
 
     private void buildMenu() {
-        JMenu fileMenu = new JMenu(vsdBundle.getString("VSDecoderFileMenu"));
+        JMenu fileMenu = new JMenu(Bundle.getMessage("MenuFile"));
 
-        fileMenu.add(new LoadVSDFileAction(vsdBundle.getString("VSDecoderFileMenuLoadVSDFile")));
-        fileMenu.add(new StoreXmlVSDecoderAction(vsdBundle.getString("VSDecoderFileMenuSaveProfile")));
-        fileMenu.add(new LoadXmlVSDecoderAction(vsdBundle.getString("VSDecoderFileMenuLoadProfile")));
-        fileMenu.add(new VSDPreferencesAction(vsdBundle.getString("VSDecoderFileMenuPreferences")));
+        fileMenu.add(new LoadVSDFileAction(Bundle.getMessage("VSDecoderFileMenuLoadVSDFile")));
+        fileMenu.add(new StoreXmlVSDecoderAction(Bundle.getMessage("VSDecoderFileMenuSaveProfile")));
+        fileMenu.add(new LoadXmlVSDecoderAction(Bundle.getMessage("VSDecoderFileMenuLoadProfile")));
+        fileMenu.addSeparator();
+        fileMenu.add(new VSDPreferencesAction(Bundle.getMessage("VSDecoderFileMenuPreferences")));
 
         fileMenu.getItem(1).setEnabled(false); // disable XML store
         fileMenu.getItem(2).setEnabled(false); // disable XML load
@@ -81,6 +76,7 @@ class VSDecoderFrame extends JmriJFrame {
 
     }
 
+    @Override
     public void windowClosing(java.awt.event.WindowEvent e) {
         // Call the superclass function
         super.windowClosing(e);
@@ -95,5 +91,5 @@ class VSDecoderFrame extends JmriJFrame {
         return menuList;
     }
 
-    private final static Logger log = LoggerFactory.getLogger(VSDecoderFrame.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(VSDecoderFrame.class);
 }

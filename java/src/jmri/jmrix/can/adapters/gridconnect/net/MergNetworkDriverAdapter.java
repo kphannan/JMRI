@@ -1,14 +1,13 @@
-// NetworkDriverAdapter.java
 package jmri.jmrix.can.adapters.gridconnect.net;
 
 
 /**
  * Implements NetworkDriverAdapter for the MERG system network connection.
- * <P>
+ * <p>
  * This connects via a telnet connection.
  *
- * @author	Bob Jacobsen Copyright (C) 2010
- * @version	$Revision: 21889 $
+ * @author Bob Jacobsen Copyright (C) 2010
+ * 
  */
 public class MergNetworkDriverAdapter extends NetworkDriverAdapter {
 

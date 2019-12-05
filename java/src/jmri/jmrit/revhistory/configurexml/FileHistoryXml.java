@@ -20,7 +20,7 @@ public class FileHistoryXml extends jmri.configurexml.AbstractXmlAdapter {
      * content is explicitly loaded from the file
      */
     @Override
-    public boolean load(Element shared, Element perNode) throws Exception {
+    public boolean load(Element shared, Element perNode) {
         return true;
     }
 
@@ -30,12 +30,13 @@ public class FileHistoryXml extends jmri.configurexml.AbstractXmlAdapter {
      * <p>
      * If no RevHistory already present in InstanceManager, creates one and adds
      * this.
-     * <P>
+     * <p>
      * Then adds, instead of replacing, the history information
      */
-    public boolean loadDirectly(Element e) throws Exception {
+    public boolean loadDirectly(Element e) {
         if (!e.getName().equals("filehistory")) {
-            throw new Exception("Unexpected element name: " + e.getName());
+            log.error("Unexpected element name: {}", e.getName());
+            return false;
         }
 
         FileHistory rmain = jmri.InstanceManager.getDefault(FileHistory.class);
@@ -89,17 +90,16 @@ public class FileHistoryXml extends jmri.configurexml.AbstractXmlAdapter {
     /**
      * Create a set of configured objects from their XML description, using an
      * auxiliary object.
-     * <P>
+     * <p>
      * For example, the auxilary object o might be a manager or GUI of some type
      * that needs to be informed as each object is created.
      *
      * @param e Top-level XML element containing the description
      * @param o Implementation-specific Object needed for the conversion
-     * @throws Exception when a error prevents creating the objects as as
-     *                   required by the input XML.
      */
-    public void load(Element e, Object o) throws Exception {
-        throw new Exception("Method not coded");
+    @Override
+    public void load(Element e, Object o) {
+        throw new UnsupportedOperationException("Method not coded");
     }
 
     /**
@@ -110,6 +110,7 @@ public class FileHistoryXml extends jmri.configurexml.AbstractXmlAdapter {
      *          in ConfigXmlManager.
      * @return The XML representation Element
      */
+    @Override
     public Element store(Object o) {
         return storeDirectly(o);
     }
@@ -175,4 +176,6 @@ public class FileHistoryXml extends jmri.configurexml.AbstractXmlAdapter {
 
         return rev;
     }
+
+    private final static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(FileHistoryXml.class);
 }

@@ -1,31 +1,38 @@
 package jmri.jmrit.vsdecoder;
 
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import jmri.*;
 import org.jdom2.Element;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * Tests for the VSDSound class
  *
  * @author Mark Underwood Copyright (C) 2011
  */
-public class VSDSoundTest extends TestCase {
+public class VSDSoundTest {
 
+    @Test
     public void testStateConstants() {
         // Maybe check the enums here?
     }
 
     // Note: VSDSound is abstract.  Using SoundBite as test vehicle.
+    @Test
     public void testCreateSimple() {
-        VSDSound uut = new SoundBite("unitUnderTest");
+        VSDSound uut = new SoundBite("unitUnderTest"); // BOUND_MODE
         Assert.assertEquals("sound name", "unitUnderTest", uut.getName());
         Assert.assertFalse("is playing", uut.isPlaying());
+    
+        // this created an audio manager, clean that up
+        InstanceManager.getDefault(jmri.AudioManager.class).cleanup();
     }
 
-    public void TestSetGet() {
-        VSDSound uut = new SoundBite("unitUnderTest");
+    @Test
+    public void testSetGet() {
+        VSDSound uut = new SoundBite("unitUnderTest"); // BOUND_MODE
         uut.setName("new name");
         Assert.assertEquals("set name", "new name", uut.getName());
     }
@@ -37,29 +44,24 @@ public class VSDSoundTest extends TestCase {
         return (e);
     }
 
+    @Test
     public void testSetXML() {
-        VSDSound uut = new SoundBite("unitUnderTest");
+        VSDSound uut = new SoundBite("unitUnderTest"); // BOUND_MODE
         Element e = buildTestXML();
         uut.setXml(e);
         // VSDSound.setXml() does nothing.
         Assert.assertEquals("xml name", "unitUnderTest", uut.getName());
     }
 
-    // from here down is testing infrastructure
-    public VSDSoundTest(String s) {
-        super(s);
+    @Before
+    public void setUp() {
+        jmri.util.JUnitUtil.setUp();
+
     }
 
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {VSDSoundTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
+    @After
+    public void tearDown() {
+        jmri.util.JUnitUtil.tearDown();
 
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(VSDSoundTest.class);
-        return suite;
     }
-
 }

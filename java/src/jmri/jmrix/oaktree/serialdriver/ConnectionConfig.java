@@ -1,16 +1,14 @@
-// ConnectionConfig.java
 package jmri.jmrix.oaktree.serialdriver;
 
-import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JPanel;
+import jmri.jmrix.oaktree.OakTreeSystemConnectionMemo;
 import jmri.jmrix.oaktree.nodeconfig.NodeConfigAction;
 
 /**
- * Definition of objects to handle configuring a Oak Tree layout connection
+ * Definition of objects to handle configuring a Oak Tree layout connection.
  *
  * @author Bob Jacobsen Copyright (C) 2003, 2006
- * @version	$Revision$
  */
 public class ConnectionConfig extends jmri.jmrix.AbstractSerialConnectionConfig {
 
@@ -23,35 +21,43 @@ public class ConnectionConfig extends jmri.jmrix.AbstractSerialConnectionConfig 
     }
 
     /**
-     * Ctor for a functional Swing object with no prexisting adapter
+     * Ctor for a connection configuration with no preexisting adapter.
+     * {@link #setInstance()} will fill the adapter member.
      */
     public ConnectionConfig() {
         super();
     }
 
+    JButton b = new JButton(Bundle.getMessage("ConfigNodesTitle"));
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void loadDetails(JPanel details) {
-        // have to embed the usual one in a new JPanel
+        setInstance();
 
-        JPanel p = new JPanel();
-        super.loadDetails(p);
-
-        details.setLayout(new BoxLayout(details, BoxLayout.Y_AXIS));
-        details.add(p);
-
+        b.addActionListener(new NodeConfigAction((OakTreeSystemConnectionMemo) adapter.getSystemConnectionMemo()));
         // add another button
-        JButton b = new JButton("Configure nodes");
-
-        details.add(b);
-
-        b.addActionListener(new NodeConfigAction());
-
+        if (!additionalItems.contains(b)) {
+            additionalItems.add(b);
+        }
+        super.loadDetails(details);
     }
 
+    @Override
     public String name() {
-        return "RCI bus";
+        return Bundle.getMessage("RciBus");
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     protected void setInstance() {
-        adapter = SerialDriverAdapter.instance();
+        if (adapter == null ) {
+           adapter = new SerialDriverAdapter();
+        }
     }
+
 }

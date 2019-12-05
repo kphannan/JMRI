@@ -1,12 +1,10 @@
-// Constants.java
 package jmri.jmrix.powerline.simulator;
 
 /**
- * Constants and functions specific to the Insteon 2412S interface
+ * Constants and functions specific to the Insteon 2412S interface.
  *
- * @author	Bob Jacobsen Copyright (C) 2008, 2009
- * @author	Ken Cameron Copyright (C) 2010
- * @version	$Revision$
+ * @author Bob Jacobsen Copyright (C) 2008, 2009
+ * @author Ken Cameron Copyright (C) 2010
  */
 public class Constants {
 
@@ -46,6 +44,8 @@ public class Constants {
 
     /**
      * Pretty-print a header code
+     * @param b value for header
+     * @return  formated string for type of header
      */
     public static String formatHeaderByte(int b) {
         return "Dim: " + ((b >> 3) & 0x1F)
@@ -54,6 +54,3 @@ public class Constants {
     }
 
 }
-
-
-/* @(#)Constants.java */

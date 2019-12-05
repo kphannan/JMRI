@@ -9,12 +9,12 @@ import org.slf4j.LoggerFactory;
 /**
  * This sample Automaton runs a locomotive back and forth on a piece of track by
  * watching two sensors.
- * <P>
+ * <p>
  * The sensors and locomotive are hardcoded, as this is an example of just the
  * Automaton function. Adding a GUI to configure these would be
  * straight-forward. The values could be passed via the constructor, or the
  * constructor (which can run in any required thread) could invoke a dialog.
- * <P>
+ * <p>
  * For test purposes, one of these objects can be created and invoked by a
  * SampleAutomaton3Action.
  * <p>
@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
  * <a href="http://jmri.org/help/en/html/tools/automation/viaJava.shtml">JMRI
  * Layout Automation in Java page</a>.
  *
- * @author	Bob Jacobsen Copyright (C) 2003
+ * @author Bob Jacobsen Copyright (C) 2003
  * @see jmri.jmrit.automat.SampleAutomaton3Action
  */
 public class SampleAutomaton3 extends AbstractAutomaton {
@@ -60,6 +60,7 @@ public class SampleAutomaton3 extends AbstractAutomaton {
     int locoNumber = 77;
     boolean locoLong = false;
 
+    @Override
     protected void init() {
         // get references to sample layout objects
 
@@ -81,6 +82,7 @@ public class SampleAutomaton3 extends AbstractAutomaton {
      *
      * @return Always returns true to continue operation
      */
+    @Override
     protected boolean handle() {
 
         // we're supposed to be moving forward here
@@ -114,6 +116,6 @@ public class SampleAutomaton3 extends AbstractAutomaton {
     }
 
     // initialize logging
-    private final static Logger log = LoggerFactory.getLogger(SampleAutomaton3.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(SampleAutomaton3.class);
 
 }

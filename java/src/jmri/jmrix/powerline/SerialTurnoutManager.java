@@ -1,41 +1,47 @@
-// SerialTurnoutManager.java
 package jmri.jmrix.powerline;
 
+import java.util.Locale;
 import jmri.Turnout;
 import jmri.managers.AbstractTurnoutManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Implement turnout manager for powerline systems
- * <P>
- * System names are "PTnnn", where nnn is the turnout number without padding.
+ * Implement turnout manager for Powerline systems.
+ * <p>
+ * System names are "PTnnn", where P is the user configurable system prefix,
+ * nnn is the turnout number without padding.
  *
- * @author	Bob Jacobsen Copyright (C) 2003, 2006, 2007, 2008 Converted to
+ * @author Bob Jacobsen Copyright (C) 2003, 2006, 2007, 2008 Converted to
  * multiple connection
- * @author kcameron Copyright (C) 2011
- * @version	$Revision$
+ * @author Ken Cameron Copyright (C) 2011
  */
 public class SerialTurnoutManager extends AbstractTurnoutManager {
 
     SerialTrafficController tc = null;
 
     public SerialTurnoutManager(SerialTrafficController tc) {
-        super();
+        super(tc.getAdapterMemo());
         this.tc = tc;
     }
 
-    public String getSystemPrefix() {
-        return tc.getAdapterMemo().getSystemPrefix();
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public SerialSystemConnectionMemo getMemo() {
+        return (SerialSystemConnectionMemo) memo;
     }
 
+    @Override
     public boolean allowMultipleAdditions(String systemName) {
         return false;
     }
 
+    @Override
     public String getNextValidAddress(String curAddress, String prefix) {
 
-        //If the hardware address past does not already exist then this can
+        //If the hardware address passed does not already exist then this can
         //be considered the next valid address.
         Turnout s = getBySystemName(prefix + typeLetter() + curAddress);
         if (s == null) {
@@ -44,19 +50,20 @@ public class SerialTurnoutManager extends AbstractTurnoutManager {
 
         // This bit deals with handling the curAddress, and how to get the next address.
         int iName = 0;
-        //Address starts with a single letter called a house code.
+        // Address starts with a single letter called a House Code.
         String houseCode = curAddress.substring(0, 1);
         try {
             iName = Integer.parseInt(curAddress.substring(1));
         } catch (NumberFormatException ex) {
-            log.error("Unable to convert " + curAddress + " Hardware Address to a number");
+            log.error("Unable to convert {} Hardware Address to a number", curAddress);
             jmri.InstanceManager.getDefault(jmri.UserPreferencesManager.class).
-                    showErrorMessage("Error", "Unable to convert " + curAddress + " to a valid Hardware Address", "" + ex, "", true, false);
+                    showErrorMessage(Bundle.getMessage("ErrorTitle"),
+                            Bundle.getMessage("ErrorConvertNumberX", curAddress), "" + ex, "", true, false);
             return null;
         }
 
-        //Check to determine if the systemName is in use, return null if it is,
-        //otherwise return the next valid address.
+        // Check to determine if the systemName is in use, return null if it is,
+        // otherwise return the next valid address.
         s = getBySystemName(prefix + typeLetter() + curAddress);
         if (s != null) {
             for (int x = 1; x < 10; x++) {
@@ -72,6 +79,7 @@ public class SerialTurnoutManager extends AbstractTurnoutManager {
         }
     }
 
+    @Override
     public Turnout createNewTurnout(String systemName, String userName) {
         // validate the system name, and normalize it
         String sName = tc.getAdapterMemo().getSerialAddress().normalizeSystemName(systemName);
@@ -91,13 +99,37 @@ public class SerialTurnoutManager extends AbstractTurnoutManager {
         // does system name correspond to configured hardware
         if (!tc.getAdapterMemo().getSerialAddress().validSystemNameConfig(sName, 'T')) {
             // system name does not correspond to configured hardware
-            log.warn("Turnout '" + sName + "' refers to an undefined Serial Node.");
+            log.warn("Turnout '{}' refers to an undefined Serial Node.", sName);
         }
         return t;
     }
 
-    private final static Logger log = LoggerFactory.getLogger(SerialTurnoutManager.class.getName());
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String validateSystemNameFormat(String name, Locale locale) {
+        return tc.getAdapterMemo().getSerialAddress().validateSystemNameFormat(name, typeLetter(), locale);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public NameValidity validSystemNameFormat(String systemName) {
+        return tc.getAdapterMemo().getSerialAddress().validSystemNameFormat(systemName, typeLetter());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String getEntryToolTip() {
+        return Bundle.getMessage("AddOutputEntryToolTip");
+    }
+
+    private final static Logger log = LoggerFactory.getLogger(SerialTurnoutManager.class);
 
 }
 
-/* @(#)SerialTurnoutManager.java */
+

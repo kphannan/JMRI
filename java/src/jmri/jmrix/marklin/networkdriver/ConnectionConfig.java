@@ -1,4 +1,3 @@
-// ConnectionConfig.java
 package jmri.jmrix.marklin.networkdriver;
 
 import javax.swing.JPanel;
@@ -8,7 +7,6 @@ import javax.swing.JPanel;
  * via a NetworkDriverAdapter object.
  *
  * @author Bob Jacobsen Copyright (C) 2001, 2003
- * @version	$Revision: 18902 $
  */
 public class ConnectionConfig extends jmri.jmrix.AbstractNetworkConnectionConfig {
 
@@ -21,21 +19,26 @@ public class ConnectionConfig extends jmri.jmrix.AbstractNetworkConnectionConfig
     }
 
     /**
-     * Ctor for a functional Swing object with no prexisting adapter
+     * Ctor for a connection configuration with no preexisting adapter.
+     * {@link #setInstance()} will fill the adapter member.
      */
     public ConnectionConfig() {
         super();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void loadDetails(final JPanel details) {
         super.loadDetails(details);
         portField.setEnabled(false);
     }
 
+    @Override
     public String name() {
         return "CS2 via network";
-    }
+    } // NOI18N
 
     /**
      * Access to current selected command station mode
@@ -43,6 +46,8 @@ public class ConnectionConfig extends jmri.jmrix.AbstractNetworkConnectionConfig
     /*public String getMode() {
      return opt2Box.getSelectedItem().toString();
      }*/
+
+    @Override
     protected void setInstance() {
         if (adapter == null) {
             adapter = new NetworkDriverAdapter();

@@ -1,4 +1,3 @@
-// TreePane.java
 package jmri.jmrix.jinput.treecontrol;
 
 import java.awt.BorderLayout;
@@ -21,33 +20,17 @@ import javax.swing.tree.DefaultTreeSelectionModel;
 import javax.swing.tree.TreePath;
 import jmri.jmrix.jinput.TreeModel;
 import jmri.jmrix.jinput.UsbNode;
+import net.java.games.input.Component;
+import net.java.games.input.Controller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Create a JPanel containing a tree of JInput sources.
  *
- * <hr>
- * This file is part of JMRI.
- * <P>
- * JMRI is free software; you can redistribute it and/or modify it under the
- * terms of version 2 of the GNU General Public License as published by the Free
- * Software Foundation. See the "COPYING" file for a copy of this license.
- * <P>
- * JMRI is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- * <P>
- *
- * @author	Bob Jacobsen Copyright 2008
- * @version	$Revision$
+ * @author Bob Jacobsen Copyright 2008
  */
 public class TreePanel extends JPanel {
-
-    /**
-     *
-     */
-    private static final long serialVersionUID = 8786948522926033006L;
 
     public TreePanel() {
 
@@ -97,13 +80,13 @@ public class TreePanel extends JPanel {
 
         JPanel p = new JPanel();
         p.setLayout(new BoxLayout(p, BoxLayout.X_AXIS));
-        p.add(new JLabel("Controller: "));
+        p.add(new JLabel(Bundle.getMessage("USBController") + ": "));
         p.add(controllerName);
         p.add(Box.createHorizontalGlue());
         p2.add(p);
         p = new JPanel();
         p.setLayout(new BoxLayout(p, BoxLayout.X_AXIS));
-        p.add(new JLabel("Type: "));
+        p.add(new JLabel(Bundle.getMessage("USBType") + ": "));
         p.add(controllerType);
         p.add(Box.createHorizontalGlue());
         p2.add(p);
@@ -112,14 +95,14 @@ public class TreePanel extends JPanel {
 
         p = new JPanel();
         p.setLayout(new BoxLayout(p, BoxLayout.X_AXIS));
-        p.add(new JLabel("Component: "));
+        p.add(new JLabel(Bundle.getMessage("USBComponent") + ": "));
         p.add(componentName);
         p.add(Box.createHorizontalGlue());
         p2.add(p);
 
         p = new JPanel();
         p.setLayout(new BoxLayout(p, BoxLayout.X_AXIS));
-        p.add(new JLabel("Identifier: "));
+        p.add(new JLabel(Bundle.getMessage("USBIdentifier") + ": "));
         p.add(componentId);
         p.add(Box.createHorizontalGlue());
         p2.add(p);
@@ -128,9 +111,9 @@ public class TreePanel extends JPanel {
 
         p = new JPanel();
         p.setLayout(new BoxLayout(p, BoxLayout.X_AXIS));
-        p.add(new JLabel("Analog: "));
+        p.add(new JLabel(Bundle.getMessage("USBAnalog") + ": "));
         p.add(componentAnalog);
-        p.add(new JLabel("  Relative: "));
+        p.add(new JLabel("  " + Bundle.getMessage("USBRelative") + ": "));
         p.add(componentRelative);
         p.add(Box.createHorizontalGlue());
         p2.add(p);
@@ -139,7 +122,7 @@ public class TreePanel extends JPanel {
 
         p = new JPanel();
         p.setLayout(new BoxLayout(p, BoxLayout.X_AXIS));
-        p.add(new JLabel("Value: "));
+        p.add(new JLabel(Bundle.getMessage("USBValue") + ": "));
         p.add(componentValue);
         p.add(Box.createHorizontalGlue());
         p2.add(p);
@@ -149,7 +132,7 @@ public class TreePanel extends JPanel {
         p = new JPanel();
         p.setLayout(new BoxLayout(p, BoxLayout.X_AXIS));
         p.add(sensorBox);
-        p.add(new JLabel("Name: "));
+        p.add(new JLabel(Bundle.getMessage("USBName") + ": "));
         p.add(sensorName);
         p.add(Box.createHorizontalGlue());
         p2.add(p);
@@ -157,7 +140,7 @@ public class TreePanel extends JPanel {
         p = new JPanel();
         p.setLayout(new BoxLayout(p, BoxLayout.X_AXIS));
         p.add(memoryBox);
-        p.add(new JLabel("Name: "));
+        p.add(new JLabel(Bundle.getMessage("USBName") + ": "));
         p.add(memoryName);
         p.add(Box.createHorizontalGlue());
         p2.add(p);
@@ -185,24 +168,19 @@ public class TreePanel extends JPanel {
         // starting listening for changes
         TreeModel.instance().addPropertyChangeListener(
                 new PropertyChangeListener() {
-                    @Override
-                    public void propertyChange(PropertyChangeEvent e) {
-                        if (currentNode == null) {
-                            return;
-                        }
-                        if (e.getOldValue() != currentNode) {
-                            return;
-                        }
-                        // right place, update
-                        float value = ((Float) e.getNewValue()).floatValue();
-                        if (currentNode.getComponent().isAnalog()) {
-                            componentValue.setText("" + value);
-                        } else {
-                            componentValue.setText((value > 0.0) ? "Yes" : "No");
-                        }
+            @Override
+            public void propertyChange(PropertyChangeEvent e) {
+                if ((currentNode != null) && (e.getOldValue() == currentNode)) {
+                    // right place, update
+                    float value = ((Float) e.getNewValue()).floatValue();
+                    if (currentNode.getComponent().isAnalog()) {
+                        componentValue.setText("" + value);
+                    } else {
+                        componentValue.setText((value > 0.0) ? Bundle.getMessage("ButtonYes") : Bundle.getMessage("ButtonNo"));
                     }
                 }
-        );
+            }
+        });
     }
 
     void checkSensorBox() {
@@ -239,27 +217,31 @@ public class TreePanel extends JPanel {
     UsbNode currentNode = null;
 
     void update() {
-        if (currentNode.getController() != null) {
-            controllerName.setText(currentNode.getController().getName());
-            controllerType.setText(currentNode.getController().getType().toString());
+        Controller controller = currentNode.getController();
+        if (controller != null) {
+            controllerName.setText(controller.getName());
+            controllerType.setText(controller.getType().toString());
         } else {
             controllerName.setText("");
             controllerType.setText("");
         }
-        if (currentNode.getComponent() != null) {
-            componentName.setText(currentNode.getComponent().getName());
-            componentId.setText(currentNode.getComponent().getIdentifier().toString());
-            if (currentNode.getComponent().isAnalog()) {
-                componentAnalog.setText("Yes");
+        Component component = currentNode.getComponent();
+        if (component != null) {
+            componentName.setText(component.getName());
+            componentId.setText(component.getIdentifier().toString());
+            if (component.isAnalog()) {
+                componentAnalog.setText(Bundle.getMessage("ButtonYes"));
                 componentValue.setText("" + currentNode.getValue());
-                componentRelative.setText(currentNode.getComponent().isRelative() ? "Yes" : "No");
+                componentRelative.setText(component.isRelative() ? Bundle.getMessage("ButtonYes") : Bundle.getMessage("ButtonNo"));
             } else {
-                componentAnalog.setText("No");
+                componentAnalog.setText(Bundle.getMessage("ButtonNo"));
                 componentRelative.setText("");
-                componentValue.setText((currentNode.getValue() > 0.0) ? "Yes" : "No");
+                componentValue.setText((currentNode.getValue() > 0.0) ? Bundle.getMessage("ButtonYes") : Bundle.getMessage("ButtonNo"));
             }
-            if ((currentNode.getAttachedSensor() != null) && (!currentNode.getAttachedSensor().equals(""))) {
-                sensorName.setText(currentNode.getAttachedSensor());
+
+            String attachedSensor = currentNode.getAttachedSensor();
+            if ((attachedSensor != null) && !attachedSensor.isEmpty()) {
+                sensorName.setText(attachedSensor);
                 sensorName.setEditable(false);
                 sensorBox.setSelected(true);
             } else {
@@ -267,8 +249,10 @@ public class TreePanel extends JPanel {
                 sensorName.setEditable(true);
                 sensorBox.setSelected(false);
             }
-            if ((currentNode.getAttachedMemory() != null) && (!currentNode.getAttachedMemory().equals(""))) {
-                memoryName.setText(currentNode.getAttachedMemory());
+
+            String attachedMemory = currentNode.getAttachedMemory();
+            if ((attachedMemory != null) && (!attachedMemory.equals(""))) {
+                memoryName.setText(attachedMemory);
                 memoryName.setEditable(false);
                 memoryBox.setSelected(true);
             } else {
@@ -279,8 +263,8 @@ public class TreePanel extends JPanel {
         } else {
             componentName.setText("");
             componentId.setText("");
-            componentAnalog.setText("No");
-            componentRelative.setText("No");
+            componentAnalog.setText(Bundle.getMessage("ButtonNo"));
+            componentRelative.setText(Bundle.getMessage("ButtonNo"));
             componentValue.setText("");
             sensorName.setText("");
             sensorName.setEditable(true);
@@ -298,9 +282,9 @@ public class TreePanel extends JPanel {
     JLabel componentAnalog = new JLabel();
     JLabel componentRelative = new JLabel();
     JLabel componentValue = new JLabel();
-    JCheckBox sensorBox = new JCheckBox("Copy to JMRI Sensor  ");
+    JCheckBox sensorBox = new JCheckBox(Bundle.getMessage("USBCopyJMRISensor") + "  ");
     JTextField sensorName = new JTextField(25);
-    JCheckBox memoryBox = new JCheckBox("Copy to JMRI Memory  ");
+    JCheckBox memoryBox = new JCheckBox(Bundle.getMessage("USBCopyJMRIMemory") + "  ");
     JTextField memoryName = new JTextField(25);
 
     public UsbNode getSelectedElement() {
@@ -320,5 +304,5 @@ public class TreePanel extends JPanel {
 
     JTree dTree;
 
-    private final static Logger log = LoggerFactory.getLogger(TreePanel.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(TreePanel.class);
 }

@@ -2,7 +2,6 @@ package jmri.jmrit.beantable;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseEvent;
-import java.beans.PropertyChangeListener;
 import java.util.ResourceBundle;
 import javax.swing.JButton;
 import javax.swing.JMenu;
@@ -27,20 +26,20 @@ import org.slf4j.LoggerFactory;
  *
  * <hr>
  * This file is part of JMRI.
- * <P>
+ * <p>
  * JMRI is free software; you can redistribute it and/or modify it under the
  * terms of version 2 of the GNU General Public License as published by the Free
  * Software Foundation. See the "COPYING" file for a copy of this license.
- * <P>
+ * <p>
  * JMRI is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
  * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- * <P>
+ * <p>
  *
- * @author	Bob Jacobsen Copyright (C) 2003
+ * @author Bob Jacobsen Copyright (C) 2003
  * @author Matthew Harris copyright (c) 2009
  */
-public class AudioTableAction extends AbstractTableAction {
+public class AudioTableAction extends AbstractTableAction<Audio> {
 
     AudioTableDataModel listeners;
     AudioTableDataModel buffers;
@@ -55,7 +54,7 @@ public class AudioTableAction extends AbstractTableAction {
 
     /**
      * Create an action with a specific title.
-     * <P>
+     * <p>
      * Note that the argument is the Action title, not the title of the
      * resulting frame. Perhaps this should be changed?
      *
@@ -65,7 +64,7 @@ public class AudioTableAction extends AbstractTableAction {
         super(actionName);
 
         // disable ourself if there is no primary Audio manager available
-        if (jmri.InstanceManager.getOptionalDefault(AudioManager.class) == null) {
+        if (!InstanceManager.getOptionalDefault(AudioManager.class).isPresent()) {
             setEnabled(false);
         }
 
@@ -102,7 +101,7 @@ public class AudioTableAction extends AbstractTableAction {
              */
             @Override
             void extras() {
-                addToFrame(null);
+                addToFrame(this);
             }
         };
         setTitle();
@@ -117,13 +116,15 @@ public class AudioTableAction extends AbstractTableAction {
     @Override
     protected void createModel() {
         // ensure that the AudioFactory has been initialised
-        if (InstanceManager.getOptionalDefault(jmri.AudioManager.class).getActiveAudioFactory() == null) {
-            InstanceManager.getDefault(jmri.AudioManager.class).init();
-            if(InstanceManager.getDefault(jmri.AudioManager.class).getActiveAudioFactory() instanceof jmri.jmrit.audio.NullAudioFactory) {
-                InstanceManager.getDefault(jmri.UserPreferencesManager.class).
-                        showWarningMessage("Error", "NullAudioFactory initialised - no sounds will be available", getClassName(), "nullAudio", false, true);
+        InstanceManager.getOptionalDefault(jmri.AudioManager.class).ifPresent(cm -> {
+            if (cm.getActiveAudioFactory() == null) {
+                cm.init();
+                if (cm.getActiveAudioFactory() instanceof jmri.jmrit.audio.NullAudioFactory) {
+                    InstanceManager.getDefault(jmri.UserPreferencesManager.class).
+                            showWarningMessage("Error", "NullAudioFactory initialised - no sounds will be available", getClassName(), "nullAudio", false, true);
+                }
             }
-        }
+        });
         listeners = new AudioListenerTableDataModel();
         buffers = new AudioBufferTableDataModel();
         sources = new AudioSourceTableDataModel();
@@ -173,7 +174,6 @@ public class AudioTableAction extends AbstractTableAction {
     @Override
     public void setMenuBar(BeanTableFrame f) {
         JMenuBar menuBar = f.getJMenuBar();
-        ResourceBundle rbapps = ResourceBundle.getBundle("apps.AppsBundle");
         MenuElement[] subElements;
         JMenu fileMenu = null;
         for (int i = 0; i < menuBar.getMenuCount(); i++) {
@@ -191,7 +191,7 @@ public class AudioTableAction extends AbstractTableAction {
             MenuElement[] popsubElements = subElement.getSubElements();
             for (MenuElement popsubElement : popsubElements) {
                 if (popsubElement instanceof JMenuItem) {
-                    if (((JMenuItem) popsubElement).getText().equals(rbapps.getString("PrintTable"))) {
+                    if (((JMenuItem) popsubElement).getText().equals(Bundle.getMessage("PrintTable"))) {
                         JMenuItem printMenu = (JMenuItem) popsubElement;
                         fileMenu.remove(printMenu);
                         break;
@@ -253,12 +253,12 @@ public class AudioTableAction extends AbstractTableAction {
         }
     }
 
-    private static final Logger log = LoggerFactory.getLogger(AudioTableAction.class.getName());
+    private static final Logger log = LoggerFactory.getLogger(AudioTableAction.class);
 
     /**
      * Define abstract AudioTableDataModel
      */
-    abstract public class AudioTableDataModel extends BeanTableDataModel implements PropertyChangeListener {
+    abstract public class AudioTableDataModel extends BeanTableDataModel<Audio> {
 
         char subType;
 
@@ -297,6 +297,7 @@ public class AudioTableAction extends AbstractTableAction {
          *
          * @param subType Audio sub-type to update
          */
+        @SuppressWarnings("deprecation") // needs careful unwinding for Set operations & generics
         protected synchronized void updateSpecificNameList(char subType) {
             // first, remove listeners from the individual objects
             if (sysNameList != null) {
@@ -418,7 +419,7 @@ public class AudioTableAction extends AbstractTableAction {
         }
 
         @Override
-        protected void clickOn(NamedBean t) {
+        protected void clickOn(Audio t) {
             // Do nothing
         }
 
@@ -491,7 +492,7 @@ public class AudioTableAction extends AbstractTableAction {
 
     @Override
     public void setMessagePreferencesDetails(){
-        jmri.InstanceManager.getDefault(jmri.UserPreferencesManager.class).preferenceItemDetails(getClassName(), "nullAudio", Bundle.getMessage("HideNullAudioWarningMessage"));
+        jmri.InstanceManager.getDefault(jmri.UserPreferencesManager.class).setPreferenceItemDetails(getClassName(), "nullAudio", Bundle.getMessage("HideNullAudioWarningMessage"));
         super.setMessagePreferencesDetails();
     }
 

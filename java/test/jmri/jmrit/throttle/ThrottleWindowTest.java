@@ -1,48 +1,30 @@
 package jmri.jmrit.throttle;
 
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import java.awt.GraphicsEnvironment;
+import jmri.util.JUnitUtil;
+import org.junit.*;
 
 /**
  * Test simple functioning of ThrottleWindow
  *
- * @author	Paul Bender Copyright (C) 2016
+ * @author Paul Bender Copyright (C) 2016
  */
-public class ThrottleWindowTest extends TestCase {
+public class ThrottleWindowTest extends jmri.util.JmriJFrameTestBase {
 
-    public void testCtor() {
-        ThrottleWindow panel = new ThrottleWindow();
-        Assert.assertNotNull("exists", panel );
-    }
-
-    // from here down is testing infrastructure
-    public ThrottleWindowTest(String s) {
-        super(s);
-    }
-
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading", ThrottleWindowTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(ThrottleWindowTest.class);
-        return suite;
-    }
-
+    @Before
     @Override
-    public void setUp() throws Exception {
-        super.setUp();
-        apps.tests.Log4JFixture.setUp();
+    public void setUp() {
+        JUnitUtil.setUp();
+        JUnitUtil.resetProfileManager();
+        JUnitUtil.initRosterConfigManager();
+        if (!GraphicsEnvironment.isHeadless()) {
+            frame = new ThrottleWindow();
+        }
     }
-    
+
+    @After
     @Override
-    public void tearDown() throws Exception {
+    public void tearDown() {
         super.tearDown();
-        apps.tests.Log4JFixture.tearDown();
     }
 }

@@ -1,6 +1,6 @@
-//SimpleReporterServerTest.java
 package jmri.jmris.simpleserver;
 
+import jmri.util.JUnitUtil;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -159,6 +159,28 @@ public class SimpleReporterServerTest {
     }
 
     @Test
+    // test sending an ID tag as a Report message.
+    public void testSendIdTagReport() {
+        StringBuilder sb = new StringBuilder();
+        java.io.DataOutputStream output = new java.io.DataOutputStream(
+                new java.io.OutputStream() {
+                    @Override
+                    public void write(int b) throws java.io.IOException {
+                        sb.append((char)b);
+                    }
+                });
+        java.io.DataInputStream input = new java.io.DataInputStream(System.in);
+        SimpleReporterServer a = new SimpleReporterServer(input, output);
+        try {
+            a.initReporter("IR1");
+            a.sendReport("IR1",new jmri.implementation.DefaultIdTag("ID1234","Hello World"));
+            Assert.assertEquals("sendErrorStatus check","REPORTER IR1 Hello World\n",sb.toString());
+        } catch(java.io.IOException ioe){
+            Assert.fail("Exception sending Error Status");
+        }
+    }
+
+    @Test
     // test sending a null Report message.
     public void testSendNullReport() {
         StringBuilder sb = new StringBuilder();
@@ -227,15 +249,14 @@ public class SimpleReporterServerTest {
     // The minimal setup for log4J
     @Before
     public void setUp() throws Exception {
-        apps.tests.Log4JFixture.setUp();
-        jmri.util.JUnitUtil.resetInstanceManager();
+        JUnitUtil.setUp();
+
         jmri.util.JUnitUtil.initReporterManager();
     }
 
     @After
     public void tearDown() throws Exception {
-        jmri.util.JUnitUtil.resetInstanceManager();
-        apps.tests.Log4JFixture.tearDown();
+        JUnitUtil.tearDown();
     }
 
 }

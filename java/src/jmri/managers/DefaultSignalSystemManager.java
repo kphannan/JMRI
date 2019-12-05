@@ -8,10 +8,12 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import jmri.NamedBean;
+import jmri.SignalHead;
 import jmri.SignalSystem;
 import jmri.SignalSystemManager;
 import jmri.implementation.DefaultSignalSystem;
 import jmri.jmrit.XmlFile;
+import jmri.jmrix.internal.InternalSystemConnectionMemo;
 import jmri.util.FileUtil;
 import org.jdom2.Element;
 import org.jdom2.JDOMException;
@@ -20,24 +22,25 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Default implementation of a SignalSystemManager.
- * <P>
+ * <p>
  * This loads automatically the first time used.
  * <p>
  *
  *
  * @author Bob Jacobsen Copyright (C) 2009
  */
-public class DefaultSignalSystemManager extends AbstractManager
-        implements SignalSystemManager, java.beans.PropertyChangeListener {
+public class DefaultSignalSystemManager extends AbstractManager<SignalSystem>
+        implements SignalSystemManager {
 
-    public DefaultSignalSystemManager() {
-        super();
+    public DefaultSignalSystemManager(InternalSystemConnectionMemo memo) {
+        super(memo);
 
         // load when created, which will generally
         // be the first time referenced
         load();
     }
 
+    @Override
     public int getXMLOrder() {
         return 65400;
     }
@@ -49,14 +52,12 @@ public class DefaultSignalSystemManager extends AbstractManager
     protected void registerSelf() {
     }
 
-    public String getSystemPrefix() {
-        return "I";
-    }
-
+    @Override
     public char typeLetter() {
         return 'F';
     }
 
+    @Override
     public SignalSystem getSystem(String name) {
         SignalSystem t = getByUserName(name);
         if (t != null) {
@@ -66,12 +67,14 @@ public class DefaultSignalSystemManager extends AbstractManager
         return getBySystemName(name);
     }
 
+    @Override
     public SignalSystem getBySystemName(String key) {
-        return (SignalSystem) _tsys.get(key);
+        return _tsys.get(key);
     }
 
+    @Override
     public SignalSystem getByUserName(String key) {
-        return (SignalSystem) _tuser.get(key);
+        return _tuser.get(key);
     }
 
     void load() {
@@ -83,7 +86,7 @@ public class DefaultSignalSystemManager extends AbstractManager
     }
 
     List<String> getListOfNames() {
-        List<String> retval = new ArrayList<String>();
+        List<String> retval = new ArrayList<>();
         // first locate the signal system directory
         // and get names of systems
         File signalDir = null;
@@ -250,11 +253,7 @@ public class DefaultSignalSystemManager extends AbstractManager
     }
 
     void loadProperties(NamedBean t, Element elem) {
-        Element p = elem.getChild("properties");
-        if (p == null) {
-            return;
-        }
-
+        // do nothing
     }
 
     /**
@@ -263,9 +262,18 @@ public class DefaultSignalSystemManager extends AbstractManager
     static class AspectFile extends XmlFile {
     }
 
-    public String getBeanTypeHandled() {
-        return Bundle.getMessage("BeanNameSignalSystem");
+    @Override
+    public String getBeanTypeHandled(boolean plural) {
+        return Bundle.getMessage(plural ? "BeanNameSignalSystems" : "BeanNameSignalSystem");
     }
 
-    private final static Logger log = LoggerFactory.getLogger(DefaultSignalSystemManager.class.getName());
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Class<SignalSystem> getNamedBeanClass() {
+        return SignalSystem.class;
+    }
+
+    private final static Logger log = LoggerFactory.getLogger(DefaultSignalSystemManager.class);
 }

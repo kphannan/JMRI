@@ -1,5 +1,6 @@
 package jmri.jmrix.nce;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.text.DecimalFormat;
 import java.util.Date;
 import java.util.ResourceBundle;
@@ -10,39 +11,37 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * NceClockControl.java
- *
- * Implementation of the Hardware Fast Clock for NCE
- * <P>
+ * Implementation of the Hardware Fast Clock for NCE.
+ * <p>
  * This module is based on the LocoNet version as worked over by David Duchamp
  * based on original work by Bob Jacobsen and Alex Shepherd. It implements the
  * sync logic to keep the Nce clock in sync with the internal clock or keeps the
  * internal in sync to the Nce clock. The following of the Nce clock is better
  * than the other way around due to the fine tuning available on the internal
  * clock while the Nce clock doesn't.
- * <BR>
+ * <br>
  * <hr>
  * This file is part of JMRI.
- * <P>
+ * <p>
  * JMRI is free software; you can redistribute it and/or modify it under the
  * terms of version 2 of the GNU General Public License as published by the Free
  * Software Foundation. See the "COPYING" file for a copy of this license.
- * </P><P>
+ * <p>
  * JMRI is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
  * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- * </P>
  *
  * @author Ken Cameron Copyright (C) 2007
  * @author Dave Duchamp Copyright (C) 2007
- * @author	Bob Jacobsen, Alex Shepherd
+ * @author Bob Jacobsen, Alex Shepherd
  */
 public class NceClockControl extends DefaultClockControl implements NceListener {
 
-    ResourceBundle rb = ResourceBundle.getBundle("jmri.jmrix.nce.NceClockControlBundle");
-
     /**
-     * Create a ClockControl object for a NCE clock
+     * Create a ClockControl object for a NCE clock.
+     *
+     * @param tc traffic controller for connection
+     * @param prefix system connection prefix
      */
     public NceClockControl(NceTrafficController tc, String prefix) {
         super();
@@ -50,12 +49,13 @@ public class NceClockControl extends DefaultClockControl implements NceListener 
         this.prefix = prefix;
 
         // Create a timebase listener for the Minute change events
-        internalClock = InstanceManager.getOptionalDefault(jmri.Timebase.class);
+        internalClock = InstanceManager.getNullableDefault(jmri.Timebase.class);
         if (internalClock == null) {
             log.error("No Timebase Instance");
             return;
         }
         minuteChangeListener = new java.beans.PropertyChangeListener() {
+            @Override
             public void propertyChange(java.beans.PropertyChangeEvent e) {
                 newInternalMinute();
             }
@@ -67,8 +67,8 @@ public class NceClockControl extends DefaultClockControl implements NceListener 
     private NceTrafficController tc = null;
 
     /* constants, variables, etc */
-    private static final boolean DEBUG_SHOW_PUBLIC_CALLS = true;	// enable debug for each public interface
-    private static final boolean DEBUG_SHOW_SYNC_CALLS = false;	// enable debug for sync logic
+    private static final boolean DEBUG_SHOW_PUBLIC_CALLS = true; // enable debug for each public interface
+    private static final boolean DEBUG_SHOW_SYNC_CALLS = false; // enable debug for sync logic
 
     public static final int CS_CLOCK_MEM_ADDR = 0xDC00;
     public static final int CS_CLOCK_MEM_SIZE = 0x10;
@@ -87,9 +87,9 @@ public class NceClockControl extends DefaultClockControl implements NceListener 
     public static final int CMD_MEM_SET_REPLY_SIZE = 0x01;
     public static final int MAX_ERROR_ARRAY = 4;
     public static final double TARGET_SYNC_DELAY = 55;
-    public static final int SYNCMODE_OFF = 0;				//0 - clocks independent
-    public static final int SYNCMODE_NCE_MASTER = 1;		//1 - NCE sets Internal
-    public static final int SYNCMODE_INTERNAL_MASTER = 2;	//2 - Internal sets NCE
+    public static final int SYNCMODE_OFF = 0;    //0 - clocks independent
+    public static final int SYNCMODE_NCE_MASTER = 1;  //1 - NCE sets Internal
+    public static final int SYNCMODE_INTERNAL_MASTER = 2; //2 - Internal sets NCE
     public static final int WAIT_CMD_EXECUTION = 1000;
 
     DecimalFormat fiveDigits = new DecimalFormat("0.00000");
@@ -98,7 +98,7 @@ public class NceClockControl extends DefaultClockControl implements NceListener 
     DecimalFormat twoDigits = new DecimalFormat("0.00");
 
     private int waiting = 0;
-    private int clockMode = SYNCMODE_OFF;
+    private final int clockMode = SYNCMODE_OFF;
     private boolean waitingForCmdRead = false;
     private boolean waitingForCmdStop = false;
     private boolean waitingForCmdStart = false;
@@ -123,21 +123,22 @@ public class NceClockControl extends DefaultClockControl implements NceListener 
     //private boolean issueDeferredGetRate = false;
     //private boolean initNeverCalledBefore = true;
 
-    private int nceSyncInitStateCounter = 0;	// NCE master sync initialzation state machine
-    private int nceSyncRunStateCounter = 0;	// NCE master sync runtime state machine
-    //private int	alarmDisplayStateCounter = 0;	// manages the display update from the alarm
+    private final int nceSyncInitStateCounter = 0; // NCE master sync initialzation state machine
+    private final int nceSyncRunStateCounter = 0; // NCE master sync runtime state machine
+    //private int alarmDisplayStateCounter = 0; // manages the display update from the alarm
 
     Timebase internalClock;
     javax.swing.Timer alarmSyncUpdate = null;
     java.beans.PropertyChangeListener minuteChangeListener;
 
     //  ignore replies
+    @Override
     public void message(NceMessage m) {
         log.error("message received: " + m);
     }
 
     // TODO: Why does this if statement contain a direct false? FIXME!
-    @SuppressWarnings("unused")
+    @Override
     public void reply(NceReply r) {
         if (false && log.isDebugEnabled()) {
             log.debug("NceReply(len " + r.getNumDataElements() + ") waiting: " + waiting
@@ -151,7 +152,7 @@ public class NceClockControl extends DefaultClockControl implements NceListener 
 
         }
         if (waiting <= 0) {
-            log.error(rb.getString("LogReplyEnexpected"));
+            log.error(Bundle.getMessage("LogReplyEnexpected"));
             return;
         }
         waiting--;
@@ -162,7 +163,7 @@ public class NceClockControl extends DefaultClockControl implements NceListener 
         }
         if (waitingForCmdTime) {
             if (r.getNumDataElements() != CMD_CLOCK_SET_REPLY_SIZE) {
-                log.error(rb.getString("LogNceClockReplySizeError") + r.getNumDataElements());
+                log.error(Bundle.getMessage("LogNceClockReplySizeError") + r.getNumDataElements());
                 return;
             } else {
                 waitingForCmdTime = false;
@@ -173,34 +174,34 @@ public class NceClockControl extends DefaultClockControl implements NceListener 
             }
         }
         if (r.getNumDataElements() != CMD_CLOCK_SET_REPLY_SIZE) {
-            log.error(rb.getString("LogNceClockReplySizeError") + r.getNumDataElements());
+            log.error(Bundle.getMessage("LogNceClockReplySizeError") + r.getNumDataElements());
             return;
         } else {
             if (waitingForCmd1224) {
                 waitingForCmd1224 = false;
                 if (r.getElement(0) != '!') {
-                    log.error(rb.getString("LogNceClock1224CmdError") + r.getElement(0));
+                    log.error(Bundle.getMessage("LogNceClock1224CmdError") + r.getElement(0));
                 }
                 return;
             }
             if (waitingForCmdRatio) {
                 waitingForCmdRatio = false;
                 if (r.getElement(0) != '!') {
-                    log.error(rb.getString("LogNceClockRatioCmdError") + r.getElement(0));
+                    log.error(Bundle.getMessage("LogNceClockRatioCmdError") + r.getElement(0));
                 }
                 return;
             }
             if (waitingForCmdStop) {
                 waitingForCmdStop = false;
                 if (r.getElement(0) != '!') {
-                    log.error(rb.getString("LogNceClockStopCmdError") + r.getElement(0));
+                    log.error(Bundle.getMessage("LogNceClockStopCmdError") + r.getElement(0));
                 }
                 return;
             }
             if (waitingForCmdStart) {
                 waitingForCmdStart = false;
                 if (r.getElement(0) != '!') {
-                    log.error(rb.getString("LogNceClockStartCmdError") + r.getElement(0));
+                    log.error(Bundle.getMessage("LogNceClockStartCmdError") + r.getElement(0));
                 }
                 return;
             }
@@ -232,7 +233,7 @@ public class NceClockControl extends DefaultClockControl implements NceListener 
             }
             log.debug(buf.toString());
             buf = new StringBuffer();
-            buf.append(rb.getString("LogReplyUnexpected") + ":");
+            buf.append(Bundle.getMessage("LogReplyUnexpected") + ":");
             for (int i = 0; i < r.getNumDataElements(); i++) {
                 buf.append(" " + r.getElement(i));
             }
@@ -244,6 +245,7 @@ public class NceClockControl extends DefaultClockControl implements NceListener 
     /**
      * name of Nce clock
      */
+    @Override
     public String getHardwareClockName() {
         if (DEBUG_SHOW_PUBLIC_CALLS && log.isDebugEnabled()) {
             log.debug("getHardwareClockName");
@@ -254,6 +256,7 @@ public class NceClockControl extends DefaultClockControl implements NceListener 
     /**
      * Nce clock runs stable enough
      */
+    @Override
     public boolean canCorrectHardwareClock() {
         if (DEBUG_SHOW_PUBLIC_CALLS && log.isDebugEnabled()) {
             log.debug("getHardwareClockName");
@@ -264,6 +267,7 @@ public class NceClockControl extends DefaultClockControl implements NceListener 
     /**
      * Nce clock supports 12/24 operation
      */
+    @Override
     public boolean canSet12Or24HourClock() {
         if (DEBUG_SHOW_PUBLIC_CALLS && log.isDebugEnabled()) {
             log.debug("canSet12Or24HourClock");
@@ -272,23 +276,25 @@ public class NceClockControl extends DefaultClockControl implements NceListener 
     }
 
     /**
-     * sets Nce clock speed, must be 1 to 15
+     * Set Nce clock speed, must be 1 to 15.
      */
+    @Override
     public void setRate(double newRate) {
         if (DEBUG_SHOW_PUBLIC_CALLS && log.isDebugEnabled()) {
             log.debug("setRate: " + newRate);
         }
         int newRatio = (int) newRate;
         if (newRatio < 1 || newRatio > 15) {
-            log.error(rb.getString("LogNceClockRatioRangeError"));
+            log.error(Bundle.getMessage("LogNceClockRatioRangeError"));
         } else {
             issueClockRatio(newRatio);
         }
     }
 
     /**
-     * Nce only supports integer rates
+     * NCE only supports integer rates.
      */
+    @Override
     public boolean requiresIntegerRate() {
         if (DEBUG_SHOW_PUBLIC_CALLS && log.isDebugEnabled()) {
             log.debug("requiresIntegerRate");
@@ -297,10 +303,11 @@ public class NceClockControl extends DefaultClockControl implements NceListener 
     }
 
     /**
-     * last known ratio from Nce clock
+     * Get last known ratio from Nce clock.
      */
+    @Override
     public double getRate() {
-        issueReadOnlyRequest();	// get the current rate
+        issueReadOnlyRequest(); // get the current rate
         //issueDeferredGetRate = true;
         if (DEBUG_SHOW_PUBLIC_CALLS && log.isDebugEnabled()) {
             log.debug("getRate: " + nceLastRatio);
@@ -309,9 +316,10 @@ public class NceClockControl extends DefaultClockControl implements NceListener 
     }
 
     /**
-     * set the time, the date part is ignored
+     * Set the time, the date part is ignored.
      */
     @SuppressWarnings("deprecation")
+    @Override
     public void setTime(Date now) {
         if (DEBUG_SHOW_PUBLIC_CALLS && log.isDebugEnabled()) {
             log.debug("setTime: " + now);
@@ -320,18 +328,19 @@ public class NceClockControl extends DefaultClockControl implements NceListener 
     }
 
     /**
-     * returns the current Nce time, does not have a date component
+     * Get the current Nce time, does not have a date component.
      */
     @SuppressWarnings("deprecation")
+    @Override
     public Date getTime() {
-        issueReadOnlyRequest();	// go get the current time value
+        issueReadOnlyRequest(); // go get the current time value
         issueDeferredGetTime = true;
         Date now = internalClock.getTime();
         if (lastClockReadPacket != null) {
-            if (nceLast1224) {	// is 24 hour mode
+            if (nceLast1224) { // is 24 hour mode
                 now.setHours(nceLastHour);
             } else {
-                if (nceLastAmPm) {	// is AM
+                if (nceLastAmPm) { // is AM
                     now.setHours(nceLastHour);
                 } else {
                     now.setHours(nceLastHour + 12);
@@ -347,23 +356,22 @@ public class NceClockControl extends DefaultClockControl implements NceListener 
     }
 
     /**
-     * set Nce clock and start clock
+     * Set Nce clock and start clock.
      */
     @SuppressWarnings("deprecation")
+    @Override
     public void startHardwareClock(Date now) {
         if (DEBUG_SHOW_PUBLIC_CALLS && log.isDebugEnabled()) {
             log.debug("startHardwareClock: " + now);
-        }
-        if (!internalClock.getInternalMaster() && internalClock.getMasterName().equals(getHardwareClockName())) {
-
         }
         issueClockSet(now.getHours(), now.getMinutes(), now.getSeconds());
         issueClockStart();
     }
 
     /**
-     * stops the Nce Clock
+     * Stop the Nce Clock.
      */
+    @Override
     public void stopHardwareClock() {
         if (DEBUG_SHOW_PUBLIC_CALLS && log.isDebugEnabled()) {
             log.debug("stopHardwareClock");
@@ -383,7 +391,7 @@ public class NceClockControl extends DefaultClockControl implements NceListener 
     }
 
     /**
-     * stops any sync, removes listeners
+     * Stop any sync, removes listeners.
      */
     public void dispose() {
 
@@ -429,10 +437,10 @@ public class NceClockControl extends DefaultClockControl implements NceListener 
         if (issueDeferredGetTime) {
             issueDeferredGetTime = false;
             Date now = internalClock.getTime();
-            if (nceLast1224) {	// is 24 hour mode
+            if (nceLast1224) { // is 24 hour mode
                 now.setHours(nceLastHour);
             } else {
-                if (nceLastAmPm) {	// is AM
+                if (nceLastAmPm) { // is AM
                     now.setHours(nceLastHour);
                 } else {
                     now.setHours(nceLastHour + 12);
@@ -446,11 +454,6 @@ public class NceClockControl extends DefaultClockControl implements NceListener 
         if (sc > 0) {
             nceLastRatio = 250 / sc;
         }
-        if (r.getElement(CS_CLOCK_STATUS) == 1) {
-            //nceLastRunning = false;
-        } else {
-            //nceLastRunning = true;
-        }
     }
 
     private void issueClockRatio(int r) {
@@ -463,6 +466,7 @@ public class NceClockControl extends DefaultClockControl implements NceListener 
     }
 
     @SuppressWarnings("unused")
+    @SuppressFBWarnings(value = "UPM_UNCALLED_PRIVATE_METHOD", justification="was previously marked with @SuppressWarnings, reason unknown")
     private void issueClock1224(boolean mode) {
         byte[] cmd = jmri.jmrix.nce.NceBinaryCommand.accSetClock1224(mode);
         NceMessage cmdNce = jmri.jmrix.nce.NceMessage.createBinaryMessage(tc, cmd, CMD_CLOCK_SET_REPLY_SIZE);
@@ -494,7 +498,7 @@ public class NceClockControl extends DefaultClockControl implements NceListener 
             waiting++;
             waitingForCmdRead = true;
             tc.sendNceMessage(cmdNce, this);
-            //			log.debug("issueReadOnlyRequest at " + internalClock.getTime());
+            //   log.debug("issueReadOnlyRequest at " + internalClock.getTime());
         }
     }
 
@@ -503,10 +507,11 @@ public class NceClockControl extends DefaultClockControl implements NceListener 
     }
 
     private void issueClockSetMem(int hh, int mm, int ss) {
-        byte[] cmd = jmri.jmrix.nce.NceBinaryCommand.accMemoryWriteN(CS_CLOCK_MEM_ADDR + CS_CLOCK_SECONDS, 3);
-        cmd[4] = (byte) ss;
-        cmd[5] = (byte) mm;
-        cmd[6] = (byte) hh;
+        byte[] b = new byte[3];
+        b[0] = (byte) ss;
+        b[1] = (byte) mm;
+        b[2] = (byte) hh;
+        byte[] cmd = jmri.jmrix.nce.NceBinaryCommand.accMemoryWriteN(CS_CLOCK_MEM_ADDR + CS_CLOCK_SECONDS, b);
         NceMessage cmdNce = jmri.jmrix.nce.NceMessage.createBinaryMessage(tc, cmd, CMD_MEM_SET_REPLY_SIZE);
         waiting++;
         waitingForCmdTime = true;
@@ -514,6 +519,7 @@ public class NceClockControl extends DefaultClockControl implements NceListener 
     }
 
     @SuppressWarnings({"deprecation", "unused"})
+    @SuppressFBWarnings(value = "UPM_UNCALLED_PRIVATE_METHOD", justification="was previously marked with @SuppressWarnings, reason unknown")
     private Date getNceDate() {
         Date now = internalClock.getTime();
         if (lastClockReadPacket != null) {
@@ -525,6 +531,7 @@ public class NceClockControl extends DefaultClockControl implements NceListener 
     }
 
     @SuppressWarnings("unused")
+    @SuppressFBWarnings(value = "UPM_UNCALLED_PRIVATE_METHOD", justification="was previously marked with @SuppressWarnings, reason unknown")
     private double getNceTime() {
         double nceTime = 0;
         if (lastClockReadPacket != null) {
@@ -537,6 +544,7 @@ public class NceClockControl extends DefaultClockControl implements NceListener 
     }
 
     @SuppressWarnings({"deprecation", "unused"})
+    @SuppressFBWarnings(value = "UPM_UNCALLED_PRIVATE_METHOD", justification="was previously marked with @SuppressWarnings, reason unknown")
     private double getIntTime() {
         Date now = internalClock.getTime();
         int ms = (int) (now.getTime() % 1000);
@@ -549,7 +557,6 @@ public class NceClockControl extends DefaultClockControl implements NceListener 
         return ((hh * 60 * 60) + (mm * 60) + ss + (ms / 1000));
     }
 
-    private final static Logger log = LoggerFactory.getLogger(NceClockControl.class.getName());
-}
+    private final static Logger log = LoggerFactory.getLogger(NceClockControl.class);
 
-/* @(#)NceClockControl.java */
+}

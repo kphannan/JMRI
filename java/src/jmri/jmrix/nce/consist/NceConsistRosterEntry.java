@@ -1,4 +1,3 @@
-// NceConsistRosterEntry.java
 package jmri.jmrix.nce.consist;
 
 import java.io.IOException;
@@ -6,6 +5,7 @@ import java.io.Writer;
 import java.util.List;
 import java.util.StringTokenizer;
 import java.util.Vector;
+import jmri.InstanceManager;
 import jmri.util.davidflanagan.HardcopyWriter;
 import org.jdom2.Element;
 import org.slf4j.Logger;
@@ -13,23 +13,22 @@ import org.slf4j.LoggerFactory;
 
 /**
  * ConsistRosterEntry represents a single element in a consist roster.
- * <P>
+ * <p>
  * The ConsistRosterEntry is the central place to find information about a
  * consists configuration, including loco address, address type, loco's
  * direction, and consist number. Up to six consist locos are currently tracked.
  * ConsistRosterEntry handles persistency through the LocoFile class. Creating a
  * ConsistRosterEntry does not necessarily read the corresponding file (which
  * might not even exist), please see readFile(), writeFile() member functions.
- * <P>
+ * <p>
  * All the data attributes have a content, not null.
- * <P>
+ * <p>
  * When the filePath attribute is non-null, the user has decided to organize the
  * roster into directories.
  *
  * @author Bob Jacobsen Copyright (C) 2001, 2002, 2004, 2005
  * @author Dennis Miller Copyright 2004
  * @author Daniel Boudreau (C) 2008
- * @version $Revision$
  * @see NceConsistRoster
  *
  */
@@ -72,7 +71,7 @@ public class NceConsistRosterEntry {
         String oldID = _id;
         _id = s;
         if (!oldID.equals(s)) {
-            NceConsistRoster.instance().entryIdChanged(this);
+            InstanceManager.getDefault(NceConsistRoster.class).entryIdChanged(this);
         }
     }
 
@@ -266,7 +265,7 @@ public class NceConsistRosterEntry {
 
     /**
      * Construct this Entry from XML. This member has to remain synchronized
-     * with the detailed DTD in consist-roster-config.xml
+     * with the detailed DTD in xml/DTD/consist-roster-config.dtd.
      *
      * @param e Consist XML element
      */
@@ -385,7 +384,7 @@ public class NceConsistRosterEntry {
 
     /**
      * Create an XML element to represent this Entry. This member has to remain
-     * synchronized with the detailed DTD in consist-roster-config.xml.
+     * synchronized with the detailed DTD in xml/DTD/consist-roster-config.dtd.
      *
      * @return Contents in a JDOM Element
      */
@@ -459,6 +458,7 @@ public class NceConsistRosterEntry {
         return getId();
     }
 
+    @Override
     public String toString() {
         String out = "[ConsistRosterEntry: "
                 + _id + " "
@@ -481,6 +481,7 @@ public class NceConsistRosterEntry {
      * Prints the roster information. Updated to allow for multiline comment
      * field. Created separate write statements for text and line feeds to work
      * around the HardcopyWriter bug that misplaces borders
+     * @param w stream to printer
      */
     public void printEntry(Writer w) {
         try {
@@ -585,20 +586,23 @@ public class NceConsistRosterEntry {
      * wrapped on a word wrap basis
      *
      * This is exactly the same as RosterEntry.wrapComment
+     * @param comment string comment from consist roster entry
+     * @param textSpace size of space to wrap text into
+     * @return wrap formated comment
      */
     public Vector<String> wrapComment(String comment, int textSpace) {
         // Tokenize the string using \n to separate the text on mulitple lines
         // and create a vector to hold the processed text pieces
         StringTokenizer commentTokens = new StringTokenizer(comment, "\n", true);
-        Vector<String> textVector = new Vector<String>(commentTokens.countTokens());
+        Vector<String> textVector = new Vector<>(commentTokens.countTokens());
         String newLine = "\n";
         while (commentTokens.hasMoreTokens()) {
             String commentToken = commentTokens.nextToken();
             int startIndex = 0;
-            int endIndex = textSpace;
-            //Check each token to see if it needs to have a line wrap.
-            //Get a piece of the token, either the size of the allowed space or
-            //a shorter piece if there isn't enough text to fill the space
+            int endIndex;
+            // Check each token to see if it needs to have a line wrap.
+            // Get a piece of the token, either the size of the allowed space or
+            // a shorter piece if there isn't enough text to fill the space
             if (commentToken.length() < startIndex + textSpace) {
                 //the piece will fit.
                 textVector.addElement(commentToken);
@@ -633,11 +637,11 @@ public class NceConsistRosterEntry {
                     //Check the remaining piece to see if it fits -Loco2rtIndex now points
                     //to the start of the next piece
                     if (commentToken.substring(startIndex).length() < textSpace) {
-                        //It will fit so just insert it, otherwise will cycle through the
-                        //while loop and the checks above will take care of the remainder.
-                        //Line feed is not required as this is the last part of the token.
+                        // It will fit so just insert it, otherwise will cycle through the
+                        // while loop and the checks above will take care of the remainder.
+                        // Line feed is not required as this is the last part of the token.
                         tokenPiece = commentToken.substring(startIndex);
-                        textVector.addElement(commentToken.substring(startIndex));
+                        textVector.addElement(tokenPiece);
                         startIndex += textSpace;
                     }
                 }
@@ -676,6 +680,6 @@ public class NceConsistRosterEntry {
     protected String _comment = "";
 
     // initialize logging
-    private final static Logger log = LoggerFactory.getLogger(NceConsistRosterEntry.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(NceConsistRosterEntry.class);
 
 }

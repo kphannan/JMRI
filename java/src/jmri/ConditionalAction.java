@@ -6,52 +6,64 @@ import jmri.jmrit.Sound;
 
 /**
  * The consequent of the antecedent of the conditional proposition. The data for
- * the action to be taken when a Conditional calculates to True
- * <P>
+ * the action to be taken when a Conditional calculates to True.
  *
  * @author Pete Cressman Copyright (C) 2009
  */
 public interface ConditionalAction {
 
     /**
-     * Integer data for action
+     * Integer data for action.
+     *
+     * @return the data
      */
     int getActionData();
 
     String getActionDataString();
 
     /**
-     * String data for action
+     * String data for action.
+     *
+     * @return the action String
      */
     String getActionString();
 
     /**
-     * Name of the device or element that is effected
+     * Name of the device or element that is effected.
+     *
+     * @return the name
      */
     String getDeviceName();
 
     /**
-     * Options on when action is taken
+     * Options on when action is taken.
+     *
+     * @return the option
      */
     int getOption();
 
     /**
-     * return String name of the option for this consequent type
+     * @param type the type
+     * @return String name of the option for this consequent type
      */
     String getOptionString(boolean type);
 
     /**
-     * The consequent device or element type
+     * The consequent device or element type.
+     *
+     * @return the type
      */
-    int getType();
+    Conditional.Action getType();
 
     /**
-     * return String name of this consequent type
+     * @return String name of this consequent type
      */
     String getTypeString();
 
     /**
      * Sets action data from user's name for it
+     *
+     * @param actionData user name
      */
     void setActionData(String actionData);
 
@@ -64,11 +76,13 @@ public interface ConditionalAction {
     void setOption(int option);
 
     /**
-     * Sets type from user's name for it
+     * Sets type from user's name for it.
+     *
+     * @param type name of the type
      */
     void setType(String type);
 
-    void setType(int type);
+    void setType(Conditional.Action type);
 
     public String description(boolean triggerType);
 
@@ -99,7 +113,9 @@ public interface ConditionalAction {
     void setListener(ActionListener listener);
 
     /**
-     * get Sound file
+     * Get the Sound.
+     *
+     * @return the sound
      */
     public Sound getSound();
 

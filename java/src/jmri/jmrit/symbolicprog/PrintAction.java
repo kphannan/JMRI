@@ -6,11 +6,11 @@ import jmri.jmrit.symbolicprog.tabbedframe.PaneProgFrame;
 
 /**
  * Action to print the information in a VariableTable.
- * <P>
+ * <p>
  * This uses the older style printing, for compatibility with Java 1.1.8 in
  * Macintosh MRJ
  *
- * @author	Bob Jacobsen Copyright (C) 2003
+ * @author Bob Jacobsen Copyright (C) 2003
  * @author Dennis Miller Copyright (C) 2005
  */
 public class PrintAction extends AbstractAction {
@@ -30,6 +30,7 @@ public class PrintAction extends AbstractAction {
      */
     boolean isPreview;
 
+    @Override
     public void actionPerformed(ActionEvent e) {
         mFrame.printPanes(isPreview);
     }

@@ -1,46 +1,81 @@
 package jmri.jmrix.roco.z21;
 
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import jmri.util.JUnitUtil;
+import org.junit.*;
 
 /**
  * Tests for the jmri.jmrix.roco.z21.z21SystemConnectionMemo class
  *
  * @author	Paul Bender
  */
-public class Z21SystemConnectionMemoTest extends TestCase {
+public class Z21SystemConnectionMemoTest extends jmri.jmrix.SystemConnectionMemoTestBase {
 
-    public void testCtor() {
-        Z21SystemConnectionMemo a = new Z21SystemConnectionMemo();
-        Assert.assertNotNull(a);
+    private Z21SystemConnectionMemo memo;
+    private Z21InterfaceScaffold tc;
+
+    @Test
+    public void testProvidesReporterManager() {
+        Z21SystemConnectionMemo a = (Z21SystemConnectionMemo)scm;
+        Assert.assertTrue(a.provides(jmri.ReporterManager.class));
     }
 
-    // from here down is testing infrastructure
-    public Z21SystemConnectionMemoTest(String s) {
-        super(s);
+    @Test
+    public void testProvidesAddressedProgrammerManager() {
+       Z21SystemConnectionMemo a = (Z21SystemConnectionMemo)scm;
+       // there is a an addressed program manager, but it is provided
+       // by delegation to the XPressNet tunnel, which setUp doesn't 
+       // currently enable.
+       Assert.assertFalse("Provides Addressed programmer",a.provides(jmri.AddressedProgrammerManager.class));
     }
 
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading", Z21SystemConnectionMemoTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
+    @Test
+    public void testProvidesGlobalProgrammerManager() {
+        Z21SystemConnectionMemo a = (Z21SystemConnectionMemo)scm;
+       // there is a an global program manager, but it is provided
+       // by delegation to the XPressNet tunnel, which setUp doesn't 
+       // currently enable.
+        Assert.assertFalse("provides golbal programmer",a.provides(jmri.GlobalProgrammerManager.class));
     }
 
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(Z21SystemConnectionMemoTest.class);
-        return suite;
+    @Override
+    @Test
+    public void testProvidesConsistManager(){
+       // there is a consist manager, but it is provided by delegation to 
+       // the XPressNet tunnel, which setUp doesn't currently enable.
+       Assert.assertFalse("Provides ConsistManager",scm.provides(jmri.ConsistManager.class));
+    }
+
+    @Test
+    public void testProvidesMultiMeter(){
+       Assert.assertTrue("Provides MultiMeter",scm.provides(jmri.MultiMeter.class));
+    }
+
+    @Test
+    public void testGetMultiMeter(){
+       Assert.assertNotNull("Get MultiMeter",scm.get(jmri.MultiMeter.class));
     }
 
     // The minimal setup for log4J
-    protected void setUp() {
-        apps.tests.Log4JFixture.setUp();
+    @Override
+    @Before
+    public void setUp() {
+        JUnitUtil.setUp();
+        tc = new Z21InterfaceScaffold();
+        memo = new Z21SystemConnectionMemo();
+        memo.setTrafficController(tc);
+        memo.setRocoZ21CommandStation(new RocoZ21CommandStation());
+        //memo.configureManagers();
+        scm = memo;
     }
 
-    protected void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
+    @Override
+    @After
+    public void tearDown() {
+        scm = null;
+        memo = null;
+        tc.terminateThreads();
+        tc = null;
+        JUnitUtil.tearDown();
     }
 
 }

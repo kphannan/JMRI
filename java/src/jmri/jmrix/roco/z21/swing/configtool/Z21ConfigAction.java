@@ -35,18 +35,19 @@ public class Z21ConfigAction extends AbstractAction {
         this("Z21 Configuration Tool");
     }
 
+    @Override
     public void actionPerformed(ActionEvent e) {
         // create a Z21ConfigFrame
         Z21ConfigFrame f = new Z21ConfigFrame(_memo);
         try {
             f.initComponents();
         } catch (Exception ex) {
-            log.warn("Z21ConfigAction starting Z21ConfigFrame: Exception: " + ex.toString());
+            log.warn("Z21ConfigAction starting Z21ConfigFrame: Exception: {}",ex);
         }
         f.setVisible(true);
 
     }
 
-    private final static Logger log = LoggerFactory.getLogger(Z21ConfigAction.class);
+    private static final Logger log = LoggerFactory.getLogger(Z21ConfigAction.class);
 
 }

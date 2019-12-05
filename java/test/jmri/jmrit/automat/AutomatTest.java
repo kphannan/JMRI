@@ -1,34 +1,39 @@
 package jmri.jmrit.automat;
 
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import jmri.util.JUnitUtil;
+
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * Tests for classes in the jmri.jmrit.automat package
  *
  * @author	Bob Jacobsen Copyright 2008
- * @version	$Revision$
  */
-public class AutomatTest extends TestCase {
+public class AutomatTest {
 
     boolean initDone;
     boolean handleDone;
 
+    @Test
     public void testCreate() {
         new AbstractAutomaton() {
         };
     }
 
+    @Test
     public void testRun() throws InterruptedException {
         initDone = false;
         handleDone = false;
         AbstractAutomaton a = new AbstractAutomaton() {
+            @Override
             public void init() {
                 initDone = true;
             }
 
+            @Override
             public boolean handle() {
                 handleDone = true;
                 return false;
@@ -47,14 +52,17 @@ public class AutomatTest extends TestCase {
         Assert.assertTrue("handleDone after run", handleDone);
     }
 
+    @Test
     public void testRestart() throws InterruptedException {
         initDone = false;
         handleDone = false;
         AbstractAutomaton a = new AbstractAutomaton() {
+            @Override
             public void init() {
                 initDone = true;
             }
 
+            @Override
             public boolean handle() {
                 handleDone = true;
                 return false;
@@ -88,31 +96,14 @@ public class AutomatTest extends TestCase {
         Assert.assertTrue("handleDone after 2nd run", handleDone);
     }
 
-    // from here down is testing infrastructure
-    public AutomatTest(String s) {
-        super(s);
+    @Before
+    public void setUp() {
+        JUnitUtil.setUp();
     }
 
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading", AutomatTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(AutomatTest.class);
-        // suite.addTest(RouteTableActionTest.suite());
-        return suite;
-    }
-
-    // The minimal setup for log4J
-    protected void setUp() {
-        apps.tests.Log4JFixture.setUp();
-    }
-
-    protected void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
+    @After
+    public void tearDown() {
+        JUnitUtil.tearDown();
     }
 
 }

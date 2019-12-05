@@ -1,38 +1,35 @@
-// Ash2_1Algorithm.java
 package jmri.jmrix.rps;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.util.Arrays;
 import javax.vecmath.Point3d;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Implementation of 2.1th algorithm for reducing Readings
- * <P>
+ * <p>
  * This algorithm was provided by Robert Ashenfelter based in part on the work
  * of Ralph Bucher in his paper "Exact Solution for Three Dimensional Hyperbolic
  * Positioning Algorithm and Synthesizable VHDL Model for Hardware
  * Implementation".
- * <P>
+ * <p>
  * Neither Ashenfelter nor Bucher provide any guarantee as to the intellectual
  * property status of this algorithm. Use it at your own risk.
  *
- * <p>
- *
  * @author	Robert Ashenfelter Copyright (C) 2007
  * @author	Bob Jacobsen Copyright (C) 2007
- * @version	$Revision$
  */
 public class Ash2_1Algorithm extends AbstractCalculator {
 
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD")
+    @SuppressFBWarnings(value = "ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD")
     public Ash2_1Algorithm(Point3d[] sensors, double vsound, int offset) {
         this(sensors, vsound);
         this.offset = offset;
     }
 
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "EI_EXPOSE_REP2")
     public Ash2_1Algorithm(Point3d[] sensors, double vsound) {
-        this.sensors = sensors;
+        this.sensors = Arrays.copyOf(sensors, sensors.length);
         this.Vs = vsound;
 
         // load the algorithm variables
@@ -61,6 +58,7 @@ public class Ash2_1Algorithm extends AbstractCalculator {
     double Yt = 0.0;
     double Zt = 0.0;
 
+    @Override
     public Measurement convert(Reading r) {
 
         if (log.isDebugEnabled()) {
@@ -89,6 +87,7 @@ public class Ash2_1Algorithm extends AbstractCalculator {
     /**
      * Seed the conversion using an estimated position
      */
+    @Override
     public Measurement convert(Reading r, Point3d guess) {
         this.Xt = guess.x;
         this.Yt = guess.y;
@@ -100,6 +99,7 @@ public class Ash2_1Algorithm extends AbstractCalculator {
     /**
      * Seed the conversion using a last measurement
      */
+    @Override
     public Measurement convert(Reading r, Measurement last) {
         if (last != null) {
             this.Xt = last.getX();
@@ -132,16 +132,16 @@ public class Ash2_1Algorithm extends AbstractCalculator {
      *							*/
     int offset = 0;			//  Offset (usec), add to delay
 
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "MS_SHOULD_BE_FINAL") // for script access
+    @SuppressFBWarnings(value = "MS_SHOULD_BE_FINAL") // for script access
     static public int TMAX = 35000;			//  Max. allowable delay (usec)
 
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "MS_SHOULD_BE_FINAL") // for script access
+    @SuppressFBWarnings(value = "MS_SHOULD_BE_FINAL") // for script access
     static public int TMIN = 150;			//  Min. allowable delay (usec)
 
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "MS_SHOULD_BE_FINAL") // for script access
+    @SuppressFBWarnings(value = "MS_SHOULD_BE_FINAL") // for script access
     static public int SMAX = 30;			//  Max. OK std. dev. (usec)
 
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "MS_SHOULD_BE_FINAL") // for script access
+    @SuppressFBWarnings(value = "MS_SHOULD_BE_FINAL") // for script access
     static public int NMAX = 50;			//  Max. no. of receivers used
 
     //  Compute RPS Position  using
@@ -397,12 +397,10 @@ public class Ash2_1Algorithm extends AbstractCalculator {
             this.vs = vs;
         }
         int code;
-        @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "UUF_UNUSED_FIELD")
+        @SuppressFBWarnings(value = "UUF_UNUSED_FIELD")
         double x, y, z, t, vs;
     }
 
-    private final static Logger log = LoggerFactory.getLogger(Ash2_1Algorithm.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(Ash2_1Algorithm.class);
 
 }
-
-/* @(#)Ash2_1Algorithm.java */

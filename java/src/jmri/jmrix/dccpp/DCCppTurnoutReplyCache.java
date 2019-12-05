@@ -1,4 +1,3 @@
-// DCCppTurnoutReplyCache.java
 package jmri.jmrix.dccpp;
 
 import org.slf4j.Logger;
@@ -6,12 +5,11 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Implement a feedback message cache for DCC++ turnouts.
- * <P>
+ * <p>
  *
- * @author	Paul Bender Copyright (C) 2012
- * @author	Mark Underwood Copyright (C) 2015
- * @version	$Revision$
- *
+ * @author Paul Bender Copyright (C) 2012
+ * @author Mark Underwood Copyright (C) 2015
+  *
  * Based on XNetFeedbackMessageCache by Paul Bender
  */
 public class DCCppTurnoutReplyCache implements DCCppListener {
@@ -26,8 +24,8 @@ public class DCCppTurnoutReplyCache implements DCCppListener {
 
     // ctor has to register for DCCpp events
     public DCCppTurnoutReplyCache(DCCppTrafficController controller) {
-	// TODO: This is likely to be a sparse table. Consider refactoring as
-	// a list or something more memory efficient.
+ // TODO: This is likely to be a sparse table. Consider refactoring as
+ // a list or something more memory efficient.
         messageCache = new DCCppReply[DCCppConstants.MAX_TURNOUT_ADDRESS];
         for (int i = 0; i < DCCppConstants.MAX_TURNOUT_ADDRESS; i++) {
             messageCache[i] = null;
@@ -43,7 +41,7 @@ public class DCCppTurnoutReplyCache implements DCCppListener {
     // requestCachedStateFromLayout
     // provide any cached state to the turnout.  Otherwise, call the turnout's 
     // requestUpdateFromLayout() method.
-    // @param turnout - the DCCppTurnout object we are requesting data for.
+    // @param turnout  the DCCppTurnout object we are requesting data for.
     synchronized public void requestCachedStateFromLayout(DCCppTurnout turnout) {
         int pNumber = turnout.getNumber();
         if (messagePending[pNumber]) {
@@ -56,12 +54,12 @@ public class DCCppTurnoutReplyCache implements DCCppListener {
                 }
                 turnout.message(messageCache[pNumber]);
             } else {
-		// TODO: Make sure this doesn't break under a no-feedback model.
+  // TODO: Make sure this doesn't break under a no-feedback model.
                 messagePending[pNumber] = true;
                 turnout.requestUpdateFromLayout(); // this does nothing. 
             }
         } catch (java.lang.NullPointerException npe) {
-	    // TODO: Make sure this doesn't break under a no-feedback model.
+     // TODO: Make sure this doesn't break under a no-feedback model.
             messagePending[pNumber] = true;
             turnout.requestUpdateFromLayout();
         }
@@ -70,7 +68,7 @@ public class DCCppTurnoutReplyCache implements DCCppListener {
     // requestCachedStateFromLayout
     // provide any cached state a sensor.  Otherwise, call the sensor's 
     // requestUpdateFromLayout() method.
-    // @param sensor - the DCCppSensor object we are requesting data for.
+    // @param sensor  the DCCppSensor object we are requesting data for.
     //
     // TODO: We don't have DCCppSensors yet. May never have them.
     /*
@@ -97,30 +95,33 @@ public class DCCppTurnoutReplyCache implements DCCppListener {
     */
 
     // listen for turnouts, creating them as needed
+    @Override
     synchronized public void message(DCCppReply l) {
         if (log.isDebugEnabled()) {
-            log.debug("recieved message: " + l);
+            log.debug("received message: " + l);
         }
         if (l.isTurnoutReply()) {
-	    // cache the message for later requests
-	    messageCache[l.getTOIDInt()] = l;
-	    messagePending[l.getTOIDInt()] = false;
+     // cache the message for later requests
+     messageCache[l.getTOIDInt()] = l;
+     messagePending[l.getTOIDInt()] = false;
         }
     }
 
     // listen for the messages to the LI100/LI101
+    @Override
     public void message(DCCppMessage l) {
     }
 
     // Handle a timeout notification
+    @Override
     public void notifyTimeout(DCCppMessage msg) {
         if (log.isDebugEnabled()) {
             log.debug("Notified of timeout on message" + msg.toString());
         }
     }
 
-    private final static Logger log = LoggerFactory.getLogger(DCCppTurnoutReplyCache.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(DCCppTurnoutReplyCache.class);
 
 }
 
-/* @(#)DCCppTurnoutReplyCache.java */
+

@@ -1,143 +1,106 @@
-/**
- * NceMonPanelTest.java
- *
- * Description:	JUnit tests for the NceProgrammer class
- *
- * @author	Bob Jacobsen
- * @version
- */
 package jmri.jmrix.nce.ncemon;
 
-import java.util.Vector;
+import java.awt.GraphicsEnvironment;
+import jmri.jmrix.AbstractMonPaneScaffold;
+import jmri.jmrix.nce.NceInterfaceScaffold;
 import jmri.jmrix.nce.NceMessage;
 import jmri.jmrix.nce.NceReply;
-import jmri.jmrix.nce.NceTrafficController;
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import jmri.jmrix.nce.NceSystemConnectionMemo;
+import jmri.util.JUnitUtil;
+import jmri.util.JmriJFrame;
+import org.junit.*;
 
-public class NceMonPanelTest extends TestCase {
+/**
+ * JUnit tests for the NceProgrammer class
+ *
+ * @author	Bob Jacobsen
+ */
+public class NceMonPanelTest extends jmri.jmrix.AbstractMonPaneTestBase {
 
-    NceInterfaceScaffold controller;  // holds dummy NceTrafficController for testing
+    private NceSystemConnectionMemo memo = null;
 
-    public void testCreate() {
-        controller = new NceInterfaceScaffold();
-        NceMonPanel f = new NceMonPanel();
-        Assert.assertNotNull("exists", f);
+    @Test
+    @Ignore("Ignore due to timing-specific, occasionally fail")
+    public void testMsg() {
+        NceMessage m = new NceMessage(3);
+        m.setBinary(false);
+        m.setOpCode('L');
+        m.setElement(1, '0');
+        m.setElement(2, 'A');
+
+        ((NceMonPanel) pane).message(m);
+
+        // The following assertions need to be re-written.  There is no
+        // current method for retrieving the text panel from the NceMonPanel.
+        //Assert.assertEquals("length ", "cmd: \"L0A\"\n".length(), ((NceMonPanel)pane).getPanelText().length()); 
+        //Assert.assertEquals("display", "cmd: \"L0A\"\n", ((NceMonPanel)pane).getPanelText()); 
     }
 
-// Following are timing-specific, occasionally fail, so commented out    
-/*     public void testMsg() { */
-    /*         NceMessage m = new NceMessage(3); */
-    /*         m.setBinary(false); */
-    /*         m.setOpCode('L'); */
-    /*         m.setElement(1, '0'); */
-    /*         m.setElement(2, 'A'); */
-    /*          */
-    /*         NceMonPanel f = new NceMonPanel(); */
-    /*          */
-    /*         f.message(m); */
-    /*          */
-    /*         Assert.assertEquals("length ", "cmd: \"L0A\"\n".length(), f.getPanelText().length()); */
-    /*         Assert.assertEquals("display", "cmd: \"L0A\"\n", f.getPanelText()); */
-    /*     } */
-    /*      */
-    /*     public void testReply() { */
-    /*         NceReply m = new NceReply(); */
-    /*         m.setBinary(false); */
-    /*         m.setOpCode('C'); */
-    /*         m.setElement(1, 'o'); */
-    /*         m.setElement(2, ':'); */
-    /*          */
-    /*         NceMonPanel f = new NceMonPanel(); */
-    /*          */
-    /*         f.reply(m); */
-    /*          */
-    /*         Assert.assertEquals("display", "rep: \"Co:\"\n", f.getPanelText()); */
-    /*         Assert.assertEquals("length ", "rep: \"Co:\"\n".length(), f.getPanelText().length()); */
-    /*     } */
-    public void testWrite() {
+    @Test
+    @Ignore("Ignore due to timing-specific, occasionally fail")
+    public void testReply() {
+        NceReply m = new NceReply(memo.getNceTrafficController());
+        m.setBinary(false);
+        m.setOpCode('C');
+        m.setElement(1, 'o');
+        m.setElement(2, ':');
 
-        // infrastructure objects
-        NceInterfaceScaffold t = new NceInterfaceScaffold();
-        Assert.assertNotNull("exists", t);
+        ((NceMonPanel) pane).reply(m);
+
+        // The following assertions need to be re-written.  There is no
+        // current method for retrieving the text panel from the NceMonPanel.
+        //Assert.assertEquals("display", "rep: \"Co:\"\n", ((NceMonPanel)pane).getPanelText()); 
+        //Assert.assertEquals("length ", "rep: \"Co:\"\n".length(), ((NceMonPanel)pane).getPanelText().length());
     }
 
-    // service internal class to handle transmit/receive for tests
-    class NceInterfaceScaffold extends NceTrafficController {
+    // Test checking the AutoScroll checkbox.
+    // for some reason the NceMonPane has the checkbox value reversed on
+    // startup compared to other AbstractMonPane derivatives.
+    @Override
+    @Test
+    public void checkAutoScrollCheckBox() {
+        Assume.assumeFalse(GraphicsEnvironment.isHeadless());
+        AbstractMonPaneScaffold s = new AbstractMonPaneScaffold(pane);
 
-        public NceInterfaceScaffold() {
+        // for Jemmy to work, we need the pane inside of a frame
+        JmriJFrame f = new JmriJFrame();
+        try {
+            pane.initComponents();
+        } catch (Exception ex) {
+            Assert.fail("Could not load pane: " + ex);
         }
-
-        // override some NceInterfaceController methods for test purposes
-        public boolean status() {
-            return true;
+        f.add(pane);
+        // set title if available
+        if (pane.getTitle() != null) {
+            f.setTitle(pane.getTitle());
         }
-
-        /**
-         * record messages sent, provide access for making sure they are OK
-         */
-        public Vector<NceMessage> outbound = new Vector<NceMessage>();  // public OK here, so long as this is a test class
-
-        public void sendNceMessage(NceMessage m, jmri.jmrix.nce.NceListener l) {
-            if (log.isDebugEnabled()) {
-                log.debug("sendNceMessage [" + m + "]");
-            }
-            // save a copy
-            outbound.addElement(m);
-        }
-
-        // test control member functions
-        /**
-         * forward a message to the listeners, e.g. test receipt
-         */
-        protected void sendTestMessage(NceMessage m) {
-            // forward a test message to Listeners
-            if (log.isDebugEnabled()) {
-                log.debug("sendTestMessage    [" + m + "]");
-            }
-            notifyMessage(m, null);
-            return;
-        }
-
-        protected void sendTestReply(NceReply m) {
-            // forward a test message to Listeners
-            if (log.isDebugEnabled()) {
-                log.debug("sendTestReply    [" + m + "]");
-            }
-            notifyReply(m, null);
-            return;
-        }
-
-        /*
-         * Check number of listeners, used for testing dispose()
-         */
-        public int numListeners() {
-            return cmdListeners.size();
-        }
-
+        f.pack();
+        f.setVisible(true);
+        Assert.assertTrue(s.getAutoScrollCheckBoxValue());
+        s.checkAutoScrollCheckBox();
+        Assert.assertFalse(s.getAutoScrollCheckBoxValue());
+        f.setVisible(false);
+        f.dispose();
     }
 
-    // from here down is testing infrastructure
-    public NceMonPanelTest(String s) {
-        super(s);
+    @Override
+    @Before
+    public void setUp() {
+        JUnitUtil.setUp();
+        JUnitUtil.initDefaultUserMessagePreferences();
+        NceInterfaceScaffold tc = new NceInterfaceScaffold();
+        memo = tc.getAdapterMemo();
+        // pane for AbstractMonPaneTestBase, panel for JmriPanelTest
+        panel = pane = new NceMonPanel();
+        ((NceMonPanel) pane).initContext(memo);
+        title = "NCE: Command Monitor";
     }
 
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {NceMonPanelTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
+    @Override
+    @After
+    public void tearDown() {
+        JUnitUtil.clearShutDownManager(); // put in place because AbstractMRTrafficController implementing subclass was not terminated properly
+        JUnitUtil.tearDown();
     }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(NceMonPanelTest.class);
-        return suite;
-    }
-
-    private final static Logger log = LoggerFactory.getLogger(NceMonPanelTest.class.getName());
 
 }

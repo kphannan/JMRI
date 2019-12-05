@@ -1,4 +1,3 @@
-// XpaPortController.java
 package jmri.jmrix.xpa;
 
 import jmri.jmrix.SystemConnectionMemo;
@@ -7,7 +6,6 @@ import jmri.jmrix.SystemConnectionMemo;
  * Abstract base for classes representing an XPA+Modem communications port
  *
  * @author	Paul Bender Copyright (C) 2004
- * @version	$Revision$
  */
 public abstract class XpaPortController extends jmri.jmrix.AbstractSerialPortController {
     // base class. Implementations will provide InputStream and OutputStream
@@ -17,6 +15,3 @@ public abstract class XpaPortController extends jmri.jmrix.AbstractSerialPortCon
         super(connectionMemo);
     }
 }
-
-
-/* @(#)XpaPortController.java */

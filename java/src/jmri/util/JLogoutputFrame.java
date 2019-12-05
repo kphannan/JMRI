@@ -37,14 +37,17 @@ public class JLogoutputFrame {
 //    private static final Log myLog = LogFactory.getLog( JLogoutputFrame.class );
 
     private static Layout myLayout = new PatternLayout("%d{HH:mm:ss.SSS} (%6r) %-5p [%-7t] %F:%L %x - %m%n");
-    private static Vector<Filter> myFilters = new Vector<Filter>();
+    private static Vector<Filter> myFilters = new Vector<>();
 
     private static JLogoutputFrame myInstance = null;
     private JFrame myMainFrame = null;
     private JTextPaneAppender myAppender = null;
 
     /**
-     * Retrieves the singleton instance
+     * Retrieves the singleton instance.
+     *
+     * @return the existing instance, or a new instance if no prior instance
+     *         exists.
      */
     public static JLogoutputFrame getInstance() {
         if (myInstance == null) {
@@ -119,6 +122,8 @@ public class JLogoutputFrame {
     /**
      * Outputs a message only to the appender which belongs to this frame
      *
+     * @param aLevel logging level
+     * @param aMsg   logging message
      */
     public void log(Level aLevel, String aMsg) {
         if (myAppender == null) {
@@ -134,13 +139,14 @@ public class JLogoutputFrame {
      * Creates the appender and adds it to all known Loggers whose additivity
      * flag is false, incl. root logger
      *
+     * @param aTextPane the pane that contains the appender
      * @return A configured Appender
      */
     public JTextPaneAppender createAppender(JTextPane aTextPane) {
         JTextPaneAppender result = new JTextPaneAppender(myLayout, "Debug", myFilters.toArray(new Filter[0]), aTextPane);
 
         // TODO: This a simple approach to add the new appender to all yet known Loggers. 
-        // If Loggers are created dynamically later on or the the additivity flag of
+        // If Loggers are created dynamically later on or the additivity flag of
         // a logger changes, these Loggers probably wouldn't log to this appender. Solution is to
         // override the DefaultLoggerFactory and the Logger's setAdditivity().
         // Better solution is: Derivation of HierarchyEventListener (see mail on log4j user list "logging relative to webapp context path in tomcat" from Mi 19.03.2008 12:04)

@@ -1,9 +1,12 @@
-// Mx1SystemConnectionMemo.javaf
 package jmri.jmrix.zimo;
 
+import java.util.Comparator;
 import java.util.ResourceBundle;
+import jmri.GlobalProgrammerManager;
 import jmri.InstanceManager;
-import jmri.ProgrammerManager;
+import jmri.NamedBean;
+import jmri.managers.DefaultProgrammerManager;
+import jmri.util.NamedBeanComparator;
 
 /**
  * Lightweight class to denote that a system is active, and provide general
@@ -14,7 +17,6 @@ import jmri.ProgrammerManager;
  *
  * @author	Kevin Dickerson Copyright (C) 2012
  * @author	Bob Jacobsen Copyright (C) 2010
- * @version $Revision: 19712 $
  */
 public class Mx1SystemConnectionMemo extends jmri.jmrix.SystemConnectionMemo {
 
@@ -56,7 +58,9 @@ public class Mx1SystemConnectionMemo extends jmri.jmrix.SystemConnectionMemo {
     jmri.jmrix.swing.ComponentFactory cf = null;
 
     /**
-     * Provides access to the TrafficController for this particular connection.
+     * Provide access to the TrafficController for this particular connection.
+     *
+     * @return the associated traffic controller
      */
     public Mx1TrafficController getMx1TrafficController() {
         return st;
@@ -79,9 +83,6 @@ public class Mx1SystemConnectionMemo extends jmri.jmrix.SystemConnectionMemo {
         if (getDisabled()) {
             return false;
         }
-        if (type.equals(jmri.ProgrammerManager.class)) {
-            return true;
-        }
         if (type.equals(jmri.GlobalProgrammerManager.class)) {
             return getProgrammerManager().isGlobalProgrammerAvailable();
         }
@@ -101,7 +102,7 @@ public class Mx1SystemConnectionMemo extends jmri.jmrix.SystemConnectionMemo {
             }
 
         }
-        return false; // nothing, by default
+        return super.provides(type);
     }
 
     @Override
@@ -109,9 +110,6 @@ public class Mx1SystemConnectionMemo extends jmri.jmrix.SystemConnectionMemo {
     public <T> T get(Class<?> T) {
         if (getDisabled()) {
             return null;
-        }
-        if (T.equals(jmri.ProgrammerManager.class)) {
-            return (T) getProgrammerManager();
         }
         if (T.equals(jmri.GlobalProgrammerManager.class)) {
             return (T) getProgrammerManager();
@@ -133,7 +131,7 @@ public class Mx1SystemConnectionMemo extends jmri.jmrix.SystemConnectionMemo {
         }
         /*if (T.equals(jmri.CommandStation.class))
          return (T)commandStation;*/
-        return null; // nothing, by default
+        return super.get(T);
     }
 
     /**
@@ -144,8 +142,12 @@ public class Mx1SystemConnectionMemo extends jmri.jmrix.SystemConnectionMemo {
      */
     public void configureManagers() {
 
-        jmri.InstanceManager.setProgrammerManager(
-                getProgrammerManager());
+        if (getProgrammerManager().isAddressedModePossible()) {
+            InstanceManager.store(getProgrammerManager(), jmri.AddressedProgrammerManager.class);
+        }
+        if (getProgrammerManager().isGlobalProgrammerAvailable()) {
+            InstanceManager.store(getProgrammerManager(), GlobalProgrammerManager.class);
+        }
 
         powerManager = new jmri.jmrix.zimo.Mx1PowerManager(this);
         jmri.InstanceManager.store(powerManager, jmri.PowerManager.class);
@@ -153,7 +155,7 @@ public class Mx1SystemConnectionMemo extends jmri.jmrix.SystemConnectionMemo {
         throttleManager = new jmri.jmrix.zimo.Mx1ThrottleManager(this);
         InstanceManager.setThrottleManager(throttleManager);
         if (getProtocol() == Mx1Packetizer.BINARY) {
-            turnoutManager = new Mx1TurnoutManager(getMx1TrafficController(), getSystemPrefix());
+            turnoutManager = new Mx1TurnoutManager(this);
             InstanceManager.setTurnoutManager(turnoutManager);
         }
     }
@@ -165,23 +167,23 @@ public class Mx1SystemConnectionMemo extends jmri.jmrix.SystemConnectionMemo {
         return Mx1Packetizer.ASCII;
     }
 
-    private ProgrammerManager programmerManager;
+    private DefaultProgrammerManager programmerManager;
     private Mx1PowerManager powerManager;
     private Mx1ThrottleManager throttleManager;
     private Mx1TurnoutManager turnoutManager;
 
-    public ProgrammerManager getProgrammerManager() {
+    public DefaultProgrammerManager getProgrammerManager() {
         if (programmerManager == null) {
             if (getProtocol() == Mx1Packetizer.BINARY) {
                 programmerManager = new Mx1ProgrammerManager(new Mx1Programmer(getMx1TrafficController()), this);
             } else {
-                programmerManager = new jmri.managers.DefaultProgrammerManager(new jmri.jmrix.zimo.Mx1Programmer(getMx1TrafficController()), this);
+                programmerManager = new DefaultProgrammerManager(new Mx1Programmer(getMx1TrafficController()), this);
             }
         }
         return programmerManager;
     }
 
-    public void setProgrammerManager(ProgrammerManager p) {
+    public void setProgrammerManager(DefaultProgrammerManager p) {
         programmerManager = p;
     }
 
@@ -202,11 +204,17 @@ public class Mx1SystemConnectionMemo extends jmri.jmrix.SystemConnectionMemo {
         return throttleManager;
     }
 
+    @Override
     protected ResourceBundle getActionModelResourceBundle() {
-        //No actions that can be loaded at startup
-        return null;
+        return ResourceBundle.getBundle("jmri.jmrix.zimo.ZimoActionListBundle");
     }
 
+    @Override
+    public <B extends NamedBean> Comparator<B> getNamedBeanComparator(Class<B> type) {
+        return new NamedBeanComparator<>();
+    }
+
+    @Override
     public void dispose() {
         st = null;
         InstanceManager.deregister(this, Mx1SystemConnectionMemo.class);
@@ -218,7 +226,5 @@ public class Mx1SystemConnectionMemo extends jmri.jmrix.SystemConnectionMemo {
         }
         super.dispose();
     }
+
 }
-
-
-/* @(#)Mx1SystemConnectionMemo.java */

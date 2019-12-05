@@ -8,7 +8,7 @@ import jmri.jmrix.lenz.liusbethernet.LIUSBEthernetAdapter;
  * Handle XML persistance of layout connections by persistening the LIUSB Server
  * (and connections). Note this is named as the XML version of a
  * ConnectionConfig object, but it's actually persisting the LIUSB Server.
- * <P>
+ * <p>
  * NOTE: The LIUSB Server currently has no options, so this class does not store
  * any.
  * <p>
@@ -17,7 +17,6 @@ import jmri.jmrix.lenz.liusbethernet.LIUSBEthernetAdapter;
  * attribute in the XML.
  *
  * @author Paul Bender Copyright (C) 2011
- * @version $Revision$
  */
 public class ConnectionConfigXml extends AbstractNetworkConnectionConfigXml {
 

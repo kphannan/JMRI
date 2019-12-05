@@ -1,7 +1,10 @@
 package jmri.util.swing;
 
+import java.awt.Container;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
 import javax.swing.Action;
 import javax.swing.ButtonGroup;
 import javax.swing.JMenu;
@@ -14,12 +17,9 @@ import org.jdom2.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nonnull;
-import javax.annotation.CheckForNull;
-
 /**
  * Common utility methods for working with JMenus.
- * <P>
+ * <p>
  * Chief among these is the loadMenu method, for creating a set of menus from an
  * XML definition
  *
@@ -42,7 +42,7 @@ public class JMenuUtil extends GuiUtilBase {
             if (((Element) child).getChild("mnemonic") != null) {
                 int mnemonic = convertStringToKeyEvent(((Element) child).getChild("mnemonic").getText());
                 if (mnemonicList.contains(mnemonic)) {
-                    log.error("Menu item '" + menuItem.getLabel() + "' Mnemonic '" + ((Element) child).getChild("mnemonic").getText() + "' has already been assigned");
+                    log.error("Menu item '" + menuItem.getText() + "' Mnemonic '" + ((Element) child).getChild("mnemonic").getText() + "' has already been assigned");
                 } else {
                     menuItem.setMnemonic(mnemonic);
                     mnemonicList.add(mnemonic);
@@ -52,7 +52,8 @@ public class JMenuUtil extends GuiUtilBase {
         return retval;
     }
 
-    static @Nonnull JMenu jMenuFromElement(@CheckForNull Element main, WindowInterface wi, Object context) {
+    static @Nonnull
+    JMenu jMenuFromElement(@CheckForNull Element main, WindowInterface wi, Object context) {
         boolean addSep = false;
         String name = "<none>";
         if (main == null) {
@@ -78,7 +79,7 @@ public class JMenuUtil extends GuiUtilBase {
                     if (!(SystemType.isMacOSX()
                             && UIManager.getLookAndFeel().isNativeLookAndFeel()
                             && ((child.getChild("adapter") != null
-                            && child.getChild("adapter").getText().equals("apps.gui3.TabbedPreferencesAction"))
+                            && child.getChild("adapter").getText().equals("apps.gui3.tabbedpreferences.TabbedPreferencesAction"))
                             || (child.getChild("current") != null
                             && child.getChild("current").getText().equals("quit"))))) {
                         if (addSep) {
@@ -107,7 +108,7 @@ public class JMenuUtil extends GuiUtilBase {
             if (menuItem != null && child.getChild("mnemonic") != null) {
                 int mnemonic = convertStringToKeyEvent(child.getChild("mnemonic").getText());
                 if (mnemonicList.contains(mnemonic)) {
-                    log.error("Menu Item '" + menuItem.getLabel() + "' Mnemonic '" + child.getChild("mnemonic").getText() + "' has already been assigned");
+                    log.error("Menu Item '" + menuItem.getText() + "' Mnemonic '" + child.getChild("mnemonic").getText() + "' has already been assigned");
                 } else {
                     menuItem.setMnemonic(mnemonic);
                     mnemonicList.add(mnemonic);
@@ -117,7 +118,8 @@ public class JMenuUtil extends GuiUtilBase {
         return menu;
     }
 
-    static @Nonnull JMenu createMenuGroupFromElement(@CheckForNull Element main, WindowInterface wi, Object context) {
+    static @Nonnull
+    JMenu createMenuGroupFromElement(@CheckForNull Element main, WindowInterface wi, Object context) {
         String name = "<none>";
         if (main == null) {
             log.warn("Menu from element called without an element");
@@ -163,6 +165,7 @@ public class JMenuUtil extends GuiUtilBase {
 
         try {
             methodListener.invoke(context, new PropertyChangeListener() {
+                @Override
                 public void propertyChange(java.beans.PropertyChangeEvent e) {
                     if (e.getPropertyName().equals(ref)) {
                         String method = (String) e.getOldValue();
@@ -175,13 +178,13 @@ public class JMenuUtil extends GuiUtilBase {
                 }
             });
         } catch (IllegalArgumentException ex) {
-            System.out.println("IllegalArgument " + ex);
+            log.error("IllegalArgument in setMenuItemInterAction ", ex);
         } catch (IllegalAccessException ex) {
-            System.out.println("IllegalAccess " + ex);
+            log.error("IllegalAccess in setMenuItemInterAction ", ex);
         } catch (java.lang.reflect.InvocationTargetException ex) {
-            System.out.println("InvocationTarget " + ref + " " + ex.getCause());
+            log.error("InvocationTarget {} in setMenuItemInterAction ", ref, ex);
         } catch (java.lang.NullPointerException ex) {
-            System.out.println("NPE " + context.getClass().getName() + " " + ex.toString());
+            log.error("NPE {} in setMenuItemInterAction ", context.getClass().getName(), ex);
         }
 
     }
@@ -192,5 +195,30 @@ public class JMenuUtil extends GuiUtilBase {
         return kcode;
     }
 
-    private final static Logger log = LoggerFactory.getLogger(JMenuUtil.class.getName());
-}
+    /**
+     * replace a menu item in its parent with another menu item
+     * <p>
+     * (at the same position in the parent menu)
+     *
+     * @param orginalMenuItem     the original menu item to be replaced
+     * @param replacementMenuItem the menu item to replace it with
+     * @return true if the original menu item was found and replaced
+     */
+    public static boolean replaceMenuItem(
+            @Nonnull JMenuItem orginalMenuItem,
+            @Nonnull JMenuItem replacementMenuItem) {
+        boolean result = false; // assume failure (pessimist!)
+        Container container = orginalMenuItem.getParent();
+        if (container != null) {
+            int index = container.getComponentZOrder(orginalMenuItem);
+            if (index > -1) {
+                container.remove(orginalMenuItem);
+                container.add(replacementMenuItem, index);
+                result = true;
+            }
+        }
+        return result;
+    }
+
+    private final static Logger log = LoggerFactory.getLogger(JMenuUtil.class);
+}   // class JMenuUtil

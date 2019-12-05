@@ -1,51 +1,53 @@
 package jmri.jmrix.rps;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.util.Arrays;
 import javax.vecmath.Point3d;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Implementation of 2nd algorithm for reducing Readings
- * <P>
+ * <p>
  * This algorithm was provided by Robert Ashenfelter based in part on the work
  * of Ralph Bucher in his paper "Exact Solution for Three Dimensional Hyperbolic
  * Positioning Algorithm and Synthesizable VHDL Model for Hardware
  * Implementation".
- * <P>
+ * <p>
  * Neither Ashenfelter nor Bucher provide any guarantee as to the intellectual
  * property status of this algorithm. Use it at your own risk.
  *
  *
  * Here is a summary of the features of the new program from Robert Ashenfelter:
  *
- * <OL>
- * <LI> It is completely iterative. No more exact solutions for sets of three
+ * <ol>
+ * <li> It is completely iterative. No more exact solutions for sets of three
  * receivers. No more weighted averages of such solutions.
  *
- * <LI> Although both the old and the new versions can accept an unlimited
+ * <li> Although both the old and the new versions can accept an unlimited
  * number of receivers, the old version only processes a maximum of 15 while the
  * new version processes up to 50.
  *
- * <LI> The accuracy of the new version is approximately the same as for the old
+ * <li> The accuracy of the new version is approximately the same as for the old
  * version, perhaps marginally better. However for more than 15 receivers it is
  * significantly better.
  *
- * <LI> It has been designed to specifically reject receiver measurements with
+ * <li> It has been designed to specifically reject receiver measurements with
  * gross errors, i.e. those which are so large that there is no possible
  * position solution when they are combined with other measurements. It does so
  * much better than version 1.1. (However, version 1.1 has deficiencies in this
  * regard and is not as good at this as version 1.0.)
  *
- * <LI> It is slightly faster.
- * </OL>
+ * <li> It is slightly faster.
+ * </ol>
  *
  * Here is a description of the new program.
- * <P>
+ * <p>
  * As before the first thing it does is sort the receivers in order of
  * increasing time delay, discarding those that failed or are too far or too
  * near, and using the closest ones. There is a maximum that are used, now set
  * at 50.
- * <P>
+ * <p>
  * Next it discards those receivers with gross measurement errors. All possible
  * pairs of receivers are checked to see if the sum of their measured ranges is
  * less than, or the difference is greater than, the distance between the
@@ -53,7 +55,7 @@ import org.slf4j.LoggerFactory;
  * largest count is booted out. The proceedure is repeated until there are no
  * more failures. If fewer than three receivers are left there can be no
  * solution and an error code is returned.
- * <P>
+ * <p>
  * Two iterative techniques are used which I call "One-At-A-Time" and
  * "All-Together." The first looks at one receiver at a time and moves the
  * estimated position directly toward or away from it such that the distance is
@@ -61,7 +63,7 @@ import org.slf4j.LoggerFactory;
  * rapidly. The second technique accumulates the adjustments for all receivers
  * and then computes and applies an average for all. It is not as fast but is
  * ultimately more accurate.
- * <P>
+ * <p>
  * The solution proceeds in four stages, the first two of which are like the
  * preliminary solution in version 1.1. Stage 0 does 50 One-At-A-Time iterations
  * with the receivers in the sorted order. As in version 1.1, it starts from a
@@ -71,7 +73,7 @@ import org.slf4j.LoggerFactory;
  * convergence is much slower. The random order is used because the procedure
  * was occasionally observed to get stuck in a loop when using a repetitive
  * fixed order.
- * <P>
+ * <p>
  * Stage 2 continues the One-At-A-Time technique for an additional 250
  * iterations with the receivers in reverse order ending with the closest
  * receiver. Weights are applied assuming that close measurements are more
@@ -81,14 +83,14 @@ import org.slf4j.LoggerFactory;
  * receiver. The result at this point is quite good and the program could well
  * stop here but it doesn't. Stage 3 runs the All-Together iteration 15 times,
  * also using weights according to distance, to produce a more refined result.
- * <P>
+ * <p>
  * The program always runs through all the iterations regardless of how fast or
  * slow the solution converges. Only at the end does it compute the variance of
  * the residuals (differences between measured receiver distances and those from
  * the computed position) to check the result. The execution time ranges from
  * 0.8 millisecond with 3 receivers to 1.3 millisecond with 50 or more receivers
  * (1.0 GHz Pentium III).
- * <P>
+ * <p>
  * Input/output is the same as for versions 1.0 and 1.1. As before, the function
  * returns 0 if all seems well and 1 if there are fewer than 3 usable receivers
  * (with the reported position outside the known universe). A return value of 2
@@ -102,11 +104,11 @@ import org.slf4j.LoggerFactory;
  * guaranteed. After all, errors in the data could happen to mimic good values
  * for a wrong position. These return values tend to less reliable when the
  * program is overloaded with too many large errors.
- * <P>
+ * <p>
  * The restrictions on the configuration of transmitters and receivers,
  * necessary to prevent the program from reporting a spurious position, are the
  * same as those for version 1.1.
- * <P>
+ * <p>
  * As before, I have tested the program with a large number of different
  * receiver configurations having from 3 to 100 receivers and with many
  * transmitter locations. In addition to small random measurement errors, I have
@@ -120,7 +122,7 @@ import org.slf4j.LoggerFactory;
  * position 90% of the time, while with a more-typical layout it may be only
  * 50%. Performance improves to 80% correct for the typical layout with six
  * receivers.
- * <P>
+ *
  * @author	Robert Ashenfelter Copyright (C) 2007
  * @author	Bob Jacobsen Copyright (C) 2007
  */
@@ -131,9 +133,8 @@ public class Ash2_0Algorithm extends AbstractCalculator {
         this.offset = offset;
     }
 
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "EI_EXPOSE_REP2") // OK until Java 1.6 allows cheap array copy
     public Ash2_0Algorithm(Point3d[] sensors, double vsound) {
-        this.sensors = sensors;
+        this.sensors = Arrays.copyOf(sensors, sensors.length);
         this.Vs = vsound;
 
         // load the algorithm variables
@@ -162,6 +163,7 @@ public class Ash2_0Algorithm extends AbstractCalculator {
     double Yt = 0.0;
     double Zt = 0.0;
 
+    @Override
     public Measurement convert(Reading r) {
 
         prep(r);
@@ -197,6 +199,7 @@ public class Ash2_0Algorithm extends AbstractCalculator {
     /**
      * Seed the conversion using an estimated position
      */
+    @Override
     public Measurement convert(Reading r, Point3d guess) {
         this.Xt = guess.x;
         this.Yt = guess.y;
@@ -208,6 +211,7 @@ public class Ash2_0Algorithm extends AbstractCalculator {
     /**
      * Seed the conversion using a last measurement
      */
+    @Override
     public Measurement convert(Reading r, Measurement last) {
         if (last != null) {
             this.Xt = last.getX();
@@ -246,7 +250,7 @@ public class Ash2_0Algorithm extends AbstractCalculator {
     final static int NMAX = 50;			//  Max. no. of receivers used
 
     //  Compute RPS Position using
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "IP_PARAMETER_IS_DEAD_BUT_OVERWRITTEN") // it's secretly FORTRAN..
+    @SuppressFBWarnings(value = "IP_PARAMETER_IS_DEAD_BUT_OVERWRITTEN") // it's secretly FORTRAN..
     RetVal RPSpos(int nr, double Tr[], double Xr[], double Yr[], double Zr[],// many
             double Vs, double Xt, double Yt, double Zt) {//         receivers
 
@@ -419,7 +423,7 @@ public class Ash2_0Algorithm extends AbstractCalculator {
      *
      * More of a struct, really
      */
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "UUF_UNUSED_FIELD") // t not formally needed
+    @SuppressFBWarnings(value = "UUF_UNUSED_FIELD") // t not formally needed
     static class RetVal {
 
         RetVal(int code, double x, double y, double z, double vs) {
@@ -433,5 +437,6 @@ public class Ash2_0Algorithm extends AbstractCalculator {
         double x, y, z, t, vs;
     }
 
-    private final static Logger log = LoggerFactory.getLogger(Ash2_0Algorithm.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(Ash2_0Algorithm.class);
+
 }

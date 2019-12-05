@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.ResourceBundle;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -27,7 +26,6 @@ import jmri.jmrit.roster.Roster;
 import jmri.jmrit.roster.RosterEntry;
 import jmri.jmrit.roster.swing.RosterEntrySelectorPanel;
 import jmri.jmrit.symbolicprog.CvTableModel;
-import jmri.jmrit.symbolicprog.IndexedCvTableModel;
 import jmri.jmrit.symbolicprog.VariableTableModel;
 import jmri.jmrit.vsdecoder.LoadVSDFileAction;
 import jmri.jmrit.vsdecoder.VSDConfig;
@@ -41,24 +39,20 @@ import org.slf4j.LoggerFactory;
  * Configuration dialog for setting up a new VSDecoder
  * <hr>
  * This file is part of JMRI.
- * <P>
- * JMRI is free software; you can redistribute it and/or modify it under 
- * the terms of version 2 of the GNU General Public License as published 
+ * <p>
+ * JMRI is free software; you can redistribute it and/or modify it under
+ * the terms of version 2 of the GNU General Public License as published
  * by the Free Software Foundation. See the "COPYING" file for a copy
  * of this license.
- * <P>
- * JMRI is distributed in the hope that it will be useful, but WITHOUT 
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License 
+ * <p>
+ * JMRI is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
  * for more details.
- * <P>
  *
- * @author			Mark Underwood Copyright (C) 2011
+ * @author   Mark Underwood Copyright (C) 2011
  */
-@SuppressWarnings("deprecation")
 public class VSDConfigDialog extends JDialog {
-
-    private static final ResourceBundle rb = VSDSwingBundle.bundle();
 
     public static final String CONFIG_PROPERTY = "Config";
 
@@ -84,7 +78,6 @@ public class VSDConfigDialog extends JDialog {
     private javax.swing.JButton rosterSaveButton;
     private javax.swing.JComboBox<Object> profileComboBox;
     private javax.swing.JButton profileLoadButton;
-    private javax.swing.JLabel profileLabel;
     private javax.swing.JPanel rosterPanel;
     private javax.swing.JPanel profilePanel;
     private javax.swing.JPanel addressPanel;
@@ -106,6 +99,7 @@ public class VSDConfigDialog extends JDialog {
         super(SwingUtilities.getWindowAncestor(parent), title);
         config = c;
         VSDecoderManager.instance().addEventListener(new VSDManagerListener() {
+            @Override
             public void eventAction(VSDManagerEvent evt) {
                 vsdecoderManagerEventAction(evt);
             }
@@ -122,7 +116,7 @@ public class VSDConfigDialog extends JDialog {
         // Tabbed pane for loco select (Roster or Manual)
         locoSelectPanel = new JTabbedPane();
         TitledBorder title = BorderFactory.createTitledBorder(BorderFactory.createLoweredBevelBorder(),
-                rb.getString("LocoTabbedPaneTitle"));
+                Bundle.getMessage("LocoTabbedPaneTitle"));
         title.setTitlePosition(TitledBorder.DEFAULT_POSITION);
         locoSelectPanel.setBorder(title);
 
@@ -131,23 +125,23 @@ public class VSDConfigDialog extends JDialog {
         rosterPanel.setLayout(new BoxLayout(rosterPanel, BoxLayout.LINE_AXIS));
         addressPanel = new JPanel();
         addressPanel.setLayout(new BoxLayout(addressPanel, BoxLayout.LINE_AXIS));
-        locoSelectPanel.addTab(rb.getString("LocoTabbedPaneRosterTab"), rosterPanel);
-        locoSelectPanel.addTab(rb.getString("LocoTabbedPaneManualTab"), addressPanel);
+        locoSelectPanel.addTab(Bundle.getMessage("RosterLabel"), rosterPanel); // tab name
+        locoSelectPanel.addTab(Bundle.getMessage("LocoTabbedPaneManualTab"), addressPanel);
         //NOTE: There appears to be a bug in Swing that doesn't let Mnemonics work on a JTabbedPane when a sibling component
         // has the focus.  Oh well.
         try {
-            locoSelectPanel.setToolTipTextAt(locoSelectPanel.indexOfTab(rb.getString("LocoTabbedPaneRosterTab")), rb.getString("LTPRosterTabToolTip"));
-            locoSelectPanel.setMnemonicAt(locoSelectPanel.indexOfTab(rb.getString("LocoTabbedPaneRosterTab")), Mnemonics.get("RosterTab"));
-            locoSelectPanel.setToolTipTextAt(locoSelectPanel.indexOfTab(rb.getString("LocoTabbedPaneManualTab")), rb.getString("LTPManualTabToolTip"));
-            locoSelectPanel.setMnemonicAt(locoSelectPanel.indexOfTab(rb.getString("LocoTabbedPaneManualTab")), Mnemonics.get("ManualTab"));
+            locoSelectPanel.setToolTipTextAt(locoSelectPanel.indexOfTab(Bundle.getMessage("RosterLabel")), Bundle.getMessage("LTPRosterTabToolTip"));
+            locoSelectPanel.setMnemonicAt(locoSelectPanel.indexOfTab(Bundle.getMessage("RosterLabel")), Mnemonics.get("RosterTab"));
+            locoSelectPanel.setToolTipTextAt(locoSelectPanel.indexOfTab(Bundle.getMessage("LocoTabbedPaneManualTab")), Bundle.getMessage("LTPManualTabToolTip"));
+            locoSelectPanel.setMnemonicAt(locoSelectPanel.indexOfTab(Bundle.getMessage("LocoTabbedPaneManualTab")), Mnemonics.get("ManualTab"));
         } catch (IndexOutOfBoundsException iobe) {
-            log.debug("Index out of bounds setting up tabbed Pane: " + iobe);
-            // Ignore out-of-bounds exception.  We just won't have mnemonics or tool tips this go round.
+            log.debug("Index out of bounds setting up tabbed Pane: {}", iobe);
+            // Ignore out-of-bounds exception.  We just won't have mnemonics or tool tips this go round
         }
         // Roster Tab components
         rosterSelector = new RosterEntrySelectorPanel();
-        rosterSelector.setNonSelectedItem(rb.getString("EmptyRosterBox"));
-        rosterSelector.setToolTipText(rb.getString("LTPRosterSelectorToolTip"));
+        rosterSelector.setNonSelectedItem(Bundle.getMessage("EmptyRosterBox"));
+        rosterSelector.setToolTipText(Bundle.getMessage("LTPRosterSelectorToolTip"));
         //rosterComboBox.setToolTipText("tool tip for roster box");
         rosterSelector.addPropertyChangeListener("selectedRosterEntries", new PropertyChangeListener() {
             @Override
@@ -157,18 +151,19 @@ public class VSDConfigDialog extends JDialog {
         });
         rosterPanel.add(rosterSelector);
         rosterLabel = new javax.swing.JLabel();
-        rosterLabel.setText(rb.getString("RosterLabel"));
+        rosterLabel.setText(Bundle.getMessage("RosterLabel"));
 
         // Address Tab Components
         addressLabel = new javax.swing.JLabel();
         addressSelector = new DccLocoAddressSelector();
-        addressSelector.setToolTipText(rb.getString("LTPAddressSelectorToolTip"));
+        addressSelector.setToolTipText(Bundle.getMessage("LTPAddressSelectorToolTip", Bundle.getMessage("ButtonSet")));
         addressSetButton = new javax.swing.JButton();
-        addressSetButton.setText(rb.getString("AddressSetButtonLabel"));
+        addressSetButton.setText(Bundle.getMessage("ButtonSet"));
         addressSetButton.setEnabled(true);
-        addressSetButton.setToolTipText(rb.getString("AddressSetButtonToolTip"));
+        addressSetButton.setToolTipText(Bundle.getMessage("AddressSetButtonToolTip"));
         addressSetButton.setMnemonic(Mnemonics.get("AddressSet"));
         addressSetButton.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 addressSetButtonActionPerformed(evt);
             }
@@ -182,14 +177,13 @@ public class VSDConfigDialog extends JDialog {
         profilePanel = new JPanel();
         profilePanel.setLayout(new BoxLayout(profilePanel, BoxLayout.PAGE_AXIS));
         profileComboBox = new javax.swing.JComboBox<>();
-        profileComboBox.setToolTipText(rb.getString("ProfileComboBoxToolTip"));
-        profileLabel = new javax.swing.JLabel();
-        profileLoadButton = new JButton(rb.getString("LoadVSDFileButtonLabel"));
-        profileLoadButton.setToolTipText(rb.getString("ProfileLoadButtonToolTip"));
+        profileComboBox.setToolTipText(Bundle.getMessage("ProfileComboBoxToolTip"));
+        profileLoadButton = new JButton(Bundle.getMessage("VSDecoderFileMenuLoadVSDFile"));
+        profileLoadButton.setToolTipText(Bundle.getMessage("ProfileLoadButtonToolTip"));
         profileLoadButton.setMnemonic(Mnemonics.get("ProfileLoad"));
         profileLoadButton.setEnabled(true);
         TitledBorder title2 = BorderFactory.createTitledBorder(BorderFactory.createLoweredBevelBorder(),
-                rb.getString("ProfileSelectorPaneTitle"));
+                Bundle.getMessage("ProfileSelectorPaneTitle"));
         title.setTitlePosition(TitledBorder.DEFAULT_POSITION);
         profilePanel.setBorder(title2);
 
@@ -205,6 +199,7 @@ public class VSDConfigDialog extends JDialog {
         profileComboBox.addItem((loadProfilePrompt = new NullProfileBoxItem()));
         profileComboBox.setSelectedItem(loadProfilePrompt);
         profileComboBox.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 profileComboBoxActionPerformed(evt);
             }
@@ -212,39 +207,41 @@ public class VSDConfigDialog extends JDialog {
         profilePanel.add(profileComboBox);
         profilePanel.add(profileLoadButton);
         profileLoadButton.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 profileLoadButtonActionPerformed(evt);
             }
         });
 
-        profileLabel.setText(rb.getString("SoundProfileLabel"));
-
         rosterSaveButton = new javax.swing.JButton();
-        rosterSaveButton.setText(rb.getString("ConfigSaveButtonLabel"));
+        rosterSaveButton.setText(Bundle.getMessage("ConfigSaveButtonLabel"));
         rosterSaveButton.addActionListener(new ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 rosterSaveButtonAction(e);
             }
         });
         rosterSaveButton.setEnabled(false); // temporarily disable this until we update the RosterEntry
-        rosterSaveButton.setToolTipText(rb.getString("RosterSaveButtonToolTip"));
+        rosterSaveButton.setToolTipText(Bundle.getMessage("RosterSaveButtonToolTip"));
         rosterSaveButton.setMnemonic(Mnemonics.get("RosterSave"));
 
         JPanel cbPanel = new JPanel();
-        closeButton = new JButton(rb.getString("CloseButtonLabel"));
+        closeButton = new JButton(Bundle.getMessage("ButtonOK"));
         closeButton.setEnabled(false);
-        closeButton.setToolTipText(rb.getString("CD_CloseButtonToolTip"));
+        closeButton.setToolTipText(Bundle.getMessage("CD_CloseButtonToolTip"));
         closeButton.setMnemonic(Mnemonics.get("CloseButton"));
         closeButton.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
                 closeButtonActionPerformed(e);
             }
         });
 
-        JButton cancelButton = new JButton(rb.getString("CancelButtonLabel"));
-        cancelButton.setToolTipText(rb.getString("CD_CancelButtonToolTip"));
+        JButton cancelButton = new JButton(Bundle.getMessage("ButtonCancel"));
+        cancelButton.setToolTipText(Bundle.getMessage("CD_CancelButtonToolTip"));
         cancelButton.setMnemonic(Mnemonics.get("CancelButton"));
         cancelButton.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 cancelButtonActionPerformed(evt);
             }
@@ -293,7 +290,7 @@ public class VSDConfigDialog extends JDialog {
 
         @Override
         public String toString() {
-            return (rb.getString("NoLocoSelectedText"));
+            return (Bundle.getMessage("NoLocoSelectedText"));
         }
     }
 
@@ -337,17 +334,17 @@ public class VSDConfigDialog extends JDialog {
             RosterEntry r = rosterSelector.getSelectedRosterEntries()[0];
             String profile = profileComboBox.getSelectedItem().toString();
             String path = VSDecoderManager.instance().getProfilePath(profile);
-            if ((path == null) || (profile == null)) {
-                log.debug("Path and/or Profile not selected.  Ignore Save button press.");
+            if (path == null) {
+                log.debug("Path not selected.  Ignore Save button press.");
                 return;
             } else {
                 r.setOpen(true);
                 r.putAttribute("VSDecoder_Path", path);
                 r.putAttribute("VSDecoder_Profile", profile);
                 int value = JOptionPane.showConfirmDialog(null,
-                        MessageFormat.format(rb.getString("UpdateRoster"),
+                        MessageFormat.format(Bundle.getMessage("UpdateRoster"),
                                 new Object[]{r.titleString()}),
-                        rb.getString("SaveRoster?"), JOptionPane.YES_NO_OPTION);
+                        Bundle.getMessage("SaveRoster?"), JOptionPane.YES_NO_OPTION);
                 if (value == JOptionPane.YES_OPTION) {
                     storeFile(r);
                 }
@@ -418,7 +415,7 @@ public class VSDConfigDialog extends JDialog {
         while (itr.hasNext()) {
             String st = itr.next();
             if (!ce_list.contains(st)) {
-                log.debug("added item " + st);
+                log.debug("added item {}", st);
                 profileComboBox.addItem(st);
             }
         }
@@ -431,7 +428,7 @@ public class VSDConfigDialog extends JDialog {
             if (rosterSelector.getSelectedRosterEntries().length > 0) {
                 RosterEntry r = rosterSelector.getSelectedRosterEntries()[0];
                 String profile = r.getAttribute("VSDecoder_Profile");
-                log.debug("Trying to set the ProfileComboBox to this Profile: " + profile);
+                log.debug("Trying to set the ProfileComboBox to this Profile: {}", profile);
                 if (profile != null) {
                     profileComboBox.setSelectedItem(profile);
                 }
@@ -456,13 +453,16 @@ public class VSDConfigDialog extends JDialog {
         vsd_path = rosterEntry.getAttribute("VSDecoder_Path");
         vsd_profile = rosterEntry.getAttribute("VSDecoder_Profile");
 
-        log.debug("Roster entry: profile = " + vsd_profile + " path = " + vsd_path);
+        log.debug("Roster entry: profile: {}, path: {}", vsd_profile, vsd_path);
 
         // If the roster entry has VSD info stored, load it.
-        if ((vsd_path != null) && (vsd_profile != null)) {
+        if (vsd_path == null || vsd_path.isEmpty()) {
+            JOptionPane.showMessageDialog(null,
+                    "No VSD info found in Roster Media - couldn't load VSD File. Use the \"Save to Roster\" button to add the VSD info.");
+        } else {
             // Load the indicated VSDecoder Profile and update the Profile combo box
             // This will trigger a PROFILE_LIST_CHANGE event from the VSDecoderManager.
-            VSDecoderManager.instance().loadProfiles(vsd_path);
+            LoadVSDFileAction.loadVSDFile(vsd_path);
         }
 
         // Set the Address box from the Roster entry
@@ -477,22 +477,21 @@ public class VSDConfigDialog extends JDialog {
      */
     protected boolean storeFile(RosterEntry _rosterEntry) {
         log.debug("storeFile starts");
-        // We need to create a programmer, a cvTableModel, an iCvTableModel, and a variableTableModel.
+        // We need to create a programmer, a cvTableModel, and a variableTableModel.
         // Doesn't matter which, so we'll use the Global programmer.
-        Programmer p = InstanceManager.getDefault(jmri.ProgrammerManager.class).getGlobalProgrammer();
+        Programmer p = InstanceManager.getDefault(jmri.GlobalProgrammerManager.class).getGlobalProgrammer();
         CvTableModel cvModel = new CvTableModel(null, p);
-        IndexedCvTableModel iCvModel = new IndexedCvTableModel(null, p);
-        VariableTableModel variableModel = new VariableTableModel(null, new String[]{"Name", "Value"}, cvModel, iCvModel);
+        VariableTableModel variableModel = new VariableTableModel(null, new String[]{"Name", "Value"}, cvModel);
 
         // Now, in theory we can call _rosterEntry.writeFile...
         if (_rosterEntry.getFileName() != null) {
             // set the loco file name in the roster entry
             _rosterEntry.readFile();  // read, but don't yet process
-            _rosterEntry.loadCvModel(variableModel, cvModel, iCvModel);
+            _rosterEntry.loadCvModel(variableModel, cvModel);
         }
 
         // id has to be set!
-        if (_rosterEntry.getId().equals("")) {
+        if (_rosterEntry.getId().isEmpty()) {
             log.debug("storeFile without a filename; issued dialog");
             return false;
         }
@@ -501,17 +500,17 @@ public class VSDConfigDialog extends JDialog {
         _rosterEntry.ensureFilenameExists();
 
         // create the RosterEntry to its file
-        _rosterEntry.writeFile(cvModel, iCvModel, variableModel); // where to get the models???
+        _rosterEntry.writeFile(cvModel, variableModel); // where to get the models???
 
         // mark this as a success
         variableModel.setFileDirty(false);
 
         // and store an updated roster file
-        Roster.writeRosterFile();
+        Roster.getDefault().writeRoster();
 
         return true;
     }
 
-    private static final Logger log = LoggerFactory.getLogger(VSDConfigDialog.class.getName());
+    private static final Logger log = LoggerFactory.getLogger(VSDConfigDialog.class);
 
 }

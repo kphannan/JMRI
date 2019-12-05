@@ -6,7 +6,7 @@ import jmri.Consist;
 import jmri.ConsistListListener;
 import jmri.ConsistListener;
 import jmri.ConsistManager;
-import jmri.DccLocoAddress;
+import jmri.LocoAddress;
 
 /**
  * An Abstract Consist Manager on top of which system specific consist managers
@@ -15,21 +15,21 @@ import jmri.DccLocoAddress;
  * @author Paul Bender Copyright (C) 2004
  * @author Randall Wood Copyright (C) 2013
  */
-abstract public class AbstractConsistManager implements ConsistManager {
+public abstract class AbstractConsistManager implements ConsistManager {
 
-    protected HashMap<DccLocoAddress, Consist> consistTable = null;
+    protected HashMap<LocoAddress, Consist> consistTable = null;
     private ArrayList<ConsistListListener> changeListeners = null;
 
     public AbstractConsistManager() {
-        consistTable = new HashMap<DccLocoAddress, Consist>();
-        changeListeners = new ArrayList<ConsistListListener>();
+        consistTable = new HashMap<>();
+        changeListeners = new ArrayList<>();
     }
 
     /**
      * Find a Consist with this consist address, and return it.
      */
     @Override
-    public Consist getConsist(DccLocoAddress address) {
+    public Consist getConsist(LocoAddress address) {
         if (consistTable.containsKey(address)) {
             return (consistTable.get(address));
         } else {
@@ -38,75 +38,66 @@ abstract public class AbstractConsistManager implements ConsistManager {
     }
 
     /**
-     * Add a new Consist with the given address to the consistTable/consistList
+     * Add a new Consist with the given address.
+     *
+     * @param address consist address
+     * @return a consist at address; this will be the existing consist if a
+     *         consist is already known to exist at address
      */
-    abstract protected Consist addConsist(DccLocoAddress address);
+    protected abstract  Consist addConsist(LocoAddress address);
 
     // remove the old Consist
     @Override
-    public void delConsist(DccLocoAddress address) {
+    public void delConsist(LocoAddress address) {
         consistTable.get(address).dispose();
         consistTable.remove(address);
     }
 
     /**
-     * Does this implementation support a command station consist?
-     */
-    @Override
-    abstract public boolean isCommandStationConsistPossible();
-
-    /**
-     * Does a CS consist require a separate consist address? (or is the lead
-     * loco to be used for the consist address)
-     */
-    @Override
-    abstract public boolean csConsistNeedsSeperateAddress();
-
-    /**
      * Return the list of consists we know about.
      */
     @Override
-    public ArrayList<DccLocoAddress> getConsistList() {
-        return new ArrayList<DccLocoAddress>(consistTable.keySet());
+    public ArrayList<LocoAddress> getConsistList() {
+        return new ArrayList<>(consistTable.keySet());
     }
 
     @Override
-    public String decodeErrorCode(int ErrorCode) {
+    public String decodeErrorCode(int errorCode) {
         StringBuilder buffer = new StringBuilder("");
-        if ((ErrorCode & ConsistListener.NotImplemented) != 0) {
+        if ((errorCode & ConsistListener.NotImplemented) != 0) {
             buffer.append("Not Implemented ");
         }
-        if ((ErrorCode & ConsistListener.OPERATION_SUCCESS) != 0) {
+        if ((errorCode & ConsistListener.OPERATION_SUCCESS) != 0) {
             buffer.append("Operation Completed Successfully ");
         }
-        if ((ErrorCode & ConsistListener.CONSIST_ERROR) != 0) {
+        if ((errorCode & ConsistListener.CONSIST_ERROR) != 0) {
             buffer.append("Consist Error ");
         }
-        if ((ErrorCode & ConsistListener.LOCO_NOT_OPERATED) != 0) {
+        if ((errorCode & ConsistListener.LOCO_NOT_OPERATED) != 0) {
             buffer.append("Address not controled by this device.");
         }
-        if ((ErrorCode & ConsistListener.ALREADY_CONSISTED) != 0) {
+        if ((errorCode & ConsistListener.ALREADY_CONSISTED) != 0) {
             buffer.append("Locomotive already consisted");
         }
-        if ((ErrorCode & ConsistListener.NOT_CONSISTED) != 0) {
+        if ((errorCode & ConsistListener.NOT_CONSISTED) != 0) {
             buffer.append("Locomotive Not Consisted ");
         }
-        if ((ErrorCode & ConsistListener.NONZERO_SPEED) != 0) {
+        if ((errorCode & ConsistListener.NONZERO_SPEED) != 0) {
             buffer.append("Speed Not Zero ");
         }
-        if ((ErrorCode & ConsistListener.NOT_CONSIST_ADDR) != 0) {
+        if ((errorCode & ConsistListener.NOT_CONSIST_ADDR) != 0) {
             buffer.append("Address Not Conist Address ");
         }
-        if ((ErrorCode & ConsistListener.DELETE_ERROR) != 0) {
+        if ((errorCode & ConsistListener.DELETE_ERROR) != 0) {
             buffer.append("Delete Error ");
         }
-        if ((ErrorCode & ConsistListener.STACK_FULL) != 0) {
+        if ((errorCode & ConsistListener.STACK_FULL) != 0) {
             buffer.append("Stack Full ");
         }
 
         String retval = buffer.toString();
         if (retval.equals("")) {
-            return "Unknown Status Code: " + ErrorCode;
+            return "Unknown Status Code: " + errorCode;
         } else {
             return retval;
         }
@@ -119,7 +110,7 @@ abstract public class AbstractConsistManager implements ConsistManager {
     /**
      * Allow a request for consist updates from the layout.
      *
-     * If not overridden, by a concrete subclass, this method always returns
+     * If not overridden by a concrete subclass, this method always returns
      * true.
      *
      * @return true if the request can be made, false if not
@@ -158,4 +149,5 @@ abstract public class AbstractConsistManager implements ConsistManager {
             l.notifyConsistListChanged();
         }
     }
+
 }

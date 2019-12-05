@@ -19,18 +19,18 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.SwingUtilities;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import javax.swing.text.BadLocationException;
 import jmri.util.FileUtil;
 import jmri.util.JmriJFrame;
+import jmri.util.swing.TextAreaFIFO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 
 /**
- * Abstract base class for Frames displaying communications monitor information
+ * Abstract base class for Frames displaying communications monitor information.
  *
- * @author	Bob Jacobsen Copyright (C) 2001, 2003, 2014
+ * @author Bob Jacobsen Copyright (C) 2001, 2003, 2014
  */
 public abstract class AbstractMonFrame extends JmriJFrame {
 
@@ -39,19 +39,23 @@ public abstract class AbstractMonFrame extends JmriJFrame {
 
     /**
      * Initialize the data source.
-     * <P>
+     * <p>
      * This is invoked at the end of the GUI initialization phase. Subclass
      * implementations should connect to their data source here.
      */
     protected abstract void init();
 
     // the subclass also needs a dispose() method to close any specific communications; call super.dispose()
+    @OverridingMethodsMustInvokeSuper
     @Override
     public void dispose() {
-        p.setSimplePreferenceState(timeStampCheck, timeCheckBox.isSelected());
-        p.setSimplePreferenceState(rawDataCheck, rawCheckBox.isSelected());
-        p.setSimplePreferenceState(alwaysOnTopCheck, alwaysOnTopCheckBox.isSelected());
-        p.setSimplePreferenceState(autoScrollCheck, !autoScrollCheckBox.isSelected());
+        if(p!=null) {
+           p.setSimplePreferenceState(timeStampCheck, timeCheckBox.isSelected());
+           p.setSimplePreferenceState(rawDataCheck, rawCheckBox.isSelected());
+           p.setSimplePreferenceState(alwaysOnTopCheck, alwaysOnTopCheckBox.isSelected());
+           p.setSimplePreferenceState(autoScrollCheck, !autoScrollCheckBox.isSelected());
+        }
+        monTextPane.dispose();
         super.dispose();
     }
     // you'll also have to add the message(Foo) members to handle info to be logged.
@@ -61,7 +65,7 @@ public abstract class AbstractMonFrame extends JmriJFrame {
     protected JButton clearButton = new JButton();
     protected JToggleButton freezeButton = new JToggleButton();
     protected JScrollPane jScrollPane1 = new JScrollPane();
-    protected JTextArea monTextPane = new JTextArea();
+    protected TextAreaFIFO monTextPane = new TextAreaFIFO(MAX_LINES);
     protected JButton startLogButton = new JButton();
     protected JButton stopLogButton = new JButton();
     protected JCheckBox rawCheckBox = new JCheckBox();
@@ -88,7 +92,11 @@ public abstract class AbstractMonFrame extends JmriJFrame {
         self = this;
     }
 
-    public void initComponents() throws Exception {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void initComponents() {
 
         p = jmri.InstanceManager.getDefault(jmri.UserPreferencesManager.class);
         // the following code sets the frame's initial state
@@ -109,34 +117,10 @@ public abstract class AbstractMonFrame extends JmriJFrame {
         monTextPane.setToolTipText(Bundle.getMessage("TooltipMonTextPane")); // NOI18N
         monTextPane.setEditable(false);
 
-        // Add document listener to scroll to end when modified if required
-        monTextPane.getDocument().addDocumentListener(new DocumentListener() {
-
-            // References to the JTextArea and JCheckBox
-            // of this instantiation
-            JTextArea ta = monTextPane;
-            JCheckBox chk = autoScrollCheckBox;
-
-            @Override
-            public void insertUpdate(DocumentEvent e) {
-                doAutoScroll(ta, chk.isSelected());
-            }
-
-            @Override
-            public void removeUpdate(DocumentEvent e) {
-                doAutoScroll(ta, chk.isSelected());
-            }
-
-            @Override
-            public void changedUpdate(DocumentEvent e) {
-                doAutoScroll(ta, chk.isSelected());
-            }
-        });
-
-        entryField.setToolTipText(Bundle.getMessage("TooltipEntryPane")); // NOI18N
+        entryField.setToolTipText(Bundle.getMessage("TooltipEntryPane", Bundle.getMessage("ButtonAddMessage"))); // NOI18N
 
         // fix a width for current character set
-        JTextField t = new JTextField(80);
+        JTextField t = new JTextField(200);
         int x = jScrollPane1.getPreferredSize().width + t.getPreferredSize().width;
         int y = jScrollPane1.getPreferredSize().height + 10 * t.getPreferredSize().height;
 
@@ -253,7 +237,7 @@ public abstract class AbstractMonFrame extends JmriJFrame {
         autoScrollCheckBox.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                doAutoScroll(monTextPane, autoScrollCheckBox.isSelected());
+                monTextPane.setAutoScroll(autoScrollCheckBox.isSelected());
             }
         });
 
@@ -264,7 +248,7 @@ public abstract class AbstractMonFrame extends JmriJFrame {
         init();
 
         // add help menu to window
-        addHelpMenu();
+        setHelp();
 
         // prevent button areas from expanding
         pack();
@@ -279,7 +263,7 @@ public abstract class AbstractMonFrame extends JmriJFrame {
      * Specific implementations can override this to show their own help page if
      * desired.
      */
-    protected void addHelpMenu() {
+    protected void setHelp() {
         addHelpMenu("package.jmri.jmrix.AbstractMonFrame", true); // NOI18N
     }
 
@@ -308,18 +292,10 @@ public abstract class AbstractMonFrame extends JmriJFrame {
         // if not frozen, display it in the Swing thread
         if (!freezeButton.isSelected()) {
             Runnable r = new Runnable() {
+                @Override
                 public void run() {
                     synchronized (self) {
                         monTextPane.append(linesBuffer.toString());
-                        int LineCount = monTextPane.getLineCount();
-                        if (LineCount > MAX_LINES) {
-                            LineCount -= MAX_LINES;
-                            try {
-                                int offset = monTextPane.getLineStartOffset(LineCount);
-                                monTextPane.getDocument().remove(0, offset);
-                            } catch (BadLocationException ex) {
-                            }
-                        }
                         linesBuffer.setLength(0);
                     }
                 }
@@ -366,7 +342,7 @@ public abstract class AbstractMonFrame extends JmriJFrame {
             // start logging
             try {
                 logStream = new PrintStream(new FileOutputStream(logFileChooser.getSelectedFile()));
-            } catch (Exception ex) {
+            } catch (java.io.FileNotFoundException ex) {
                 log.error("exception " + ex);
             }
         }
@@ -407,24 +383,12 @@ public abstract class AbstractMonFrame extends JmriJFrame {
         return linesBuffer.toString();
     }
 
-    /**
-     * Method to position caret at end of JTextArea ta when scroll true.
-     *
-     * @param ta     Reference to JTextArea
-     * @param scroll True to move to end
+    /** 
+     * Get access to the main text area. This is intended
+     * for use in e.g. scripting to extend the behavior of the window.
      */
-    private void doAutoScroll(final JTextArea ta, final boolean scroll) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                int len = ta.getText().length();
-                if (scroll) {
-                    ta.setCaretPosition(len);
-                } else if (ta.getCaretPosition() == len && len > 0) {
-                    ta.setCaretPosition(len - 1);
-                }
-            }
-        });
+    public final synchronized JTextArea getTextArea() {
+        return monTextPane;
     }
 
     volatile PrintStream logStream = null;
@@ -434,5 +398,7 @@ public abstract class AbstractMonFrame extends JmriJFrame {
 
     StringBuffer linesBuffer = new StringBuffer();
     static private int MAX_LINES = 500;
-    private static final Logger log = LoggerFactory.getLogger(AbstractMonFrame.class.getName());
+
+    private static final Logger log = LoggerFactory.getLogger(AbstractMonFrame.class);
+
 }

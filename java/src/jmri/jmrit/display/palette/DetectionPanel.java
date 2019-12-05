@@ -25,11 +25,11 @@ import jmri.jmrit.picker.PickListModel;
 import jmri.jmrit.picker.PickPanel;
 
 /**
- * Panel for Occupancy and Error detection,
+ * Panel for Occupancy and Error detection.
  */
 public class DetectionPanel extends JPanel {
 
-    private JTextField _occDetectorName = new JTextField();   // can be either a Sensor or OBlock name
+    private JTextField _occDetectorName = new JTextField(); // can be either a Sensor or OBlock name
     private JFrame _pickFrame;
     private JButton _openPicklistButton;
     private JPanel _trainIdPanel;
@@ -41,16 +41,19 @@ public class DetectionPanel extends JPanel {
     private JPanel _checkBoxPanel;
 
     /**
+     * Add _blockPathPanel to this ItemPanel.
      */
     public DetectionPanel(ItemPanel parent) {
         super();
         _parent = parent;
         _occDetectorName.addActionListener(new ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 checkDetection();
             }
         });
         _occDetectorName.addFocusListener(new FocusAdapter() {
+            @Override
             public void focusLost(FocusEvent e) {
                 checkDetection();
             }
@@ -58,9 +61,10 @@ public class DetectionPanel extends JPanel {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.add(makeSensorPanel(_occDetectorName, "OccupancySensor", "ToolTipOccupancySensor"));
+        panel.add(makeSensorPanel(_occDetectorName, "DetectionSensor", "ToolTipOccupancySensor"));
         _openPicklistButton = new JButton(Bundle.getMessage("OpenPicklist"));
         _openPicklistButton.addActionListener(new ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent a) {
                 if (_pickFrame == null) {
                     openPickList();
@@ -69,10 +73,8 @@ public class DetectionPanel extends JPanel {
                 }
             }
         });
-        _openPicklistButton.setToolTipText(Bundle.getMessage("ToolTipPickLists"));
         JPanel p = new JPanel();
         p.add(_openPicklistButton);
-        p.setToolTipText(Bundle.getMessage("ToolTipPickLists"));
         panel.add(p);
         add(panel);
 
@@ -119,8 +121,8 @@ public class DetectionPanel extends JPanel {
         JPanel blurb = new JPanel();
         blurb.setLayout(new BoxLayout(blurb, BoxLayout.Y_AXIS));
         blurb.add(Box.createVerticalStrut(ItemPalette.STRUT_SIZE));
-        blurb.add(new JLabel(Bundle.getMessage("DragOccupancyName")));
-        blurb.add(new JLabel(Bundle.getMessage("DragErrorName")));
+        blurb.add(new JLabel(Bundle.getMessage("DragOccupancyName", Bundle.getMessage("DetectionSensor"))));
+//        blurb.add(new JLabel(Bundle.getMessage("DragErrorName", Bundle.getMessage("ErrorSensor"))));
         blurb.add(Box.createVerticalStrut(ItemPalette.STRUT_SIZE));
         JPanel panel = new JPanel();
         panel.add(blurb);
@@ -132,6 +134,7 @@ public class DetectionPanel extends JPanel {
 
         _pickFrame.setContentPane(content);
         _pickFrame.addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
             public void windowClosing(java.awt.event.WindowEvent e) {
                 closePickList();
             }
@@ -211,7 +214,7 @@ public class DetectionPanel extends JPanel {
         if (_pathBoxes != null) {
             for (int i = 0; i < _pathBoxes.size(); i++) {
                 if (_pathBoxes.get(i).isSelected()) {
-                    paths.add(_pathBoxes.get(i).getName().trim());
+                    paths.add(_pathBoxes.get(i).getName());
                 }
             }
         }
@@ -225,7 +228,7 @@ public class DetectionPanel extends JPanel {
         }
         for (int k = 0; k < iconPath.size(); k++) {
             for (int i = 0; i < _pathBoxes.size(); i++) {
-                String name = _pathBoxes.get(i).getName().trim();
+                String name = _pathBoxes.get(i).getName();
                 if (iconPath.get(k).equals(name)) {
                     _pathBoxes.get(i).setSelected(true);
                 }
@@ -250,7 +253,7 @@ public class DetectionPanel extends JPanel {
                 if (sensor == null) {
                     JOptionPane.showMessageDialog(_parent._paletteFrame,
                             Bundle.getMessage("InvalidOccDetector", name),
-                            Bundle.getMessage("warnTitle"), JOptionPane.WARNING_MESSAGE);
+                            Bundle.getMessage("WarningTitle"), JOptionPane.WARNING_MESSAGE);
                     _occDetectorName.setText(null);
                 }
                 _blockPathPanel.setVisible(false);
@@ -292,4 +295,5 @@ public class DetectionPanel extends JPanel {
         _blockPathPanel.add(_checkBoxPanel, 1);
         _blockPathPanel.setVisible(true);
     }
+
 }

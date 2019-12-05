@@ -1,18 +1,19 @@
-// InterchangeTableModel.java
 package jmri.jmrit.operations.locations;
 
 import java.beans.PropertyChangeEvent;
+
 import javax.swing.JTable;
 import javax.swing.SwingUtilities;
-import jmri.jmrit.operations.setup.Control;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import jmri.jmrit.operations.setup.Control;
 
 /**
  * Table Model for edit of interchanges used by operations
  *
  * @author Daniel Boudreau Copyright (C) 2008
- * @version $Revision$
  */
 public class InterchangeTableModel extends TrackTableModel {
 
@@ -29,6 +30,9 @@ public class InterchangeTableModel extends TrackTableModel {
         switch (col) {
             case NAME_COLUMN:
                 return Bundle.getMessage("InterchangeName");
+            default:
+                // fall out
+                break;
         }
         return super.getColumnName(col);
     }
@@ -40,18 +44,15 @@ public class InterchangeTableModel extends TrackTableModel {
             tef.dispose();
         }
         // use invokeLater so new window appears on top
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                tef = new InterchangeEditFrame();
-                Track interchange = tracksList.get(row);
-                tef.initComponents(_location, interchange);
-                tef.setTitle(Bundle.getMessage("EditInterchange"));
-            }
+        SwingUtilities.invokeLater(() -> {
+            tef = new InterchangeEditFrame();
+            Track interchange = tracksList.get(row);
+            tef.initComponents(_location, interchange);
+            tef.setTitle(Bundle.getMessage("EditInterchange"));
         });
     }
 
-    // this table listens for changes to a location and it's interchanges
+    // this table listens for changes to a location and its interchanges
     @Override
     public void propertyChange(PropertyChangeEvent e) {
         if (Control.SHOW_PROPERTY) {
@@ -61,7 +62,7 @@ public class InterchangeTableModel extends TrackTableModel {
         super.propertyChange(e);
         if (e.getSource().getClass().equals(Track.class)) {
             Track track = ((Track) e.getSource());
-            if (track.getTrackType().equals(Track.INTERCHANGE)) {
+            if (track.isInterchange()) {
                 int row = tracksList.indexOf(track);
                 if (Control.SHOW_PROPERTY) {
                     log.debug("Update interchange table row: {} track: {}", row, track.getName());
@@ -73,5 +74,5 @@ public class InterchangeTableModel extends TrackTableModel {
         }
     }
 
-    private final static Logger log = LoggerFactory.getLogger(InterchangeTableModel.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(InterchangeTableModel.class);
 }

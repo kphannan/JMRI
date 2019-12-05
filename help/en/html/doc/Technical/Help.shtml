@@ -7,9 +7,10 @@
   "HTML Tidy for Mac OS X (vers 31 October 2006 - Apple Inc. build 15.17), see www.w3.org">
 
   <title>JMRI: Use of JavaHelp</title>
-  <meta name="Author" content="Bob Jacobsen">
+  <meta name="author" content="Bob Jacobsen">
   <meta name="keywords" content=
-  "JMRI technical code Java Help JavaHelp"><!-- Style -->
+  "JMRI technical code Java Help JavaHelp">
+  <!-- Style -->
   <meta http-equiv="Content-Type" content=
   "text/html; charset=us-ascii">
   <link rel="stylesheet" type="text/css" href="/css/default.css"
@@ -17,21 +18,23 @@
   <link rel="stylesheet" type="text/css" href="/css/print.css"
   media="print">
   <link rel="icon" href="/images/jmri.ico" type="image/png">
-  <link rel="home" title="Home" href="/"><!-- /Style -->
+  <link rel="home" title="Home" href="/">
+  <!-- /Style -->
 </head>
 
 <body>
-  <!--#include virtual="/Header" -->
-
+  <!--#include virtual="/Header.shtml" -->
   <div id="mBody">
-    <!--#include virtual="Sidebar" -->
-
+    <!--#include virtual="Sidebar.shtml" -->
     <div id="mainContent">
-      <h1>JMRI: Use of JavaHelp</h1>This page talks about technical
+
+      <h1>JMRI Code: Use of JavaHelp</h1>
+      
+      This page talks about technical
       aspects of how JMRI provides help information using <a href=
       "https://javahelp.java.net">JavaHelp</a> and <a href=
-      "http://jhelpdev.sourceforge.net/">JHelpDev</a>.
-
+      "http://jhelpdev.sourceforge.net/">JHelpDev</a>.      
+      
       <h2>Organization of the help files</h2>The help files are
       located in the "help" directory within the JMRI distribution
       directory.
@@ -65,7 +68,8 @@
         al manuals reformatted for use in the help system. (Older
         ones are stored in the <a href="WebSite.shtml">main web
         site</a>)</li>
-      </ul>In the long run, we want only two branches to this
+      </ul>
+      In the long run, we want only two branches to this
       structure: the "package" part of the tree for help
       information that is specific to a particular piece of code,
       and another part of the tree for more general information.
@@ -74,22 +78,40 @@
       just one). The web is meant to be a <em>web</em>, with many
       paths through it to reach content. The second part of the
       tree should also be organized as "one page, one topic", with
-      links to connect them as needed. <a name="limitations" id=
-      "limitations"></a>
+      links to connect them as needed.
 
-      <h3>Limitations of JavaHelp HTML</h3>JavaHelp displays "plain
+      <a name="limitations" id="limitations"></a>
+      <p>All the page formatting on JMRI help and other web
+      pages is done through included CSS files, originally created by
+      John Plocher. These are included from "/css" via 
+      Server-Side Includes (SSI).  The main file is at
+      <a href="http://jmri.org/css/default.css">/css/default.css</a>
+      and works with a few other files in that same directory.
+      Because JavaHelp ignores SSI, the CSS formatting
+      is ignored when JavaHelp is displaying the pages within the JMRI itself.
+      In that case, JavaHelp provides the formatting.
+
+      <h3>Limitations of JavaHelp HTML</h3>
+      JavaHelp displays "plain
       old HTML 4.0", without providing some of the syntactic sugar
-      provided by many browsers to allow poor HTML to render. In
-      particular, there are a couple things to watch for.
+      provided by many browsers to allow poor HTML to render. 
+      Do not include any particular formatting options, specifically
+      including embedded CSS commands. 
+      There are a couple of specific things to watch for:
 
       <ul>
         <li>Anchor tags need a specific format. Specifically, they
         should be written
-<pre style="font-family: monospace;">
-&lt;a name="pull"&gt;&lt;/a&gt;
-</pre>For example, to put an anchor on a heading, do
-<pre style="font-family: monospace;">
-&lt;a name="foo"&gt;&lt;/a&gt;&lt;h2&gt;Foo!&lt;/h2&gt;
+          <pre style="font-family: monospace;">
+&lt;a name="pull"&gt;...&lt;/a&gt;
+</pre>around text content only. It's OK to be empty between the
+open and close tags. It's not OK to combine them into a single
+<code>&lt;a name="pull"/&gt;</code> tag; don't do that, as it
+confuses JavaHelp.
+
+          <p>For example, to put an anchor on a heading, do</p>
+          <pre style="font-family: monospace;">
+&lt;h2&gt;&lt;a name="foo"&gt;Foo!&lt;/a&gt;&lt;/h2&gt;
 </pre>
 
           <p>Note: Incorrectly structured anchor tags (not like the
@@ -97,29 +119,45 @@
           itself on the rendered help page.</p>
         </li>
 
-        <li>Anchors need to use the "name" attribute rather
-        than the "id" attribute. See the item above for an
-        example.</li>
+        <li>Anchors need to use the "name" attribute rather than
+        the "id" attribute. See the item above for an example.</li>
 
-        <li>You can use the <code>&lt;code&gt;</code> element,
-        or the <code>&lt;pre&gt;</code> element, but you can't use both together.
-        <code>&lt;code&gt;</code> is good for highlighting in-line text as
-        being code (like we've used it here); <code>&lt;pre&gt;</code> 
-        is good for making a block of inline HTML or Java look right.
-        To give a code-like appearance to a block, wrap it in 
-        <code>&lt;pre style=&quot;font-family: monospace;&quot;&gt;</code>
+        <li>Do not use spaces or <code>%20</code> in anchor names.
+        If you must use a phrase for a name, use the underscore character:
+        "This_Anchor", not "This Anchor.</li>
+
+        <li>You can use the <code>&lt;code&gt;</code> element, or
+        the <code>&lt;pre&gt;</code> element, but you can't use
+        both together. <code>&lt;code&gt;</code> is good for
+        highlighting in-line text as being code (like we've used it
+        here); <code>&lt;pre&gt;</code> is good for making a block
+        of inline HTML or Java look right. To give a code-like
+        appearance to a block, wrap it in <code>&lt;pre
+        style="font-family: monospace;"&gt;</code></li>
+
         <li>You can't count on any particular location for your
         files on the local machine, so all links to other help
         pages need to be relative.</li>
 
-        <li>Links to web pages outside the help system work, but
-        JavaHelp can't display PDF files. Links to those should be
-        shown explicitly as links, so they can be copied to an
-        outside web browser.</li>
-      </ul>
+        <li>Links to web pages outside the help system work. In
+        most cases they'll be automatically opened in an outside
+        web browser.</li>
+      </ul><a name="web" id="web"></a>
+
+      <a id="check"></a>
+      <h3>Checking Your Changes</h3>
       
-      <a name="web"></a>
-      <h2>Web access to help</h2>It's inconvenient to have to
+      The 
+      <a href="ContinuousIntegration.shtml">Continuous Integration</a>
+      process checks all changes to JMRI Help files to make
+      sure they're OK.  If you'd like to run that same check
+      while you're working, do:
+<pre style="font-family: monospace;">   
+    ant scanhelp   
+</pre>
+
+      <h2>Web access to help</h2>
+      It's inconvenient to have to
       maintain two separate web pages for the main web site and the
       help system. To reduce the need for that, we use a particular
       form for the web pages in the help system.
@@ -136,9 +174,10 @@
         whether or not you want to include a "Sidebar" via a file
         of the same name. This will put the proper top and bottom
         matter in place to get the page properly displayed.</li>
-      </ul><a name="code"></a>
+      </ul><a name="code" id="code"></a>
 
-      <h2>Access in the code</h2>Within the JMRI code, access the
+      <h2>Access in the code</h2>
+      Within the JMRI code, access the
       help system comes via the jmri.util.HelpUtil class. (For
       historical reasons, there's a little bit of code in
       apps.Apps, but you should ignore that).
@@ -152,17 +191,18 @@
       <code>jmri.jmrit.simpleclock.SimpleClockFrame</code> class
       inherits from JmriJFrame, and adds a help menu with the
       line</p>
-<pre style="font-family: monospace;">
+      <pre style="font-family: monospace;">
   addHelpMenu("package.jmri.jmrit.simpleclock.SimpleClockFrame", true);
-</pre>
-The help file is then located at
+</pre>The help file is then located at
 <code>help/en/package/jmri/jmrit/simpleclock/SimpleClockFrame.shtml</code>.
-
+      <p>You should add the new page to the JHelpDev index to have JMRI
+      accept it as a Help target (see next the heading).</p>
       <p>A number of help files have been put in place without any
       contents; hopefully some users will edit them and contribute
-      them back. <a name="jhelpdev"></a></p>
+      them back. <a name="jhelpdev" id="jhelpdev"></a></p>
 
-      <h2>Creating the control files with JHelpDev</h2>JavaHelp
+      <h2>Creating the control files with JHelpDev</h2>
+      JavaHelp
       uses various XML files to control how the table of contents
       and index are displayed. We create those with <a href=
       "http://jhelpdev.sourceforge.net/">JHelpDev</a>. Please don't
@@ -175,6 +215,16 @@ The help file is then located at
         <li>Make sure you've updated to the most recent version in
         the code repository before getting started.</li>
 
+        <li>You can run in batch mode by running <code>ant</code>
+        from the command line in the <code>help/en/</code>
+        directory. It'll still pop windows, but should run 
+        to completion by itself.  It might take a minute or so.</li>
+        
+        <li>If you'd like to operate it manually, please 
+        follow the rest of these bullets.
+        (Or if using Eclipse, right-click on the
+        help/en/build.xml file and select Run As Ant Build.)</li>
+        
         <li>Start the tool by clicking on the jhelpdev.jar file.
         (If that doesn't work, try running either JHelpDev.csh or
         JHelpDev.bat, depending on what kind of computer you
@@ -206,9 +256,8 @@ The help file is then located at
         Index, etc.</li>
 
         <li>Then, back on the command line and in the help/en
-        directory, invoke "ant" to create the web index and table
-        of contents pages. (Or if using Eclipse, right-click on the
-        help/en/build.xml file and select Run As Ant Build.)</li>
+        directory, invoke "ant index TOC" to create the web index and table
+        of contents pages. </li>
       </ol>
 
       <p>The various control files that JavaHelp uses are stored in
@@ -218,7 +267,8 @@ The help file is then located at
       files for themselves. <a name="tocAndIndex" id=
       "tocAndIndex"></a></p>
 
-      <h3>Table of Contents and Index</h3>Java Help includes a
+      <h3>Table of Contents and Index</h3>
+      Java Help includes a
       <a href="http://jmri.org/help/en/webtoc.shtml">table of
       contents</a> and an <a href=
       "http://jmri.org/help/en/webindex.shtml">index</a>. These are
@@ -246,15 +296,17 @@ The help file is then located at
       on how to do that on the <a href=
       "http://jhelpdev.sourceforge.net/">JHelpDev web site</a>.
       Remember to run "ant" after that to include your updates on
-      the web versions. <a name="site"></a></p>
+      the web versions. <a name="site" id="site"></a></p>
 
-      <h2>Updating the JMRI.org site</h2>Changes to Help pages
+      <h2>Updating the JMRI.org site</h2>
+      <p>Changes to Help pages
       which are checked-in should show up automatically on the
       JMRI.org site after a short while. There's a <a href=
       "http://jmri.tagadab.com/jenkins/job/WebSite/job/generate-website/">
       Jenkins job</a> that handles periodic updates for the static
-      (from repository, unlike e.g. JavaDoc) pages. 
-      <!--#include virtual="/Footer" -->
+      (from repository, unlike e.g. Javadoc) pages.</p>
+
+      <!--#include virtual="/Footer.shtml" -->
     </div><!-- closes #mainContent-->
   </div><!-- closes #mBody-->
 </body>

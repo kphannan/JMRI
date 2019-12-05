@@ -2,15 +2,16 @@ package jmri.jmrix.tams;
 
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nonnull;
+
 import jmri.ProgrammingMode;
 import jmri.jmrix.AbstractProgrammer;
-import jmri.managers.DefaultProgrammerManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Convert the jmri.Programmer interface into commands for the NCE power house.
- * <P>
+ * <p>
  * This has two states: NOTPROGRAMMING, and COMMANDSENT. The transitions to and
  * from programming mode are now handled in the TrafficController code. Based on
  * work by Bob Jacobsen
@@ -26,16 +27,17 @@ public class TamsProgrammer extends AbstractProgrammer implements TamsListener {
         super.SHORT_TIMEOUT = 6000;
     }
 
-    /**
-     * Types implemented here.
+    /** 
+     * {@inheritDoc}
      */
     @Override
+    @Nonnull
     public List<ProgrammingMode> getSupportedModes() {
         List<ProgrammingMode> ret = new ArrayList<ProgrammingMode>();
-        ret.add(DefaultProgrammerManager.PAGEMODE);
-        ret.add(DefaultProgrammerManager.DIRECTBITMODE);
-        ret.add(DefaultProgrammerManager.DIRECTBYTEMODE);
-        ret.add(DefaultProgrammerManager.REGISTERMODE);
+        ret.add(ProgrammingMode.PAGEMODE);
+        ret.add(ProgrammingMode.DIRECTBITMODE);
+        ret.add(ProgrammingMode.DIRECTBYTEMODE);
+        ret.add(ProgrammingMode.REGISTERMODE);
         return ret;
     }
 
@@ -48,8 +50,12 @@ public class TamsProgrammer extends AbstractProgrammer implements TamsListener {
     int _val;	// remember the value being read/written for confirmative reply
     int _cv;	// remember the cv being read/written
 
-    // programming interface
-    public synchronized void writeCV(int CV, int val, jmri.ProgListener p) throws jmri.ProgrammerException {
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
+    public synchronized void writeCV(String CVname, int val, jmri.ProgListener p) throws jmri.ProgrammerException {
+        final int CV = Integer.parseInt(CVname);
         if (log.isDebugEnabled()) {
             log.debug("writeCV " + CV + " listens " + p);
         }
@@ -73,12 +79,20 @@ public class TamsProgrammer extends AbstractProgrammer implements TamsListener {
         }
     }
 
+    /** 
+     * {@inheritDoc}
+     */
     @Override
     public void confirmCV(String CV, int val, jmri.ProgListener p) throws jmri.ProgrammerException {
         readCV(CV, p);
     }
 
-    public synchronized void readCV(int CV, jmri.ProgListener p) throws jmri.ProgrammerException {
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
+    public synchronized void readCV(String CVname, jmri.ProgListener p) throws jmri.ProgrammerException {
+        final int CV = Integer.parseInt(CVname);
         if (log.isDebugEnabled()) {
             log.debug("readCV " + CV + " listens " + p);
         }
@@ -123,18 +137,18 @@ public class TamsProgrammer extends AbstractProgrammer implements TamsListener {
         // val = -1 for read command; mode is direct, etc
         if (val < 0) {
             // read
-            if (getMode() == DefaultProgrammerManager.PAGEMODE) {
+            if (getMode() == ProgrammingMode.PAGEMODE) {
                 return TamsMessage.getReadPagedCV(cvnum);
-            } else if (getMode() == DefaultProgrammerManager.DIRECTBYTEMODE) {
+            } else if (getMode() == ProgrammingMode.DIRECTBYTEMODE) {
                 return TamsMessage.getReadDirectByteCV(cvnum);
             } else {
                 return TamsMessage.getReadRegister(registerFromCV(cvnum));
             }
         } else {
             // write
-            if (getMode() == DefaultProgrammerManager.PAGEMODE) {
+            if (getMode() == ProgrammingMode.PAGEMODE) {
                 return TamsMessage.getWritePagedCV(cvnum, val);
-            } else if (getMode() == DefaultProgrammerManager.DIRECTBYTEMODE) {
+            } else if (getMode() == ProgrammingMode.DIRECTBYTEMODE) {
                 return TamsMessage.getWriteDirectByteCV(cvnum, val);
             } else {
                 return TamsMessage.getWriteRegister(registerFromCV(cvnum), val);
@@ -142,10 +156,18 @@ public class TamsProgrammer extends AbstractProgrammer implements TamsListener {
         }
     }
 
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
     public void message(TamsMessage m) {
         log.error("message received unexpectedly: " + m.toString());
     }
 
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
     public synchronized void reply(TamsReply m) {
         if (progState == NOTPROGRAMMING) {
             // we get the complete set of replies now, so ignore these
@@ -219,9 +241,10 @@ public class TamsProgrammer extends AbstractProgrammer implements TamsListener {
         }
     }
 
-    /**
-     * Internal routine to handle a timeout
+    /** 
+     * {@inheritDoc}
      */
+    @Override
     protected synchronized void timeout() {
         if (progState != NOTPROGRAMMING) {
             // we're programming, time to stop
@@ -249,9 +272,9 @@ public class TamsProgrammer extends AbstractProgrammer implements TamsListener {
         // clear the current listener _first_
         jmri.ProgListener temp = _usingProgrammer;
         _usingProgrammer = null;
-        temp.programmingOpReply(value, status);
+        notifyProgListenerEnd(temp, value, status);
     }
 
-    private final static Logger log = LoggerFactory.getLogger(TamsProgrammer.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(TamsProgrammer.class);
 
 }

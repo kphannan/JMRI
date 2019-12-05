@@ -10,12 +10,11 @@ import org.slf4j.LoggerFactory;
 /**
  * This is an extention of the XNetPacketizer to handle the device specific
  * requirements of the LIUSB.
- * <P>
+ * <p>
  * In particular, LIUSBXNetPacketizer adds functions to add and remove the 0xFF
  * 0xFE or 0xFF 0xFD bytes that appear prior to any message read in.
  *
- * @author	Paul Bender Copyright (C) 2005
- * @version $Revision$
+ * @author Paul Bender Copyright (C) 2005
  *
  */
 public class LIUSBXNetPacketizer extends XNetPacketizer {
@@ -31,10 +30,9 @@ public class LIUSBXNetPacketizer extends XNetPacketizer {
      * @param msg The output byte stream
      * @return next location in the stream to fill
      */
+    @Override
     protected int addHeaderToOutput(byte[] msg, jmri.jmrix.AbstractMRMessage m) {
-        if (log.isDebugEnabled()) {
-            log.debug("Appending 0xFF 0xFE to start of outgoing message");
-        }
+        log.debug("Appending 0xFF 0xFE to start of outgoing message");
         msg[0] = (byte) 0xFF;
         msg[1] = (byte) 0xFE;
         return 2;
@@ -42,11 +40,12 @@ public class LIUSBXNetPacketizer extends XNetPacketizer {
 
     /**
      * Determine how much many bytes the entire message will take, including
-     * space for header and trailer
+     * space for header and trailer.
      *
      * @param m The message to be sent
      * @return Number of bytes
      */
+    @Override
     protected int lengthOfByteStream(jmri.jmrix.AbstractMRMessage m) {
         int len = m.getNumDataElements() + 2;
         int cr = 0;
@@ -58,9 +57,9 @@ public class LIUSBXNetPacketizer extends XNetPacketizer {
 
     /**
      * Get characters from the input source, and file a message.
-     * <P>
+     * <p>
      * Returns only when the message is complete.
-     * <P>
+     * <p>
      * Only used in the Receive thread.
      *
      * @param msg     message to fill
@@ -71,9 +70,7 @@ public class LIUSBXNetPacketizer extends XNetPacketizer {
     protected void loadChars(jmri.jmrix.AbstractMRReply msg, java.io.DataInputStream istream) throws java.io.IOException {
         int i;
         byte lastbyte = (byte) 0xFF;
-        if (log.isDebugEnabled()) {
-            log.debug("loading characters from port");
-        }
+        log.debug("loading characters from port");
         for (i = 0; i < msg.maxSize(); i++) {
             byte char1 = readByteProtected(istream);
             // This is a test for the LIUSB device
@@ -100,7 +97,6 @@ public class LIUSBXNetPacketizer extends XNetPacketizer {
         }
     }
 
-    private final static Logger log = LoggerFactory.getLogger(LIUSBXNetPacketizer.class.getName());
-}
+    private final static Logger log = LoggerFactory.getLogger(LIUSBXNetPacketizer.class);
 
-/* @(#)LIUSBXNetPacketizer.java */
+}

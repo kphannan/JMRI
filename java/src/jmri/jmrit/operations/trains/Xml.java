@@ -4,7 +4,7 @@ package jmri.jmrit.operations.trains;
  * A convenient place to access operations xml element and attribute names.
  *
  * @author Daniel Boudreau Copyright (C) 2013
- * @version $Revision: 22156 $
+ * 
  *
  */
 public class Xml {
@@ -33,7 +33,7 @@ public class Xml {
     static final String TYPES = "types"; // NOI18N
     static final String CAR_TYPE = "carType"; // NOI18N
     static final String LOCO_TYPE = "locoType"; // NOI18N
-    static final String CAR_ROAD_OPERATION = "carRoadOperation"; // NOI18N	should have been option not operation
+    static final String CAR_ROAD_OPERATION = "carRoadOperation"; // NOI18N should have been option not operation
     static final String CAR_ROAD_OPTION = "carRoadOption"; // NOI18N
     static final String CAR_ROADS = "carRoads"; // NOI18N
     static final String CAR_ROAD = "carRoad"; // NOI18N
@@ -116,12 +116,13 @@ public class Xml {
     static final String RUN_FILE = "runFile"; // NOI18N
     static final String TRAIN_ACTION = "trainAction"; // NOI18N
 
-    static final String COLUMN_WIDTHS = "columnWidths"; // TODO This here is for backwards compatibility, remove after next major release // NOI18N
-
-    static final String TRAIN_SCHEDULE_OPTIONS = "trainScheduleOptions"; // NOI18N
-    static final String ACTIVE_ID = "activeId"; // NOI18N
+//    static final String TRAIN_SCHEDULE_OPTIONS = "trainScheduleOptions"; // NOI18N
+//    static final String ACTIVE_ID = "activeId"; // NOI18N
     static final String START_UP = "startUp"; // NOI18N
     static final String SHUT_DOWN = "shutDown"; // NOI18N
+    
+    static final String CONDUCTOR_OPTIONS = "conductorOptions"; // NOI18N
+    static final String SHOW_HYPHEN_NAME = "showHyphenName"; // NOI18N
 
     static final String ROW_COLOR_OPTIONS = "rowColorOptions"; // NOI18N
     static final String ROW_COLOR_MANUAL = "rowColorManual"; // NOI18N
@@ -190,7 +191,9 @@ public class Xml {
     static final String TYPE = "type"; // NOI18N
     static final String MODEL = "model"; // NOI18N
     static final String LENGTH = "length"; // NOI18N
+    static final String WEIGHT = "weight"; // NOI18N
     static final String LOAD = "load"; // NOI18N
+    static final String LOAD_TYPE = "load_type"; // NOI18N
     static final String COLOR = "color"; // NOI18N
     static final String TRACK = "track"; // NOI18N
     //static final String DESTINATION = "destination"; // NOI18N

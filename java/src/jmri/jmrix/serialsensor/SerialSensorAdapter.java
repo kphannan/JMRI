@@ -1,21 +1,30 @@
 package jmri.jmrix.serialsensor;
 
-import gnu.io.CommPortIdentifier;
-import gnu.io.PortInUseException;
-import gnu.io.SerialPort;
-import gnu.io.SerialPortEvent;
-import gnu.io.SerialPortEventListener;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.ResourceBundle;
+import java.util.TooManyListenersException;
 import jmri.InstanceManager;
 import jmri.JmriException;
+import jmri.NamedBean;
 import jmri.Sensor;
 import jmri.jmrix.AbstractSerialPortController;
 import jmri.jmrix.SystemConnectionMemo;
+import jmri.util.NamedBeanComparator;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import purejavacomm.CommPortIdentifier;
+import purejavacomm.NoSuchPortException;
+import purejavacomm.PortInUseException;
+import purejavacomm.SerialPort;
+import purejavacomm.SerialPortEvent;
+import purejavacomm.SerialPortEventListener;
+import purejavacomm.UnsupportedCommOperationException;
 
 /**
  * Implements SerialPortAdapter for connecting to two sensors via the serial
@@ -23,25 +32,31 @@ import org.slf4j.LoggerFactory;
  *
  * @author	Bob Jacobsen Copyright (C) 2003
  */
-public class SerialSensorAdapter extends AbstractSerialPortController
-        implements jmri.jmrix.SerialPortAdapter {
+public class SerialSensorAdapter extends AbstractSerialPortController {
 
     SerialPort activeSerialPort = null;
 
     public SerialSensorAdapter() {
-        super(new SystemConnectionMemo("S", "Serial") {
+        super(new SystemConnectionMemo("S", Bundle.getMessage("TypeSerial")) {
 
             @Override
             protected ResourceBundle getActionModelResourceBundle() {
                 return null;
             }
+
+            @Override
+            public <B extends NamedBean> Comparator<B> getNamedBeanComparator(Class<B> type) {
+                return (o1, o2) -> o1.getSystemName().compareTo(o2.getSystemName());
+            }
         });
     }
 
+    @Override
     public void configure() {
-        log.debug("Configure doesnt do anything here");
+        log.debug("Configure doesn't do anything here");
     }
 
+    @Override
     public String openPort(String portName, String appName) {
         // open the port, check ability to set moderators
         try {
@@ -53,46 +68,44 @@ public class SerialSensorAdapter extends AbstractSerialPortController
                 return handlePortBusy(p, portName, log);
             }
 
-            // try to set it for comunication via SerialDriver
+            // try to set it for communication via SerialDriver
             try {
                 activeSerialPort.setSerialPortParams(9600, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
-            } catch (gnu.io.UnsupportedCommOperationException e) {
-                log.error("Cannot set serial parameters on port " + portName + ": " + e.getMessage());
+            } catch (UnsupportedCommOperationException e) {
+                log.error("Cannot set serial parameters on port {}: {}", portName, e.getMessage());
                 return "Cannot set serial parameters on port " + portName + ": " + e.getMessage();
             }
 
-            // set RTS high, DTR high
-            activeSerialPort.setRTS(true);		// not connected in some serial ports and adapters
-            activeSerialPort.setDTR(false);		// pin 1 in DIN8; on main connector, this is DTR
-
             // disable flow control; hardware lines used for signaling, XON/XOFF might appear in data
-            activeSerialPort.setFlowControlMode(0);
+            // set RTS active low, DTR inactive high
+            configureLeadsAndFlowControl(activeSerialPort, 0, true, false);
 
             // set timeout
             // activeSerialPort.enableReceiveTimeout(1000);
-            log.debug("Serial timeout was observed as: " + activeSerialPort.getReceiveTimeout()
+            log.debug("Serial timeout was observed as: {} {}", activeSerialPort.getReceiveTimeout()
                     + " " + activeSerialPort.isReceiveTimeoutEnabled());
 
             // arrange to notify of sensor changes
             activeSerialPort.addEventListener(new SerialPortEventListener() {
+                @Override
                 public void serialEvent(SerialPortEvent e) {
                     int type = e.getEventType();
                     switch (type) {
                         case SerialPortEvent.DSR:
-                            log.info("SerialEvent: DSR is " + e.getNewValue());
+                            log.info("SerialEvent: DSR is {}", e.getNewValue());
                             notify("1", e.getNewValue());
                             return;
                         case SerialPortEvent.CD:
-                            log.info("SerialEvent: CD is " + e.getNewValue());
+                            log.info("SerialEvent: CD is {}", e.getNewValue());
                             notify("2", e.getNewValue());
                             return;
                         case SerialPortEvent.CTS:
-                            log.info("SerialEvent: CTS is " + e.getNewValue());
+                            log.info("SerialEvent: CTS is {}", e.getNewValue());
                             notify("3", e.getNewValue());
                             return;
                         default:
                             if (log.isDebugEnabled()) {
-                                log.debug("SerialEvent of type: " + type + " value: " + e.getNewValue());
+                                log.debug("SerialEvent of type: {} value: {}", type, e.getNewValue());
                             }
                             return;
                     }
@@ -130,24 +143,21 @@ public class SerialSensorAdapter extends AbstractSerialPortController
 
             opened = true;
 
-        } catch (gnu.io.NoSuchPortException ex1) {
-            log.error("No such port " + portName, ex1);
+        } catch (NoSuchPortException ex1) {
+            log.error("No such port {} ", portName, ex1);
             return "No such port " + portName + ": " + ex1;
-        } catch (gnu.io.UnsupportedCommOperationException ex2) {
-            log.error("Exception to operation on port " + portName, ex2);
-            return "Exception to operation on port " + portName + ": " + ex2;
-        } catch (java.util.TooManyListenersException ex3) {
-            log.error("Too Many Listeners on port " + portName, ex3);
+        } catch (TooManyListenersException ex3) {
+            log.error("Too Many Listeners on port {} ", portName, ex3);
             return "Too Many Listeners on port " + portName + ": " + ex3;
-        } catch (java.io.IOException ex4) {
-            log.error("I/O error on port " + portName, ex4);
+        } catch (IOException ex4) {
+            log.error("I/O error on port {} ", portName, ex4);
             return "I/O error on port " + portName + ": " + ex4;
         }
 
         return null; // indicates OK return
-
     }
 
+    @Override
     public DataInputStream getInputStream() {
         if (!opened) {
             log.error("getInputStream called before load(), stream not available");
@@ -156,6 +166,7 @@ public class SerialSensorAdapter extends AbstractSerialPortController
         return new DataInputStream(serialStream);
     }
 
+    @Override
     public DataOutputStream getOutputStream() {
         if (!opened) {
             log.error("getOutputStream called before load(), stream not available");
@@ -163,26 +174,44 @@ public class SerialSensorAdapter extends AbstractSerialPortController
         try {
             return new DataOutputStream(activeSerialPort.getOutputStream());
         } catch (java.io.IOException e) {
-            log.error("getOutputStream exception: " + e);
+            log.error("getOutputStream exception: ", e);
         }
         return null;
     }
 
+    @Override
     public boolean status() {
         return opened;
     }
 
     /**
-     * Get an array of valid baud rates. This is currently only 19,200 bps
+     * {@inheritDoc}
+     * Currently only 19,200 bps.
      */
+    @Override
     public String[] validBaudRates() {
         return new String[]{"9,600 bps"};
     }
 
     /**
-     * Set the baud rate. This currently does nothing, as there's only one
-     * possible value
+     * {@inheritDoc}
      */
+    @Override
+    public int[] validBaudNumbers() {
+        return new int[]{9600};
+    }
+
+    @Override
+    public int defaultBaudIndex() {
+        return 0;
+    }
+
+    /**
+     * {@inheritDoc}
+     * This currently does nothing, as there's only one
+     * possible value.
+     */
+    @Override
     public void configureBaudRate(String rate) {
     }
 
@@ -191,7 +220,7 @@ public class SerialSensorAdapter extends AbstractSerialPortController
     InputStream serialStream = null;
 
     /**
-     * Do a sensor change on the event queue
+     * Do a sensor change on the event queue.
      */
     public void notify(String sensor, boolean value) {
     }
@@ -210,6 +239,7 @@ public class SerialSensorAdapter extends AbstractSerialPortController
             mValue = pValue;
         }
 
+        @Override
         public void run() {
             log.debug("serial sensor notify starts");
             int value = Sensor.INACTIVE;
@@ -220,11 +250,11 @@ public class SerialSensorAdapter extends AbstractSerialPortController
                 InstanceManager.sensorManagerInstance().provideSensor(mSensor)
                         .setKnownState(value);
             } catch (JmriException | IllegalArgumentException e) {
-                log.error("Exception setting state: " + e);
+                log.error("Exception setting state: ", e);
             }
         }
     }
 
-    private final static Logger log = LoggerFactory.getLogger(SerialSensorAdapter.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(SerialSensorAdapter.class);
 
 }

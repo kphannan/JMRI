@@ -1,48 +1,34 @@
 package jmri.jmrix.lenz.ztc640;
 
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import jmri.util.JUnitUtil;
+import org.junit.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Assert;
 
 /**
  * ZTC640AdapterTest.java
  *
- * Description:	tests for the jmri.jmrix.lenz.ztc640.ZTC640Adapter class
+ * Description: tests for the jmri.jmrix.lenz.ztc640.ZTC640Adapter class
  *
- * @author	Paul Bender
+ * @author Paul Bender
  */
-public class ZTC640AdapterTest extends TestCase {
+public class ZTC640AdapterTest {
 
+    @Test
     public void testCtor() {
         ZTC640Adapter a = new ZTC640Adapter();
         Assert.assertNotNull(a);
     }
 
-    // from here down is testing infrastructure
-    public ZTC640AdapterTest(String s) {
-        super(s);
+    @Before
+    public void setUp() {
+        JUnitUtil.setUp();
     }
 
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading", ZTC640AdapterTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(ZTC640AdapterTest.class);
-        return suite;
-    }
-
-    // The minimal setup for log4J
-    protected void setUp() {
-        apps.tests.Log4JFixture.setUp();
-    }
-
-    protected void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
+    @After
+    public void tearDown() {
+        JUnitUtil.tearDown();
     }
 
 }

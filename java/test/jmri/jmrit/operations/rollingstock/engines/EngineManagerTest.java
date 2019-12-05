@@ -1,20 +1,19 @@
 package jmri.jmrit.operations.rollingstock.engines;
 
 import java.util.List;
+import jmri.InstanceManager;
 import jmri.jmrit.operations.OperationsTestCase;
 import jmri.jmrit.operations.locations.Location;
 import jmri.jmrit.operations.locations.Track;
-import jmri.jmrit.operations.rollingstock.RollingStock;
 import jmri.jmrit.operations.routes.Route;
 import jmri.jmrit.operations.trains.Train;
 import org.junit.Assert;
-import junit.framework.Test;
-import junit.framework.TestSuite;
+import org.junit.Test;
 
 /**
  * Tests for the Operations RollingStock Engine class Last manually
  * cross-checked on 20090131
- *
+ * <p>
  * Still to do: Engine: Destination Engine: Verify everything else EngineTypes:
  * get/set Names lists EngineModels: get/set Names lists EngineLengths:
  * Everything Consist: Everything Import: Everything EngineManager: Engine
@@ -24,47 +23,49 @@ import junit.framework.TestSuite;
  */
 public class EngineManagerTest extends OperationsTestCase {
 
-     private Engine e1;
-     private Engine e2;
-     private Engine e3;
-     private Engine e4;
-     private Engine e5;
-     private Engine e6;
-     private Location l1;
-     private Location l2;
-     private Location l3;
+    private Engine e1;
+    private Engine e2;
+    private Engine e3;
+    private Engine e4;
+    private Engine e5;
+    private Engine e6;
+    private Location l1;
+    private Location l2;
+    private Location l3;
 
-
-    public void testCTor(){
-        EngineManager manager = EngineManager.instance();
-        Assert.assertNotNull("Manager Creation",manager);
+    @Test
+    public void testCTor() {
+        EngineManager manager = InstanceManager.getDefault(EngineManager.class);
+        Assert.assertNotNull("Manager Creation", manager);
     }
 
-    public void testAddEngines(){
-        EngineManager manager = EngineManager.instance();
-        List<RollingStock> engineList = manager.getByIdList();
+    @Test
+    public void testAddEngines() {
+        EngineManager manager = InstanceManager.getDefault(EngineManager.class);
+        List<Engine> engineList = manager.getByIdList();
 
         Assert.assertEquals("Starting Number of Engines", 0, engineList.size());
-        e1 = manager.newEngine("CP", "1");
-        e2 = manager.newEngine("ACL", "3");
-        e3 = manager.newEngine("CP", "3");
-        e4 = manager.newEngine("CP", "3-1");
-        e5 = manager.newEngine("PC", "2");
-        e6 = manager.newEngine("AA", "1");
-        engineList=manager.getByIdList();
-        Assert.assertEquals("Finishing Number of Engines",6,engineList.size());
+        e1 = manager.newRS("CP", "1");
+        e2 = manager.newRS("ACL", "3");
+        e3 = manager.newRS("CP", "3");
+        e4 = manager.newRS("CP", "3-1");
+        e5 = manager.newRS("PC", "2");
+        e6 = manager.newRS("AA", "1");
+        engineList = manager.getByIdList();
+        Assert.assertEquals("Finishing Number of Engines", 6, engineList.size());
         manager.dispose();
-        engineList=manager.getByIdList();
-        Assert.assertEquals("After dispose Number of Engines",0,engineList.size());
+        engineList = manager.getByIdList();
+        Assert.assertEquals("After dispose Number of Engines", 0, engineList.size());
     }
 
+    @Test
     public void testListEnginesById() {
         resetEngineManager();
- 
-        EngineManager manager=EngineManager.instance();
+
+        EngineManager manager = InstanceManager.getDefault(EngineManager.class);
 
         // now get engines by id
-        List<RollingStock> engineList = manager.getByIdList();
+        List<Engine> engineList = manager.getByIdList();
         Assert.assertEquals("Number of Engines by id", 6, engineList.size());
         Assert.assertEquals("1st engine in list by id", e6, engineList.get(0));
         Assert.assertEquals("2nd engine in list by id", e2, engineList.get(1));
@@ -74,10 +75,11 @@ public class EngineManagerTest extends OperationsTestCase {
         Assert.assertEquals("6th engine in list by id", e5, engineList.get(5));
     }
 
+    @Test
     public void testListEnginesByBuildDate() {
         resetEngineManager();
- 
-        EngineManager manager=EngineManager.instance();
+
+        EngineManager manager = InstanceManager.getDefault(EngineManager.class);
 
         //setup the engines
         e1.setBuilt("2016");
@@ -88,7 +90,7 @@ public class EngineManagerTest extends OperationsTestCase {
         e6.setBuilt("1956");
 
         // now get engines by built
-        List<RollingStock> engineList = manager.getByBuiltList();
+        List<Engine> engineList = manager.getByBuiltList();
         Assert.assertEquals("Number of Engines by built", 6, engineList.size());
         Assert.assertEquals("1st engine in list by built", e3, engineList.get(0));
         Assert.assertEquals("2nd engine in list by built", e2, engineList.get(1));
@@ -98,10 +100,11 @@ public class EngineManagerTest extends OperationsTestCase {
         Assert.assertEquals("6th engine in list by built", e1, engineList.get(5));
     }
 
+    @Test
     public void testListEnginesByMoves() {
         resetEngineManager();
- 
-        EngineManager manager=EngineManager.instance();
+
+        EngineManager manager = InstanceManager.getDefault(EngineManager.class);
 
         //setup the engines
         e1.setMoves(2);
@@ -112,7 +115,7 @@ public class EngineManagerTest extends OperationsTestCase {
         e6.setMoves(9999);
 
         // now get engines by moves
-        List<RollingStock> engineList = manager.getByMovesList();
+        List<Engine> engineList = manager.getByMovesList();
         Assert.assertEquals("Number of Engines by move", 6, engineList.size());
         Assert.assertEquals("1st engine in list by move", e1, engineList.get(0));
         Assert.assertEquals("2nd engine in list by move", e5, engineList.get(1));
@@ -122,10 +125,11 @@ public class EngineManagerTest extends OperationsTestCase {
         Assert.assertEquals("6th engine in list by move", e3, engineList.get(5));
     }
 
+    @Test
     public void testListEnginesByOwner() {
         resetEngineManager();
- 
-        EngineManager manager=EngineManager.instance();
+
+        EngineManager manager = InstanceManager.getDefault(EngineManager.class);
 
         //setup the engines
         e1.setOwner("LAST");
@@ -136,7 +140,7 @@ public class EngineManagerTest extends OperationsTestCase {
         e6.setOwner("BOB");
 
         // now get engines by owner
-        List<RollingStock> engineList = manager.getByOwnerList();
+        List<Engine> engineList = manager.getByOwnerList();
         Assert.assertEquals("Number of Engines by owner", 6, engineList.size());
         Assert.assertEquals("1st engine in list by owner", e3, engineList.get(0));
         Assert.assertEquals("2nd engine in list by owner", e6, engineList.get(1));
@@ -146,13 +150,14 @@ public class EngineManagerTest extends OperationsTestCase {
         Assert.assertEquals("6th engine in list by owner", e1, engineList.get(5));
     }
 
+    @Test
     public void testListEnginesByRoadName() {
         resetEngineManager();
- 
-        EngineManager manager=EngineManager.instance();
+
+        EngineManager manager = InstanceManager.getDefault(EngineManager.class);
 
         // now get engines by road name
-        List<RollingStock> engineList = manager.getByRoadNameList();
+        List<Engine> engineList = manager.getByRoadNameList();
         Assert.assertEquals("Number of Engines by road name", 6, engineList.size());
         Assert.assertEquals("1st engine in list by road name", e6, engineList.get(0));
         Assert.assertEquals("2nd engine in list by road name", e2, engineList.get(1));
@@ -162,10 +167,11 @@ public class EngineManagerTest extends OperationsTestCase {
         Assert.assertEquals("6th engine in list by road name", e5, engineList.get(5));
     }
 
+    @Test
     public void testListEnginesByConsist() {
         resetEngineManager();
- 
-        EngineManager manager=EngineManager.instance();
+
+        EngineManager manager = InstanceManager.getDefault(EngineManager.class);
 
         //setup the engines
         e1.setConsist(new Consist("F"));
@@ -176,7 +182,7 @@ public class EngineManagerTest extends OperationsTestCase {
         e6.setConsist(new Consist("E"));
 
         // now get engines by consist
-        List<RollingStock> engineList = manager.getByConsistList();
+        List<Engine> engineList = manager.getByConsistList();
         Assert.assertEquals("Number of Engines by consist", 6, engineList.size());
         Assert.assertEquals("1st engine in list by consist", e4, engineList.get(0));
         Assert.assertEquals("2nd engine in list by consist", e3, engineList.get(1));
@@ -186,13 +192,14 @@ public class EngineManagerTest extends OperationsTestCase {
         Assert.assertEquals("6th engine in list by consist", e1, engineList.get(5));
     }
 
+    @Test
     public void testListEnginesByLocation() {
         resetEngineManager();
- 
-        EngineManager manager=EngineManager.instance();
+
+        EngineManager manager = InstanceManager.getDefault(EngineManager.class);
 
         // now get engines by location
-        List<RollingStock> engineList = manager.getByLocationList();
+        List<Engine> engineList = manager.getByLocationList();
         Assert.assertEquals("Number of Engines by location", 6, engineList.size());
         Assert.assertEquals("1st engine in list by location", e6, engineList.get(0));
         Assert.assertEquals("2nd engine in list by location", e5, engineList.get(1));
@@ -202,13 +209,14 @@ public class EngineManagerTest extends OperationsTestCase {
         Assert.assertEquals("6th engine in list by location", e3, engineList.get(5));
     }
 
+    @Test
     public void testListEnginesByDestination() {
         resetEngineManager();
- 
-        EngineManager manager=EngineManager.instance();
+
+        EngineManager manager = InstanceManager.getDefault(EngineManager.class);
 
         // now get engines by destination
-        List<RollingStock> engineList = manager.getByDestinationList();
+        List<Engine> engineList = manager.getByDestinationList();
         Assert.assertEquals("Number of Engines by destination", 6, engineList.size());
         Assert.assertEquals("1st engine in list by destination", e2, engineList.get(0));
         Assert.assertEquals("2nd engine in list by destination", e1, engineList.get(1));
@@ -218,10 +226,11 @@ public class EngineManagerTest extends OperationsTestCase {
         Assert.assertEquals("6th engine in list by destination", e4, engineList.get(5));
     }
 
+    @Test
     public void testListEnginesByTrain() {
         resetEngineManager();
- 
-        EngineManager manager=EngineManager.instance();
+
+        EngineManager manager = InstanceManager.getDefault(EngineManager.class);
 
         Route r = new Route("id", "Test");
         r.addLocation(l1);
@@ -242,7 +251,7 @@ public class EngineManagerTest extends OperationsTestCase {
         e6.setTrain(new Train("id6", "A"));
 
         // now get engines by train
-        List<RollingStock> engineList = manager.getByTrainList();
+        List<Engine> engineList = manager.getByTrainList();
         Assert.assertEquals("Number of Engines by train", 6, engineList.size());
         Assert.assertEquals("1st engine in list by train", e6, engineList.get(0));
         Assert.assertEquals("2nd engine in list by train", e4, engineList.get(1));
@@ -252,10 +261,11 @@ public class EngineManagerTest extends OperationsTestCase {
         Assert.assertEquals("6th engine in list by train", e1, engineList.get(5));
     }
 
+    @Test
     public void testListEnginesBySpecifiedTrain() {
         resetEngineManager();
- 
-        EngineManager manager=EngineManager.instance();
+
+        EngineManager manager = InstanceManager.getDefault(EngineManager.class);
 
         Route r = new Route("id", "Test");
         r.addLocation(l1);
@@ -287,10 +297,11 @@ public class EngineManagerTest extends OperationsTestCase {
 
     }
 
+    @Test
     public void testListAvaialbleEngines() {
         resetEngineManager();
- 
-        EngineManager manager=EngineManager.instance();
+
+        EngineManager manager = InstanceManager.getDefault(EngineManager.class);
 
         Route r = new Route("id", "Test");
         r.addLocation(l1);
@@ -323,10 +334,11 @@ public class EngineManagerTest extends OperationsTestCase {
         Assert.assertEquals("3rd engine in list available for t3", e3, engineList.get(2));
     }
 
+    @Test
     public void testAvailableAfterReleaseFromTrain() {
         resetEngineManager();
- 
-        EngineManager manager=EngineManager.instance();
+
+        EngineManager manager = InstanceManager.getDefault(EngineManager.class);
 
         Route r = new Route("id", "Test");
         r.addLocation(l1);
@@ -364,13 +376,14 @@ public class EngineManagerTest extends OperationsTestCase {
 
     }
 
+    @Test
     public void testListEnginesByNumber() {
         resetEngineManager();
- 
-        EngineManager manager=EngineManager.instance();
+
+        EngineManager manager = InstanceManager.getDefault(EngineManager.class);
 
         // now get engines by road number
-        List<RollingStock> engineList = manager.getByNumberList();
+        List<Engine> engineList = manager.getByNumberList();
         Assert.assertEquals("Number of Engines by number", 6, engineList.size());
         Assert.assertEquals("1st engine in list by number", e6, engineList.get(0));
         Assert.assertEquals("2nd engine in list by number", e1, engineList.get(1));
@@ -380,10 +393,11 @@ public class EngineManagerTest extends OperationsTestCase {
         Assert.assertEquals("6th engine in list by number", e4, engineList.get(5));
     }
 
+    @Test
     public void testFindEnginesByRoadNameAndNumber() {
         resetEngineManager();
- 
-        EngineManager manager=EngineManager.instance();
+
+        EngineManager manager = InstanceManager.getDefault(EngineManager.class);
 
         // find engine by road and number
         Assert.assertEquals("find e1 by road and number", e1, manager.getByRoadAndNumber("CP", "1"));
@@ -394,10 +408,11 @@ public class EngineManagerTest extends OperationsTestCase {
         Assert.assertEquals("find e6 by road and number", e6, manager.getByRoadAndNumber("AA", "1"));
     }
 
+    @Test
     public void testListEnginesByRfid() {
         resetEngineManager();
- 
-        EngineManager manager=EngineManager.instance();
+
+        EngineManager manager = InstanceManager.getDefault(EngineManager.class);
 
         // make sure the ID tags exist before we
         // try to add it to an engine.
@@ -407,7 +422,7 @@ public class EngineManagerTest extends OperationsTestCase {
         jmri.InstanceManager.getDefault(jmri.IdTagManager.class).provideIdTag("asd");
         jmri.InstanceManager.getDefault(jmri.IdTagManager.class).provideIdTag("93F");
         jmri.InstanceManager.getDefault(jmri.IdTagManager.class).provideIdTag("B12");
-        
+
         //setup the engines
         e1.setRfid("SQ1");
         e2.setRfid("1Ab");
@@ -417,7 +432,7 @@ public class EngineManagerTest extends OperationsTestCase {
         e6.setRfid("B12");
 
         // now get engines by RFID
-        List<RollingStock> engineList = manager.getByRfidList();
+        List<Engine> engineList = manager.getByRfidList();
         Assert.assertEquals("Number of Engines by rfid", 6, engineList.size());
         Assert.assertEquals("1st engine in list by rfid", e2, engineList.get(0));
         Assert.assertEquals("2nd engine in list by rfid", e5, engineList.get(1));
@@ -427,10 +442,11 @@ public class EngineManagerTest extends OperationsTestCase {
         Assert.assertEquals("6th engine in list by rfid", e1, engineList.get(5));
     }
 
+    @Test
     public void testFindEnginesByRfid() {
         resetEngineManager();
- 
-        EngineManager manager=EngineManager.instance();
+
+        EngineManager manager = InstanceManager.getDefault(EngineManager.class);
 
         // make sure the ID tags exist before we
         // try to add it to an engine.
@@ -440,7 +456,7 @@ public class EngineManagerTest extends OperationsTestCase {
         jmri.InstanceManager.getDefault(jmri.IdTagManager.class).provideIdTag("asd");
         jmri.InstanceManager.getDefault(jmri.IdTagManager.class).provideIdTag("93F");
         jmri.InstanceManager.getDefault(jmri.IdTagManager.class).provideIdTag("B12");
-        
+
         //setup the engines
         e1.setRfid("SQ1");
         e2.setRfid("1Ab");
@@ -448,7 +464,6 @@ public class EngineManagerTest extends OperationsTestCase {
         e4.setRfid("asd");
         e5.setRfid("93F");
         e6.setRfid("B12");
-
 
         // find engine by RFID
         Assert.assertEquals("find e1 by rfid", e1, manager.getByRfid("SQ1"));
@@ -460,12 +475,13 @@ public class EngineManagerTest extends OperationsTestCase {
 
     }
 
+    @Test
     public void testListEnginesByType() {
         resetEngineManager();
- 
-        EngineManager manager=EngineManager.instance();
+
+        EngineManager manager = InstanceManager.getDefault(EngineManager.class);
         // now get engines by model
-        List<RollingStock> engineList = manager.getByModelList();
+        List<Engine> engineList = manager.getByModelList();
         Assert.assertEquals("Number of Engines by type", 6, engineList.size());
         Assert.assertEquals("1st engine in list by type", e3, engineList.get(0));
         Assert.assertEquals("2nd engine in list by type", e4, engineList.get(1));
@@ -475,45 +491,46 @@ public class EngineManagerTest extends OperationsTestCase {
         Assert.assertEquals("6th engine in list by type", e1, engineList.get(5));
     }
 
+    @Test
     public void testListEnginesByLastMovedDate() {
         resetEngineManager();
 
-        EngineManager manager = EngineManager.instance();
+        EngineManager manager = InstanceManager.getDefault(EngineManager.class);
 
         java.util.Calendar cal = java.util.Calendar.getInstance();
         java.util.Date start = cal.getTime(); // save to rest time, to avoid
-                                              // test probelms if run near
-                                              // midnight.
+        // test probelms if run near
+        // midnight.
         java.util.Date time = cal.getTime();
         e1.setLastDate(time); // right now
 
         cal.setTime(start);
-        cal.add(java.util.Calendar.HOUR_OF_DAY,-1);
+        cal.add(java.util.Calendar.HOUR_OF_DAY, -1);
         time = cal.getTime();
         e2.setLastDate(time); // one hour ago
 
         cal.setTime(start);
-        cal.add(java.util.Calendar.HOUR_OF_DAY,1);
+        cal.add(java.util.Calendar.HOUR_OF_DAY, 1);
         time = cal.getTime();
         e3.setLastDate(time); // one hour from now
 
         cal.setTime(start);
-        cal.set(java.util.Calendar.DAY_OF_MONTH,-1);
+        cal.set(java.util.Calendar.DAY_OF_MONTH, -1);
         time = cal.getTime();
         e4.setLastDate(time); // one day ago.
 
         cal.setTime(start);
-        cal.add(java.util.Calendar.DAY_OF_MONTH,1);
+        cal.add(java.util.Calendar.DAY_OF_MONTH, 1);
         time = cal.getTime();
         e5.setLastDate(time); // one day in the future now.
 
         cal.setTime(start);
-        cal.add(java.util.Calendar.YEAR,-1);
+        cal.add(java.util.Calendar.YEAR, -1);
         time = cal.getTime();
         e6.setLastDate(time); // one year ago.
 
         // now get engines by last move date.
-        List<RollingStock> engineList = manager.getByLastDateList();
+        List<Engine> engineList = manager.getByLastDateList();
         Assert.assertEquals("Number of Engines by last move date", 6, engineList.size());
         Assert.assertEquals("1st engine in list by move date", e6, engineList.get(0));
         Assert.assertEquals("2nd engine in list by move date", e4, engineList.get(1));
@@ -523,45 +540,46 @@ public class EngineManagerTest extends OperationsTestCase {
         Assert.assertEquals("6th engine in list by move date", e5, engineList.get(5));
     }
 
+    @Test
     public void testSortListedEnginesByLastMovedDate() {
         resetEngineManager();
 
-        EngineManager manager = EngineManager.instance();
+        EngineManager manager = InstanceManager.getDefault(EngineManager.class);
 
         java.util.Calendar cal = java.util.Calendar.getInstance();
         java.util.Date start = cal.getTime(); // save to rest time, to avoid
-                                              // test probelms if run near
-                                              // midnight.
+        // test probelms if run near
+        // midnight.
         java.util.Date time = cal.getTime();
         e1.setLastDate(time); // right now
         cal.setTime(start);
-        cal.add(java.util.Calendar.HOUR_OF_DAY,-1);
+        cal.add(java.util.Calendar.HOUR_OF_DAY, -1);
         time = cal.getTime();
         e2.setLastDate(time); // one hour ago
 
         cal.setTime(start);
-        cal.add(java.util.Calendar.HOUR_OF_DAY,1);
+        cal.add(java.util.Calendar.HOUR_OF_DAY, 1);
         time = cal.getTime();
         e3.setLastDate(time); // one hour from now
 
         cal.setTime(start);
-        cal.set(java.util.Calendar.DAY_OF_MONTH,-1);
+        cal.set(java.util.Calendar.DAY_OF_MONTH, -1);
         time = cal.getTime();
         e4.setLastDate(time); // one day ago.
 
         cal.setTime(start);
-        cal.add(java.util.Calendar.DAY_OF_MONTH,1);
+        cal.add(java.util.Calendar.DAY_OF_MONTH, 1);
         time = cal.getTime();
         e5.setLastDate(time); // one day in the future now.
 
         cal.setTime(start);
-        cal.add(java.util.Calendar.YEAR,-1);
+        cal.add(java.util.Calendar.YEAR, -1);
 
         time = cal.getTime();
         e6.setLastDate(time); // one year ago.
 
         // now get engines by last move date.
-        List<RollingStock> engineList = manager.getByLastDateList(manager.getByIdList());
+        List<Engine> engineList = manager.getByLastDateList(manager.getByIdList());
         Assert.assertEquals("Number of Engines by last move date", 6, engineList.size());
         Assert.assertEquals("1st engine in list by move date", e6, engineList.get(0));
         Assert.assertEquals("2nd engine in list by move date", e4, engineList.get(1));
@@ -571,42 +589,42 @@ public class EngineManagerTest extends OperationsTestCase {
         Assert.assertEquals("6th engine in list by move date", e5, engineList.get(5));
     }
 
-
+    @Test
     public void testListEnginesAtLocation() {
         resetEngineManager();
 
-        EngineManager manager = EngineManager.instance();
-        List<RollingStock> engineList = manager.getList(l1);
+        EngineManager manager = InstanceManager.getDefault(EngineManager.class);
+        List<Engine> engineList = manager.getList(l1);
         Assert.assertEquals("Number of Engines at location", 2, engineList.size());
         Assert.assertTrue("e1 in engine list at location", engineList.contains(e1));
         Assert.assertTrue("e2 in engine list at location", engineList.contains(e2));
         Assert.assertFalse("e3 not in engine list at location", engineList.contains(e3));
     }
 
+    @Test
     public void testListEnginesOnTrack() {
         resetEngineManager();
 
-        EngineManager manager = EngineManager.instance();
+        EngineManager manager = InstanceManager.getDefault(EngineManager.class);
         Track l1t1 = l1.getTrackByName("A", Track.SPUR);
-        List<RollingStock> engineList = manager.getList(l1t1);
+        List<Engine> engineList = manager.getList(l1t1);
         Assert.assertEquals("Number of Engines on track", 1, engineList.size());
         Assert.assertTrue("e1 in engine list on track", engineList.contains(e1));
         Assert.assertFalse("e2 not in engine list on track", engineList.contains(e2));
         Assert.assertFalse("e3 not in engine list on track", engineList.contains(e3));
-   }
+    }
 
-    private void resetEngineManager(){
-        EngineManager.instance().dispose();
-       
-        EngineManager manager = EngineManager.instance();
+    private void resetEngineManager() {
+        InstanceManager.getDefault(EngineManager.class).dispose();
 
-        e1 = manager.newEngine("CP", "1");
-        e2 = manager.newEngine("ACL", "3");
-        e3 = manager.newEngine("CP", "3");
-        e4 = manager.newEngine("CP", "3-1");
-        e5 = manager.newEngine("PC", "2");
-        e6 = manager.newEngine("AA", "1");
+        EngineManager manager = InstanceManager.getDefault(EngineManager.class);
 
+        e1 = manager.newRS("CP", "1");
+        e2 = manager.newRS("ACL", "3");
+        e3 = manager.newRS("CP", "3");
+        e4 = manager.newRS("CP", "3-1");
+        e5 = manager.newRS("PC", "2");
+        e6 = manager.newRS("AA", "1");
 
         e1.setModel("GP356");
         e2.setModel("GP354");
@@ -639,7 +657,7 @@ public class EngineManagerTest extends OperationsTestCase {
         Track l3t1 = l3.addTrack("B", Track.SPUR);
         Track l3t2 = l3.addTrack("A", Track.SPUR);
 
-        // add track lengths       
+        // add track lengths
         l1t1.setLength(100);
         l1t2.setLength(100);
         l2t1.setLength(100);
@@ -657,7 +675,7 @@ public class EngineManagerTest extends OperationsTestCase {
         l3t1.addTypeName("Diesel");
         l3t2.addTypeName("Diesel");
 
-        EngineTypes et = EngineTypes.instance();
+        EngineTypes et = InstanceManager.getDefault(EngineTypes.class);
         et.addName("Diesel");
 
         // place engines on tracks
@@ -684,35 +702,4 @@ public class EngineManagerTest extends OperationsTestCase {
         e6.setMoves(9999);
 
     }
-
-
-    // from here down is testing infrastructure
-    // Ensure minimal setup for log4J
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-    }
-
-    public EngineManagerTest(String s) {
-        super(s);
-    }
-
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading", EngineManagerTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(EngineManagerTest.class);
-        return suite;
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-       super.tearDown();
-    }
-
-
 }

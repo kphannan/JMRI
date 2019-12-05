@@ -6,9 +6,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Swing action to create and register a SendPacketFrame object
+ * Swing action to create and register a SendPacketFrame object.
  *
- * @author	Bob Jacobsen Copyright (C) 2003
+ * @author Bob Jacobsen Copyright (C) 2003
  */
 public class SendPacketAction extends AbstractAction {
 
@@ -16,15 +16,16 @@ public class SendPacketAction extends AbstractAction {
         super(s);
 
         // disable ourself if there is no command Station object available
-        if (jmri.InstanceManager.getOptionalDefault(jmri.CommandStation.class) == null) {
+        if (jmri.InstanceManager.getNullableDefault(jmri.CommandStation.class) == null) {
             setEnabled(false);
         }
     }
 
     public SendPacketAction() {
-        this("Send DCC packet");
+        this(Bundle.getMessage("SendPacketTitle"));
     }
 
+    @Override
     public void actionPerformed(ActionEvent e) {
         // create a SendPacketFrame
         SendPacketFrame f = new SendPacketFrame();
@@ -35,5 +36,7 @@ public class SendPacketAction extends AbstractAction {
         }
         f.setVisible(true);
     }
-    private final static Logger log = LoggerFactory.getLogger(SendPacketAction.class.getName());
+
+    private final static Logger log = LoggerFactory.getLogger(SendPacketAction.class);
+
 }

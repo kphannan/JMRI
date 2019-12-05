@@ -1,4 +1,3 @@
-// ConnectionConfig.java
 package jmri.jmrix.sprog.pi.pisprognano;
 
 import jmri.util.SystemType;
@@ -8,7 +7,6 @@ import jmri.util.SystemType;
  * SerialDriverAdapter object.
  *
  * @author Andrew Crosland Copyright (C) 2016
- * @version	$Revision$
  */
 public class ConnectionConfig extends jmri.jmrix.AbstractSerialConnectionConfig {
 
@@ -21,22 +19,16 @@ public class ConnectionConfig extends jmri.jmrix.AbstractSerialConnectionConfig 
     }
 
     /**
-     * Ctor for a functional Swing object with no prexisting adapter
+     * Ctor for a connection configuration with no preexisting adapter.
+     * {@link #setInstance()} will fill the adapter member.
      */
     public ConnectionConfig() {
         super();
     }
 
+    @Override
     public String name() {
-        return "Pi-SPROG Nano Command Station";
-    }
-
-    public String getManufacturer() {
-        return adapter.getManufacturer();
-    }
-
-    public void setManufacturer(String manu) {
-        adapter.setManufacturer(manu);
+        return Bundle.getMessage("PiSprogNanoCSTitle");
     }
 
     @Override
@@ -47,9 +39,14 @@ public class ConnectionConfig extends jmri.jmrix.AbstractSerialConnectionConfig 
         return new String[]{};
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     protected void setInstance() {
-        adapter = PiSprogNanoSerialDriverAdapter.instance();
+        if(adapter == null) {
+           adapter = new PiSprogNanoSerialDriverAdapter();
+        }
     }
-}
 
-/* @(#)ConnectionConfig.java */
+}

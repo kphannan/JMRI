@@ -1,12 +1,11 @@
 package jmri.jmrix.lenz.swing.lzv100;
 
+import java.awt.GraphicsEnvironment;
 import jmri.jmrix.lenz.LenzCommandStation;
 import jmri.jmrix.lenz.XNetInterfaceScaffold;
 import jmri.jmrix.lenz.XNetSystemConnectionMemo;
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import jmri.util.JUnitUtil;
+import org.junit.*;
 
 /**
  * LZV100FrameTest.java
@@ -15,40 +14,27 @@ import junit.framework.TestSuite;
  *
  * @author	Paul Bender
  */
-public class LZV100FrameTest extends TestCase {
+public class LZV100FrameTest extends jmri.util.JmriJFrameTestBase {
+        
+    private XNetInterfaceScaffold tc;
 
-    public void testCtor() {
-        // infrastructure objects
-        XNetInterfaceScaffold tc = new XNetInterfaceScaffold(new LenzCommandStation());
-
-        LZV100Frame f = new LZV100Frame(new XNetSystemConnectionMemo(tc));
-        Assert.assertNotNull(f);
+    @Before
+    @Override
+    public void setUp() {
+        JUnitUtil.setUp();
+        jmri.util.JUnitUtil.resetProfileManager();
+        tc = new XNetInterfaceScaffold(new LenzCommandStation());
+        if(!GraphicsEnvironment.isHeadless()){
+           frame = new LZV100Frame(new XNetSystemConnectionMemo(tc));
+        }
     }
 
-    // from here down is testing infrastructure
-    public LZV100FrameTest(String s) {
-        super(s);
-    }
-
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading", LZV100FrameTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(LZV100FrameTest.class);
-        return suite;
-    }
-
-    // The minimal setup for log4J
-    protected void setUp() {
-        apps.tests.Log4JFixture.setUp();
-    }
-
-    protected void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
+    @After
+    @Override
+    public void tearDown() {
+        tc = null;
+        JUnitUtil.clearShutDownManager(); // put in place because AbstractMRTrafficController implementing subclass was not terminated properly
+        super.tearDown();
     }
 
 }

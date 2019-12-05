@@ -1,5 +1,6 @@
 package jmri.jmrix.can.adapters.loopback.configurexml;
 
+import jmri.jmrix.PortAdapter;
 import jmri.jmrix.can.adapters.loopback.ConnectionConfig;
 import jmri.jmrix.can.adapters.loopback.Port;
 import jmri.jmrix.configurexml.AbstractSerialConnectionConfigXml;
@@ -10,13 +11,12 @@ import org.slf4j.LoggerFactory;
 /**
  * Handle XML persistance of layout connections by persistening the CAN
  * simulator (and connections).
- * <P>
+ * <p>
  * This class is invoked from jmrix.JmrixConfigPaneXml on write, as that class
  * is the one actually registered. Reads are brought here directly via the class
  * attribute in the XML.
  *
  * @author Bob Jacobsen Copyright: Copyright (c) 2008, 2010
- * @version $Revision$
  */
 public class ConnectionConfigXml extends AbstractSerialConnectionConfigXml {
 
@@ -24,24 +24,22 @@ public class ConnectionConfigXml extends AbstractSerialConnectionConfigXml {
         super();
     }
 
-    static java.util.ResourceBundle rb
-            = java.util.ResourceBundle.getBundle("jmri.jmrix.JmrixBundle");
-
     /**
      * A simulated connection needs no extra information, so we reimplement the
      * superclass method to just write the necessary parts.
      *
-     * @return Formatted element containing no attributes except the class name
+     * @return formatted element containing no attributes except the class name
      */
+    @Override
     public Element store(Object o) {
 
         adapter = ((ConnectionConfig) o).getAdapter();
         Element e = new Element("connection");
 
-        if (adapter.getCurrentPortName() != null) {
+        if (adapter.getCurrentPortName() != null) { // port not functional in loopback Sim, hidden in UI. Remove in store?
             e.setAttribute("port", adapter.getCurrentPortName());
         } else {
-            e.setAttribute("port", rb.getString("noneSelected"));
+            e.setAttribute("port", Bundle.getMessage("noneSelected"));
         }
         if (adapter.getManufacturer() != null) {
             e.setAttribute("manufacturer", adapter.getManufacturer());
@@ -60,9 +58,12 @@ public class ConnectionConfigXml extends AbstractSerialConnectionConfigXml {
 
         e.setAttribute("class", this.getClass().getName());
 
+        extendElement(e);
+
         return e;
     }
 
+    @Override
     public boolean load(Element shared, Element perNode) {
         boolean result = true;
         getInstance();
@@ -86,7 +87,7 @@ public class ConnectionConfigXml extends AbstractSerialConnectionConfigXml {
             String mfg = shared.getAttribute("manufacturer").getValue();
             adapter.setManufacturer(mfg);
         }
-        if (shared.getAttribute("port") != null) {
+        if (shared.getAttribute("port") != null) { // port not functional in loopback Sim, hidden in UI. Remove in load?
             String portName = shared.getAttribute("port").getValue();
             adapter.setPort(portName);
         }
@@ -114,10 +115,12 @@ public class ConnectionConfigXml extends AbstractSerialConnectionConfigXml {
         return result;
     }
 
+    @Override
     protected void getInstance() {
         adapter = new Port();
     }
 
+    @Override
     protected void getInstance(Object object) {
         adapter = ((ConnectionConfig) object).getAdapter();
     }
@@ -128,7 +131,21 @@ public class ConnectionConfigXml extends AbstractSerialConnectionConfigXml {
         log.info("CAN Simulator Started");
     }
 
+    @Override
+    protected void loadOptions(Element shared, Element perNode, PortAdapter adapter) {
+        super.loadOptions(shared, perNode, adapter);
+
+        jmri.jmrix.openlcb.configurexml.ConnectionConfigXml.maybeLoadOlcbProfileSettings(
+                shared.getParentElement(), perNode.getParentElement(), adapter);
+    }
+
+    @Override
+    protected void extendElement(Element e) {
+        jmri.jmrix.openlcb.configurexml.ConnectionConfigXml.maybeSaveOlcbProfileSettings(
+                e, adapter);
+    }
+
     // initialize logging
-    private final static Logger log = LoggerFactory.getLogger(ConnectionConfigXml.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(ConnectionConfigXml.class);
 
 }

@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
  * NceLight.java
  *
  * Implementation of the Light Object for NCE
- * <P>
+ * <p>
  * Based in part on SerialLight.java
  *
  * @author Dave Duchamp Copyright (C) 2010
@@ -18,8 +18,11 @@ public class NceLight extends AbstractLight {
 
     /**
      * Create a Light object, with only system name.
-     * <P>
+     * <p>
      * 'systemName' was previously validated in NceLightManager
+     * @param systemName system name for light
+     * @param tc traffic controller for connection
+     * @param mgr LightManager for light
      */
     public NceLight(String systemName, NceTrafficController tc, NceLightManager mgr) {
         super(systemName);
@@ -31,8 +34,12 @@ public class NceLight extends AbstractLight {
 
     /**
      * Create a Light object, with both system and user names.
-     * <P>
+     * <p>
      * 'systemName' was previously validated in NceLightManager
+     * @param systemName system name for light
+     * @param userName userName for light
+     * @param tc traffic controller for connection
+     * @param mgr LightManager for light
      */
     public NceLight(String systemName, String userName, NceTrafficController tc, NceLightManager mgr) {
         super(systemName, userName);
@@ -57,6 +64,7 @@ public class NceLight extends AbstractLight {
      * Set the current state of this Light This routine requests the hardware to
      * change.
      */
+    @Override
     protected void doNewState(int oldState, int newState) {
         boolean state = true;
         if (newState == OFF) {
@@ -97,5 +105,5 @@ public class NceLight extends AbstractLight {
 
     }
 
-    private final static Logger log = LoggerFactory.getLogger(NceLight.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(NceLight.class);
 }

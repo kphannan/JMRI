@@ -2,25 +2,27 @@ package jmri.jmrit.beantable;
 
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.Box;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
+import javax.swing.SortOrder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import jmri.Manager;
-import jmri.util.ConnectionNameFromSystemName;
-import jmri.util.com.sun.TableSorter;
+import javax.swing.table.TableRowSorter;
+import jmri.*;
+import jmri.swing.RowSorterUtil;
+import jmri.util.AlphanumComparator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-abstract public class AbstractTableTabAction extends AbstractTableAction {
+abstract public class AbstractTableTabAction<E extends NamedBean> extends AbstractTableAction<E> {
 
     protected JPanel dataPanel;
     protected JTabbedPane dataTabs;
@@ -31,29 +33,35 @@ abstract public class AbstractTableTabAction extends AbstractTableAction {
         super(s);
     }
 
+    @Override
     protected void createModel() {
         dataPanel = new JPanel();
         dataTabs = new JTabbedPane();
         dataPanel.setLayout(new BorderLayout());
         if (getManager() instanceof jmri.managers.AbstractProxyManager) {
-            jmri.managers.AbstractProxyManager proxy = (jmri.managers.AbstractProxyManager) getManager();
-            List<jmri.Manager> managerList = proxy.getManagerList();
-            tabbedTableArray.add(new TabbedTableItem("All", true, getManager(), getNewTableAction("All")));
-            for (int x = 0; x < managerList.size(); x++) {
-                String manuName = ConnectionNameFromSystemName.getConnectionName(managerList.get(x).getSystemPrefix());
-                TabbedTableItem itemModel = new TabbedTableItem(manuName, true, managerList.get(x), getNewTableAction(manuName));
+            // build the list, with default at start and internal at end (if present)
+            jmri.managers.AbstractProxyManager<E> proxy = (jmri.managers.AbstractProxyManager<E>) getManager();
+
+            tabbedTableArray.add(new TabbedTableItem<>(Bundle.getMessage("All"), true, getManager(), getNewTableAction("All"))); // NOI18N
+
+            List<jmri.Manager<E>> managerList = proxy.getDisplayOrderManagerList();
+            for (Manager<E> manager : managerList) {
+                String manuName = manager.getMemo().getUserName();
+                TabbedTableItem<E> itemModel = new TabbedTableItem<>(manuName, true, manager, getNewTableAction(manuName)); // connection name to display in Tab
                 tabbedTableArray.add(itemModel);
             }
+            
         } else {
-            String manuName = ConnectionNameFromSystemName.getConnectionName(getManager().getSystemPrefix());
-            tabbedTableArray.add(new TabbedTableItem(manuName, true, getManager(), getNewTableAction(manuName)));
+            String manuName = getManager().getMemo().getUserName();
+            tabbedTableArray.add(new TabbedTableItem<>(manuName, true, getManager(), getNewTableAction(manuName)));
         }
         for (int x = 0; x < tabbedTableArray.size(); x++) {
-            AbstractTableAction table = tabbedTableArray.get(x).getAAClass();
+            AbstractTableAction<E> table = tabbedTableArray.get(x).getAAClass();
             table.addToPanel(this);
             dataTabs.addTab(tabbedTableArray.get(x).getItemString(), null, tabbedTableArray.get(x).getPanel(), null);
         }
         dataTabs.addChangeListener(new ChangeListener() {
+            @Override
             public void stateChanged(ChangeEvent evt) {
                 setMenuBar(f);
             }
@@ -62,9 +70,9 @@ abstract public class AbstractTableTabAction extends AbstractTableAction {
         init = true;
     }
 
-    abstract protected Manager getManager();
+    abstract protected Manager<E> getManager();
 
-    abstract protected AbstractTableAction getNewTableAction(String choice);
+    abstract protected AbstractTableAction<E> getNewTableAction(String choice);
 
     @Override
     public JPanel getPanel() {
@@ -74,27 +82,35 @@ abstract public class AbstractTableTabAction extends AbstractTableAction {
         return dataPanel;
     }
 
-    protected ArrayList<TabbedTableItem> tabbedTableArray = new ArrayList<TabbedTableItem>();
+    protected ArrayList<TabbedTableItem<E>> tabbedTableArray = new ArrayList<>();
 
+    @Override
     protected void setTitle() {
         //atf.setTitle("multiple sensors");
     }
 
+    @Override
     abstract protected String helpTarget();
 
+    @Override
     protected void addPressed(ActionEvent e) {
         log.warn("This should not have happened");
     }
 
-    public void addToFrame(BeanTableFrame f) {
+    @Override
+    public void addToFrame(BeanTableFrame<E> f) {
         try {
-            tabbedTableArray.get(dataTabs.getSelectedIndex()).getAAClass().addToFrame(f);
+            TabbedTableItem<E> table = tabbedTableArray.get(dataTabs.getSelectedIndex());
+            if (table != null) {
+                table.getAAClass().addToFrame(f);
+            }
         } catch (ArrayIndexOutOfBoundsException ex) {
             log.error(ex.toString() + " in add to Frame " + dataTabs.getSelectedIndex() + " " + dataTabs.getSelectedComponent());
         }
     }
 
-    public void setMenuBar(BeanTableFrame f) {
+    @Override
+    public void setMenuBar(BeanTableFrame<E> f) {
         try {
             tabbedTableArray.get(dataTabs.getSelectedIndex()).getAAClass().setMenuBar(f);
         } catch (ArrayIndexOutOfBoundsException ex) {
@@ -103,13 +119,15 @@ abstract public class AbstractTableTabAction extends AbstractTableAction {
     }
 
     public void addToBottomBox(JComponent c, String str) {
-        for (int x = 0; x < tabbedTableArray.size(); x++) {
-            if (tabbedTableArray.get(x).getItemString().equals(str)) {
-                tabbedTableArray.get(x).addToBottomBox(c);
+        tabbedTableArray.forEach((table) -> {
+            String item = table.getItemString();
+            if (item != null && item.equals(str)) {
+                table.addToBottomBox(c);
             }
-        }
+        });
     }
 
+    @Override
     public void print(javax.swing.JTable.PrintMode mode, java.text.MessageFormat headerFormat, java.text.MessageFormat footerFormat) {
         try {
             tabbedTableArray.get(dataTabs.getSelectedIndex()).getDataTable().print(mode, headerFormat, footerFormat);
@@ -120,6 +138,7 @@ abstract public class AbstractTableTabAction extends AbstractTableAction {
         }
     }
 
+    @Override
     public void dispose() {
         for (int x = 0; x < tabbedTableArray.size(); x++) {
             tabbedTableArray.get(x).dispose();
@@ -127,25 +146,25 @@ abstract public class AbstractTableTabAction extends AbstractTableAction {
         super.dispose();
     }
 
-    protected static class TabbedTableItem {
+    static protected class TabbedTableItem<E extends NamedBean> {  // E comes from the parent
 
-        AbstractTableAction tableAction;
+        AbstractTableAction<E> tableAction;
         String itemText;
-        BeanTableDataModel dataModel;
+        BeanTableDataModel<E> dataModel;
         JTable dataTable;
         JScrollPane dataScroll;
         Box bottomBox;
-        Boolean AddToFrameRan = false;
-        Manager manager;
+        boolean addToFrameRan = false;
+        Manager<E> manager;
 
-        int bottomBoxIndex;	// index to insert extra stuff
+        int bottomBoxIndex; // index to insert extra stuff
         static final int bottomStrutWidth = 20;
 
         boolean standardModel = true;
 
         final JPanel dataPanel = new JPanel();
 
-        public TabbedTableItem(String choice, boolean stdModel, Manager manager, AbstractTableAction tableAction) {
+        public TabbedTableItem(String choice, boolean stdModel, Manager<E> manager, AbstractTableAction<E> tableAction) {
 
             this.tableAction = tableAction;
             itemText = choice;
@@ -170,20 +189,16 @@ abstract public class AbstractTableTabAction extends AbstractTableAction {
                 tableAction.setManager(manager);
             }
             dataModel = tableAction.getTableDataModel();
-            TableSorter sorter = new TableSorter(dataModel);
-            dataTable = dataModel.makeJTable(sorter);
-            sorter.setTableHeader(dataTable.getTableHeader());
+            TableRowSorter<BeanTableDataModel> sorter = new TableRowSorter<>(dataModel);
+            dataTable = dataModel.makeJTable(dataModel.getMasterClassName() + ":" + getItemString(), dataModel, sorter);
             dataScroll = new JScrollPane(dataTable);
 
-            try {
-                TableSorter tmodel = ((TableSorter) dataTable.getModel());
-                tmodel.setColumnComparator(String.class, new jmri.util.SystemNameComparator());
-                tmodel.setSortingStatus(BeanTableDataModel.SYSNAMECOL, TableSorter.ASCENDING);
-            } catch (java.lang.ClassCastException e) {
-            }  // happens if not sortable table
+            RowSorterUtil.setSortOrder(sorter, BeanTableDataModel.SYSNAMECOL, SortOrder.ASCENDING);
+
+            sorter.setComparator(BeanTableDataModel.USERNAMECOL, new AlphanumComparator());
+            RowSorterUtil.setSortOrder(sorter, BeanTableDataModel.USERNAMECOL, SortOrder.ASCENDING);
 
             dataModel.configureTable(dataTable);
-            dataModel.loadTableColumnDetails(dataTable, dataModel.getMasterClassName() + ":" + getItemString());
 
             java.awt.Dimension dataTableSize = dataTable.getPreferredSize();
             // width is right, but if table is empty, it's not high
@@ -202,12 +217,22 @@ abstract public class AbstractTableTabAction extends AbstractTableAction {
             if (tableAction.includeAddButton()) {
                 JButton addButton = new JButton(Bundle.getMessage("ButtonAdd"));
                 addToBottomBox(addButton);
-                addButton.addActionListener(new ActionListener() {
-                    public void actionPerformed(ActionEvent e) {
-                        tableAction.addPressed(e);
-                    }
+                addButton.addActionListener((ActionEvent e) -> {
+                    tableAction.addPressed(e);
                 });
             }
+            if (dataModel.getPropertyColumnCount() > 0) {
+                final JCheckBox propertyVisible = new JCheckBox(Bundle.getMessage
+                        ("ShowSystemSpecificProperties"));
+                propertyVisible.setToolTipText(Bundle.getMessage
+                        ("ShowSystemSpecificPropertiesToolTip"));
+                addToBottomBox(propertyVisible);
+                propertyVisible.addActionListener((ActionEvent e) -> {
+                    dataModel.setPropertyColumnsVisible(dataTable, propertyVisible.isSelected());
+                });
+                dataModel.setPropertyColumnsVisible(dataTable, false);
+            }
+
         }
 
         void addPanelModel() {
@@ -223,7 +248,7 @@ abstract public class AbstractTableTabAction extends AbstractTableAction {
             return itemText;
         }
 
-        public AbstractTableAction getAAClass() {
+        public AbstractTableAction<E> getAAClass() {
             return tableAction;
         }
 
@@ -232,11 +257,11 @@ abstract public class AbstractTableTabAction extends AbstractTableAction {
         }
 
         public boolean getAdditionsToFrameDone() {
-            return AddToFrameRan;
+            return addToFrameRan;
         }
 
         public void setAddToFrameRan() {
-            AddToFrameRan = true;
+            addToFrameRan = true;
         }
 
         public JTable getDataTable() {
@@ -256,7 +281,7 @@ abstract public class AbstractTableTabAction extends AbstractTableAction {
 
         protected void dispose() {
             if (dataModel != null) {
-                dataModel.saveTableColumnDetails(dataTable, dataModel.getMasterClassName() + ":" + getItemString());
+                dataModel.stopPersistingTable(dataTable);
                 dataModel.dispose();
             }
             dataModel = null;
@@ -265,6 +290,6 @@ abstract public class AbstractTableTabAction extends AbstractTableAction {
         }
     }
 
-    private final static Logger log = LoggerFactory.getLogger(AbstractTableTabAction.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(AbstractTableTabAction.class);
 
 }

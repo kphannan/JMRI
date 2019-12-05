@@ -1,9 +1,9 @@
 package jmri.jmrit.symbolicprog;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -16,39 +16,38 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Extends EnumVariableValue to represent a composition of variable values.
- * <P>
+ * <p>
  * Internally, each "choice" is stored as a list of "setting" items. Numerical
  * values for this type of variable (itself) are strictly sequential, because
  * they are arbitrary.
  * <p>
  * This version of the class has certain limitations:
- * <OL>
- * <LI>Variables referenced in the definition of one of these must have already
+ * <ol>
+ * <li>Variables referenced in the definition of one of these must have already
  * been declared earlier in the decoder file. This prevents circular references,
  * and makes it much easier to find the target variables.
- * <LI>
+ * <li>
  * This version of the variable never changes "State" (color), though it does
- * track it's value from changes to other variables.
- * <LI>The should be a final choice (entry) that doesn't define any settings.
+ * track its value from changes to other variables.
+ * <li>There should be a final choice (entry) that doesn't define any settings.
  * This will then form the default value when the target variables change.
- * <LI>Programming operations on a variable of this type doesn't do anything,
+ * <li>Programming operations on a variable of this type doesn't do anything,
  * because there doesn't seem to be a consistent model of what "read changes"
  * and "write changes" should do. This has two implications:
- * <UL>
- * <LI>Variables referenced as targets must appear on some programming pane, or
+ * <ul>
+ * <li>Variables referenced as targets must appear on some programming pane, or
  * they won't be updated by programming operations.
- * <LI>If this variable references variables that are not on this pane, the user
+ * <li>If this variable references variables that are not on this pane, the user
  * needs to do a read/write all panes operation to record the changes made to
  * this variable.
- * </UL>
+ * </ul>
  * It's therefore recommended that a CompositeVariableValue just make changes to
  * target variables on the same programming page.
  * </ol>
- * <P>
- * @author	Bob Jacobsen Copyright (C) 2001, 2005, 2013
  *
+ * @author Bob Jacobsen Copyright (C) 2001, 2005, 2013
  */
-public class CompositeVariableValue extends EnumVariableValue implements ActionListener, PropertyChangeListener {
+public class CompositeVariableValue extends EnumVariableValue {
 
     public CompositeVariableValue(String name, String comment, String cvName,
             boolean readOnly, boolean infoOnly, boolean writeOnly, boolean opsOnly,
@@ -58,9 +57,7 @@ public class CompositeVariableValue extends EnumVariableValue implements ActionL
         _maxVal = maxVal;
         _minVal = minVal;
         _value = new JComboBox<String>();
-        if (log.isDebugEnabled()) {
-            log.debug("New Composite named " + name);
-        }
+        log.debug("New Composite named {}", name);
     }
 
     /**
@@ -71,6 +68,7 @@ public class CompositeVariableValue extends EnumVariableValue implements ActionL
         _value = new JComboBox<String>();
     }
 
+    @Override
     public CvValue[] usesCVs() {
         HashSet<CvValue> cvSet = new HashSet<CvValue>(20);  // 20 is arbitrary
         Iterator<VariableValue> i = variables.iterator();
@@ -91,7 +89,7 @@ public class CompositeVariableValue extends EnumVariableValue implements ActionL
     }
 
     /**
-     * Define objects to save and manipulate a particular setting
+     * Define objects to save and manipulate a particular setting.
      */
     static class Setting {
 
@@ -102,23 +100,19 @@ public class CompositeVariableValue extends EnumVariableValue implements ActionL
         Setting(String varName, VariableValue variable, String value) {
             this.varName = varName;
             this.variable = variable;
-            this.value = Integer.valueOf(value).intValue();
-            if (log.isDebugEnabled()) {
-                log.debug("    cTor Setting " + varName + " = " + value);
-            }
+            this.value = Integer.parseInt(value);
+            log.debug("    cTor Setting {} = {}", varName, value);
 
         }
 
         void setValue() {
-            if (log.isDebugEnabled()) {
-                log.debug("    Setting.setValue of " + varName + " to " + value);
-            }
+            log.debug("    Setting.setValue of {} to {}", varName, value);
             variable.setIntValue(value);
         }
 
         boolean match() {
             if (log.isDebugEnabled()) {
-                log.debug("         Match checks " + variable.getIntValue() + " == " + value);
+                log.debug("         Match checks {} == {}", variable.getIntValue(), value);
             }
             return (variable.getIntValue() == value);
         }
@@ -126,16 +120,14 @@ public class CompositeVariableValue extends EnumVariableValue implements ActionL
 
     /**
      * Defines a list of Setting objects.
-     * <P>
+     * <p>
      * Serves as a home for various service methods
      */
     static class SettingList extends ArrayList<Setting> {
 
         public SettingList() {
             super();
-            if (log.isDebugEnabled()) {
-                log.debug("New setting list");
-            }
+            log.debug("New setting list");
         }
 
         void addSetting(String varName, VariableValue variable, String value) {
@@ -145,7 +137,7 @@ public class CompositeVariableValue extends EnumVariableValue implements ActionL
 
         void setValues() {
             if (log.isDebugEnabled()) {
-                log.debug(" setValues in length " + size());
+                log.debug(" setValues in length {}", size());
             }
             for (int i = 0; i < this.size(); i++) {
                 Setting s = this.get(i);
@@ -157,13 +149,13 @@ public class CompositeVariableValue extends EnumVariableValue implements ActionL
             for (int i = 0; i < size(); i++) {
                 if (!this.get(i).match()) {
                     if (log.isDebugEnabled()) {
-                        log.debug("      No match in setting list of length " + size() + " at position " + i);
+                        log.debug("      No match in setting list of length {} at position {}", size(), i);
                     }
                     return false;
                 }
             }
             if (log.isDebugEnabled()) {
-                log.debug("      Match in setting list of length " + size());
+                log.debug("      Match in setting list of length {}", size());
             }
             return true;
         }
@@ -193,10 +185,10 @@ public class CompositeVariableValue extends EnumVariableValue implements ActionL
         if (variable != null) {
             variables.add(variable);
             if (!variable.label().equals(varName)) {
-                log.warn("Unexpected label /" + variable.label() + "/ for varName /" + varName + "/ during addSetting");
+                log.warn("Unexpected label /{}/ for varName /{}/ during addSetting", variable.label(), varName);
             }
         } else {
-            log.error("Variable pointer null when varName=" + varName + " in choice " + choice + "; ignored");
+            log.error("Variable pointer null when varName={} in choice {}; ignored", varName, choice);
         }
     }
 
@@ -204,8 +196,9 @@ public class CompositeVariableValue extends EnumVariableValue implements ActionL
      * Do end of initialization processing.
      */
     @SuppressWarnings("null")
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH",
+    @SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH",
             justification = "we want to force an exception")
+    @Override
     public void lastItem() {
         // configure the representation object
         _defaultColor = _value.getBackground();
@@ -231,15 +224,18 @@ public class CompositeVariableValue extends EnumVariableValue implements ActionL
         _value.addActionListener(this);
     }
 
+    @Override
     public void setToolTipText(String t) {
         super.setToolTipText(t);   // do default stuff
         _value.setToolTipText(t);  // set our value
     }
 
+    @Override
     public Object rangeVal() {
         return "composite: " + _minVal + " - " + _maxVal;
     }
 
+    @Override
     public void actionPerformed(ActionEvent e) {
         // see if this is from _value itself, or from an alternate rep.
         // if from an alternate rep, it will contain the value to select
@@ -247,9 +243,7 @@ public class CompositeVariableValue extends EnumVariableValue implements ActionL
             // is from alternate rep
             _value.setSelectedItem(e.getActionCommand());
         }
-        if (log.isDebugEnabled()) {
-            log.debug("action event: " + e);
-        }
+        log.debug("action event: {}", e);
 
         // notify
         prop.firePropertyChange("Value", null, Integer.valueOf(getIntValue()));
@@ -260,24 +254,21 @@ public class CompositeVariableValue extends EnumVariableValue implements ActionL
     /**
      * This variable doesn't change state, hence doesn't change color.
      */
+    @Override
     public void setState(int state) {
-        if (log.isDebugEnabled()) {
-            log.debug("Ignore setState(" + state + ")");
-        }
+        log.debug("Ignore setState({})", state);
     }
 
     /**
      * Set to a specific value.
-     * <P>
+     * <p>
      * Does this by delegating to the SettingList
-     *
      */
+    @Override
     protected void selectValue(int value) {
-        if (log.isDebugEnabled()) {
-            log.debug("selectValue(" + value + ")");
-        }
+        log.debug("selectValue({})", value);
         if (value > _value.getItemCount() - 1) {
-            log.error("Saw unreasonable internal value: " + value);
+            log.error("Saw unreasonable internal value: {}", value);
             return;
         }
 
@@ -288,14 +279,17 @@ public class CompositeVariableValue extends EnumVariableValue implements ActionL
 
     }
 
+    @Override
     public int getIntValue() {
         return _value.getSelectedIndex();
     }
 
+    @Override
     public Component getCommonRep() {
         return _value;
     }
 
+    @Override
     public void setValue(int value) {
         int oldVal = getIntValue();
         selectValue(value);
@@ -307,9 +301,9 @@ public class CompositeVariableValue extends EnumVariableValue implements ActionL
 
     /**
      * Notify the connected CVs of a state change from above by way of the
-     * variables (e.g. not direct to CVs)
-     *
+     * variables (e.g. not direct to CVs).
      */
+    @Override
     public void setCvState(int state) {
         Iterator<VariableValue> i = variables.iterator();
         while (i.hasNext()) {
@@ -318,6 +312,7 @@ public class CompositeVariableValue extends EnumVariableValue implements ActionL
         }
     }
 
+    @Override
     public boolean isChanged() {
         Iterator<VariableValue> i = variables.iterator();
         while (i.hasNext()) {
@@ -329,6 +324,7 @@ public class CompositeVariableValue extends EnumVariableValue implements ActionL
         return false;
     }
 
+    @Override
     public void setToRead(boolean state) {
 
         Iterator<VariableValue> i = variables.iterator();
@@ -339,9 +335,10 @@ public class CompositeVariableValue extends EnumVariableValue implements ActionL
     }
 
     /**
-     * This variable needs to be read if any of it's subsidiary variables needs
+     * This variable needs to be read if any of its subsidiary variables needs
      * to be read.
      */
+    @Override
     public boolean isToRead() {
         Iterator<VariableValue> i = variables.iterator();
         while (i.hasNext()) {
@@ -353,10 +350,9 @@ public class CompositeVariableValue extends EnumVariableValue implements ActionL
         return false;
     }
 
+    @Override
     public void setToWrite(boolean state) {
-        if (log.isDebugEnabled()) {
-            log.debug("Start setToWrite with " + state);
-        }
+        log.debug("Start setToWrite with {}", state);
 
         Iterator<VariableValue> i = variables.iterator();
         while (i.hasNext()) {
@@ -367,9 +363,10 @@ public class CompositeVariableValue extends EnumVariableValue implements ActionL
     }
 
     /**
-     * This variable needs to be written if any of it's subsidiary variables
+     * This variable needs to be written if any of its subsidiary variables
      * needs to be written.
      */
+    @Override
     public boolean isToWrite() {
         Iterator<VariableValue> i = variables.iterator();
         while (i.hasNext()) {
@@ -381,6 +378,7 @@ public class CompositeVariableValue extends EnumVariableValue implements ActionL
         return false;
     }
 
+    @Override
     public void readChanges() {
         if (isChanged()) {
             readingChanges = true;
@@ -389,6 +387,7 @@ public class CompositeVariableValue extends EnumVariableValue implements ActionL
         }
     }
 
+    @Override
     public void writeChanges() {
         if (isChanged()) {
             writingChanges = true;
@@ -397,6 +396,7 @@ public class CompositeVariableValue extends EnumVariableValue implements ActionL
         }
     }
 
+    @Override
     public void readAll() {
         readingChanges = false;
         amReading = true;
@@ -410,9 +410,7 @@ public class CompositeVariableValue extends EnumVariableValue implements ActionL
      */
     protected void continueRead() {
         // search for something to do
-        if (log.isDebugEnabled()) {
-            log.debug("Start continueRead");
-        }
+        log.debug("Start continueRead");
 
         Iterator<VariableValue> i = variables.iterator();
         while (i.hasNext()) {
@@ -436,6 +434,7 @@ public class CompositeVariableValue extends EnumVariableValue implements ActionL
         log.debug("End continueRead, nothing to do");
     }
 
+    @Override
     public void writeAll() {
         if (getReadOnly()) {
             log.error("unexpected write operation when readOnly is set");
@@ -452,9 +451,7 @@ public class CompositeVariableValue extends EnumVariableValue implements ActionL
      */
     protected void continueWrite() {
         // search for something to do
-        if (log.isDebugEnabled()) {
-            log.debug("Start continueWrite");
-        }
+        log.debug("Start continueWrite");
 
         Iterator<VariableValue> i = variables.iterator();
         while (i.hasNext()) {
@@ -463,7 +460,7 @@ public class CompositeVariableValue extends EnumVariableValue implements ActionL
                 // something to do!
                 amWriting = true; // should be set already
                 setBusy(true);
-                log.debug("request write of " + v.label() + " writing changes " + writingChanges);
+                log.debug("request write of {} writing changes {}", v.label(), writingChanges);
                 if (writingChanges) {
                     v.writeChanges();
                 } else {
@@ -481,10 +478,11 @@ public class CompositeVariableValue extends EnumVariableValue implements ActionL
     }
 
     // handle incoming parameter notification
+    @Override
     public void propertyChange(java.beans.PropertyChangeEvent e) {
         // notification from CV; check for Value being changed
         if (log.isDebugEnabled()) {
-            log.debug("propertyChange in " + label() + " type " + e.getPropertyName() + " new value " + e.getNewValue());
+            log.debug("propertyChange in {} type {} new value {}", label(), e.getPropertyName(), e.getNewValue());
         }
         if (e.getPropertyName().equals("Busy")) {
             if (((Boolean) e.getNewValue()).equals(Boolean.FALSE)) {
@@ -507,33 +505,28 @@ public class CompositeVariableValue extends EnumVariableValue implements ActionL
     /**
      * Suspect underlying variables have changed value; check. First match will
      * succeed, so there should not be multiple matches possible. ("First match"
-     * is defined in choice-sequence)
+     * is defined in choice-sequence).
      */
     void findValue() {
         if (log.isDebugEnabled()) {
-            log.debug("findValue invoked on " + label());
+            log.debug("findValue invoked on {}", label());
         }
         for (int i = 0; i < _value.getItemCount(); i++) {
             String choice = _value.getItemAt(i);
             SettingList sl = choiceHash.get(choice);
             if (sl.match()) {
-                if (log.isDebugEnabled()) {
-                    log.debug("  match in " + i);
-                }
+                log.debug("  match in {}", i);
                 _value.setSelectedItem(choice);
                 return;
             }
         }
-        if (log.isDebugEnabled()) {
-            log.debug("   no match");
-        }
+        log.debug("   no match");
     }
 
     // clean up connections when done
+    @Override
     public void dispose() {
-        if (log.isDebugEnabled()) {
-            log.debug("dispose");
-        }
+        log.debug("dispose");
 
         Iterator<VariableValue> i = variables.iterator();
         while (i.hasNext()) {
@@ -546,6 +539,6 @@ public class CompositeVariableValue extends EnumVariableValue implements ActionL
     }
 
     // initialize logging
-    private final static Logger log = LoggerFactory.getLogger(CompositeVariableValue.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(CompositeVariableValue.class);
 
 }

@@ -7,9 +7,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * Create a "Systems" menu containing the Tams-specific tools.
  *
  * Based on work by Bob Jacobsen
- *
  * @author	Kevin Dickerson Copyright (C) 2012
  */
 public class TamsMenu extends JMenu {
@@ -17,15 +17,11 @@ public class TamsMenu extends JMenu {
     public TamsMenu(TamsSystemConnectionMemo memo) {
         super();
 
-        ResourceBundle rb = ResourceBundle.getBundle("jmri.jmrix.tams.TamsBundle");
-        String title;
         if (memo != null) {
-            title = memo.getUserName();
+            setText(memo.getUserName());
         } else {
-            title = rb.getString("MenuTams");
+            setText(Bundle.getMessage("MenuTams"));
         }
-
-        setText(title);
 
         jmri.util.swing.WindowInterface wi = new jmri.util.swing.sdi.JmriJFrameInterface();
 
@@ -33,18 +29,17 @@ public class TamsMenu extends JMenu {
             if (item == null) {
                 add(new javax.swing.JSeparator());
             } else {
-                add(new TamsNamedPaneAction(rb.getString(item.name), wi, item.load, memo));
+                add(new TamsNamedPaneAction(Bundle.getMessage(item.name), wi, item.load, memo));
             }
         }
 
-        if (jmri.InstanceManager.getOptionalDefault(jmri.jmrit.beantable.ListedTableFrame.class) == null) {
+        if (jmri.InstanceManager.getNullableDefault(jmri.jmrit.beantable.ListedTableFrame.class) == null) {
             try {
                 new jmri.jmrit.beantable.ListedTableFrame();
             } catch (java.lang.NullPointerException ex) {
                 log.error("Unable to register Tams table");
             }
         }
-
     }
 
     Item[] panelItems = new Item[]{
@@ -64,5 +59,6 @@ public class TamsMenu extends JMenu {
         String load;
     }
 
-    private final static Logger log = LoggerFactory.getLogger(TamsMenu.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(TamsMenu.class);
+
 }

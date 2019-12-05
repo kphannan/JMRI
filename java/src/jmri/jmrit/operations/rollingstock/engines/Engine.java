@@ -1,29 +1,35 @@
 package jmri.jmrit.operations.rollingstock.engines;
 
 import java.beans.PropertyChangeEvent;
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import jmri.InstanceManager;
 import jmri.jmrit.operations.locations.Location;
 import jmri.jmrit.operations.locations.Track;
 import jmri.jmrit.operations.rollingstock.RollingStock;
 import jmri.jmrit.operations.routes.RouteLocation;
 import jmri.jmrit.operations.trains.Train;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import jmri.jmrit.roster.Roster;
+import jmri.jmrit.roster.RosterEntry;
 
 /**
  * Represents a locomotive on the layout
  *
  * @author Daniel Boudreau (C) Copyright 2008
- * @version $Revision$
  */
 public class Engine extends RollingStock {
-    
+
     public static final int NCE_REAR_BLOCK_NUMBER = 8;
-    public static final int B_UNIT_BLOCKING = 10;  // block B Units after NCE Consists
+    public static final int B_UNIT_BLOCKING = 10; // block B Units after NCE Consists
+    public static final String HP_CHANGED_PROPERTY = "hp"; // NOI18N
 
     private Consist _consist = null;
     private String _model = NONE;
 
-    EngineModels engineModels = EngineModels.instance();
+    EngineModels engineModels = InstanceManager.getDefault(EngineModels.class);
 
     public Engine(String road, String number) {
         super(road, number);
@@ -34,6 +40,8 @@ public class Engine extends RollingStock {
     /**
      * Set the locomotive's model. Note a model has only one length, type, and
      * horsepower rating.
+     * 
+     * @param model The string model name.
      *
      */
     public void setModel(String model) {
@@ -86,7 +94,7 @@ public class Engine extends RollingStock {
         String old = getHp();
         engineModels.setModelHorsepower(getModel(), hp);
         if (!old.equals(hp)) {
-            setDirtyAndFirePropertyChange("hp", old, hp); // NOI18N
+            setDirtyAndFirePropertyChange(HP_CHANGED_PROPERTY, old, hp); // NOI18N
         }
     }
 
@@ -102,7 +110,7 @@ public class Engine extends RollingStock {
         try {
             return Integer.parseInt(getHp());
         } catch (NumberFormatException e) {
-            log.warn("Locomotive ({}) horsepower ({}) isn't a number", toString(), getHp());
+            log.debug("Locomotive ({}) horsepower ({}) isn't a number", toString(), getHp());
             return 0;
         }
     }
@@ -138,11 +146,11 @@ public class Engine extends RollingStock {
                 length = NONE;
             }
             if (!length.equals(_length)) {
-                if (_lengthChange) // return "old" length, used for track reserve changes
-                {
+                // return "old" length, used for track reserve changes
+                if (_lengthChange) {
                     return _length;
                 }
-                log.debug("Loco ({}) length has been modified", toString());
+                log.debug("Loco ({}) length ({}) has been modified from ({})", toString(), length, _length);
                 super.setLength(length); // adjust track lengths
             }
             return length;
@@ -212,6 +220,8 @@ public class Engine extends RollingStock {
 
     /**
      * Place locomotive in a consist
+     * 
+     * @param consist The Consist to use.
      *
      */
     public void setConsist(Consist consist) {
@@ -252,6 +262,75 @@ public class Engine extends RollingStock {
     }
 
     /**
+     * Used to determine if engine is lead engine in a consist
+     * 
+     * @return true if lead engine in a consist
+     */
+    public boolean isLead() {
+        if (getConsist() != null) {
+            return getConsist().isLead(this);
+        }
+        return false;
+    }
+
+    /**
+     * Get the DCC address for this engine from the JMRI roster. Does 4
+     * attempts, 1st by road and number, 2nd by number, 3rd by dccAddress using
+     * the engine's road number, 4th by id.
+     * 
+     * @return dccAddress
+     */
+    public String getDccAddress() {
+        RosterEntry re = getRosterEntry();
+        if (re != null) {
+            return re.getDccAddress();
+        }
+        return NONE;
+    }
+    
+    /**
+     * Get the RosterEntry for this engine from the JMRI roster. Does 4
+     * attempts, 1st by road and number, 2nd by number, 3rd by dccAddress using
+     * the engine's road number, 4th by id.
+     * 
+     * @return RosterEntry, can be null
+     */
+    public RosterEntry getRosterEntry() {
+        RosterEntry rosterEntry = null;
+        // 1st by road name and number
+        List<RosterEntry> list =
+                Roster.getDefault().matchingList(getRoadName(), getNumber(), null, null, null, null, null);
+        if (list.size() > 0) {
+            rosterEntry = list.get(0);
+            log.debug("Roster Loco found by road and number: {}", rosterEntry.getDccAddress());
+            // 2nd by road number
+        } else if (!getNumber().equals(NONE)) {
+            list = Roster.getDefault().matchingList(null, getNumber(), null, null, null, null, null);
+            if (list.size() > 0) {
+                rosterEntry = list.get(0);
+                log.debug("Roster Loco found by number: {}", rosterEntry.getDccAddress());
+            }
+        }
+        // 3rd by dcc address
+        if (rosterEntry == null) {
+            list = Roster.getDefault().matchingList(null, null, getNumber(), null, null, null, null);
+            if (list.size() > 0) {
+                rosterEntry = list.get(0);
+                log.debug("Roster Loco found by dccAddress: {}", rosterEntry.getDccAddress());
+            }
+        }
+        // 4th by id
+        if (rosterEntry == null) {
+            list = Roster.getDefault().matchingList(null, null, null, null, null, null, getNumber());
+            if (list.size() > 0) {
+                rosterEntry = list.get(0);
+                log.debug("Roster Loco found by roster id: {}", rosterEntry.getDccAddress());
+            }
+        }
+        return rosterEntry;
+    }
+
+    /**
      * Used to check destination track to see if it will accept locomotive
      *
      * @return status, see RollingStock.java
@@ -262,21 +341,24 @@ public class Engine extends RollingStock {
     }
 
     /**
-     * Determine if there's a change in the lead locomotive. There are two possible
-     * locations in a train's route. TODO this code places the last loco added to the
-     * train as the lead. It would be better if the first one became the lead loco.
+     * Determine if there's a change in the lead locomotive. There are two
+     * possible locations in a train's route. TODO this code places the last
+     * loco added to the train as the lead. It would be better if the first one
+     * became the lead loco.
      */
     @Override
     protected void moveRollingStock(RouteLocation current, RouteLocation next) {
         if (current == getRouteLocation()) {
-            if (getConsist() == null || getConsist().isLead(this)) {
-                if (getRouteLocation() != getRouteDestination() && getTrain() != null
-                        && !isBunit() && getTrain().getLeadEngine() != this) {
-                    if (((getTrain().getSecondLegStartLocation() == current
-                            && (getTrain().getSecondLegOptions() & Train.CHANGE_ENGINES) == Train.CHANGE_ENGINES))
-                            ||
-                            ((getTrain().getThirdLegStartLocation() == current
-                            && (getTrain().getThirdLegOptions() & Train.CHANGE_ENGINES) == Train.CHANGE_ENGINES))) {
+            if (getConsist() == null || isLead()) {
+                if (getRouteLocation() != getRouteDestination() &&
+                        getTrain() != null &&
+                        !isBunit() &&
+                        getTrain().getLeadEngine() != this) {
+                    if (((getTrain().getSecondLegStartLocation() == current &&
+                            (getTrain().getSecondLegOptions() & Train.CHANGE_ENGINES) == Train.CHANGE_ENGINES)) ||
+                            ((getTrain().getThirdLegStartLocation() == current &&
+                                    (getTrain().getThirdLegOptions() &
+                                            Train.CHANGE_ENGINES) == Train.CHANGE_ENGINES))) {
                         log.debug("New lead locomotive ({}) for train ({})", toString(), getTrain().getName());
                         getTrain().setLeadEngine(this);
                         getTrain().createTrainIcon(current);
@@ -290,8 +372,8 @@ public class Engine extends RollingStock {
     @Override
     public void dispose() {
         setConsist(null);
-        EngineTypes.instance().removePropertyChangeListener(this);
-        EngineLengths.instance().removePropertyChangeListener(this);
+        InstanceManager.getDefault(EngineTypes.class).removePropertyChangeListener(this);
+        InstanceManager.getDefault(EngineLengths.class).removePropertyChangeListener(this);
         super.dispose();
     }
 
@@ -324,7 +406,7 @@ public class Engine extends RollingStock {
             setBunit(a.getValue().equals(Xml.TRUE));
         }
         if ((a = e.getAttribute(Xml.CONSIST)) != null) {
-            Consist c = EngineManager.instance().getConsistByName(a.getValue());
+            Consist c = InstanceManager.getDefault(EngineManager.class).getConsistByName(a.getValue());
             if (c != null) {
                 setConsist(c);
                 if ((a = e.getAttribute(Xml.LEAD_CONSIST)) != null && a.getValue().equals(Xml.TRUE)) {
@@ -356,7 +438,7 @@ public class Engine extends RollingStock {
         e.setAttribute(Xml.B_UNIT, (isBunit() ? Xml.TRUE : Xml.FALSE));
         if (getConsist() != null) {
             e.setAttribute(Xml.CONSIST, getConsistName());
-            if (getConsist().isLead(this)) {
+            if (isLead()) {
                 e.setAttribute(Xml.LEAD_CONSIST, Xml.TRUE);
                 if (getConsist().getConsistNumber() > 0) {
                     e.setAttribute(Xml.CONSIST_NUM,
@@ -370,13 +452,13 @@ public class Engine extends RollingStock {
     @Override
     protected void setDirtyAndFirePropertyChange(String p, Object old, Object n) {
         // Set dirty
-        EngineManagerXml.instance().setDirty(true);
+        InstanceManager.getDefault(EngineManagerXml.class).setDirty(true);
         super.setDirtyAndFirePropertyChange(p, old, n);
     }
 
     private void addPropertyChangeListeners() {
-        EngineTypes.instance().addPropertyChangeListener(this);
-        EngineLengths.instance().addPropertyChangeListener(this);
+        InstanceManager.getDefault(EngineTypes.class).addPropertyChangeListener(this);
+        InstanceManager.getDefault(EngineLengths.class).addPropertyChangeListener(this);
     }
 
     @Override
@@ -384,24 +466,20 @@ public class Engine extends RollingStock {
         super.propertyChange(e);
         if (e.getPropertyName().equals(EngineTypes.ENGINETYPES_NAME_CHANGED_PROPERTY)) {
             if (e.getOldValue().equals(getTypeName())) {
-                if (log.isDebugEnabled()) {
-                    log.debug("Loco ({} {}) sees type name change old: ({}) new: ({})", toString(), e.getOldValue(), e
-                            .getNewValue()); // NOI18N
-                }
+                log.debug("Loco ({} {}) sees type name change old: ({}) new: ({})", toString(), e.getOldValue(), e
+                        .getNewValue()); // NOI18N
                 setTypeName((String) e.getNewValue());
             }
         }
         if (e.getPropertyName().equals(EngineLengths.ENGINELENGTHS_NAME_CHANGED_PROPERTY)) {
             if (e.getOldValue().equals(getLength())) {
-                if (log.isDebugEnabled()) {
-                    log.debug("Loco ({}) sees length name change old: {} new: {}", toString(), e.getOldValue(), e
-                            .getNewValue()); // NOI18N
-                }
+                log.debug("Loco ({}) sees length name change old: {} new: {}", toString(), e.getOldValue(), e
+                        .getNewValue()); // NOI18N
                 setLength((String) e.getNewValue());
             }
         }
     }
 
-    private final static Logger log = LoggerFactory.getLogger(Engine.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(Engine.class);
 
 }

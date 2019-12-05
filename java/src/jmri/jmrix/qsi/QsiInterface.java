@@ -1,4 +1,3 @@
-// QsiInterface.java
 package jmri.jmrix.qsi;
 
 /**
@@ -6,7 +5,6 @@ package jmri.jmrix.qsi;
  * station.
  *
  * @author	Bob Jacobsen Copyright (C) 2001
- * @version	$Revision$
  */
 public interface QsiInterface {
 
@@ -17,7 +15,7 @@ public interface QsiInterface {
     /**
      * Test operational status of interface.
      *
-     * @return true is interface implementation is operational.
+     * @return true is interface implementation is operational
      */
     boolean status();
 
@@ -28,7 +26,5 @@ public interface QsiInterface {
      * @param l Listener to be notified of reply.
      */
     void sendQsiMessage(QsiMessage m, QsiListener l);
+
 }
-
-
-/* @(#)QsiInterface.java */

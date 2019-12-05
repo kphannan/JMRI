@@ -6,7 +6,7 @@ import javax.swing.AbstractAction;
 /**
  * Swing action to create and register a SensorGroupFrame object
  *
- * @author	Bob Jacobsen Copyright (C) 2003, 2007
+ * @author Bob Jacobsen Copyright (C) 2003, 2007
  */
 public class SensorGroupAction extends AbstractAction {
 
@@ -14,7 +14,7 @@ public class SensorGroupAction extends AbstractAction {
         super(s);
 
         // disable ourself if there is no route manager object available
-        if (jmri.InstanceManager.getOptionalDefault(jmri.RouteManager.class) == null) {
+        if (jmri.InstanceManager.getNullableDefault(jmri.RouteManager.class) == null) {
             setEnabled(false);
         }
     }
@@ -23,6 +23,7 @@ public class SensorGroupAction extends AbstractAction {
         this("Define Sensor Group...");
     }
 
+    @Override
     public void actionPerformed(ActionEvent e) {
         SensorGroupFrame f = new SensorGroupFrame();
         f.initComponents();

@@ -1,31 +1,29 @@
-// SprogSlot.java
 package jmri.jmrix.sprog;
 
 import java.util.Arrays;
 import jmri.DccLocoAddress;
-import jmri.DccThrottle;
+import jmri.SpeedStepMode;
 import jmri.NmraPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Represents information for a DCC Command Station Queue entry where each entry
- * is a DCC packet to be transmitted to the rails
- * <P>
+ * Represent information for a DCC Command Station Queue entry where each entry
+ * is a DCC packet to be transmitted to the rails.
+ * <p>
  * A SlotListener can be registered to hear of changes in this slot. All changes
  * in values will result in notification.
- * <P>
+ * <p>
  * Updated by Andrew Crosland February 2012 to allow slots to hold 28 step speed
- * packets</P>
+ * packets
  *
  * @author	Andrew Crosland Copyright (C) 2006, 2012
  * @author	Andrew Berridge 2010
- * @version	$Revision$
  */
 public class SprogSlot {
 
     private boolean speedPacket = false;
-    private int speedMode = DccThrottle.SpeedStepMode128;
+    private SpeedStepMode speedMode = SpeedStepMode.NMRA_DCC_128;
 
     public SprogSlot(int num) {
         payload = new byte[SprogConstants.MAX_PACKET_LENGTH];
@@ -85,7 +83,7 @@ public class SprogSlot {
     private boolean repeatF12 = false;
 
     /**
-     * Set the contents of the slot. Intended for accessory packets
+     * Set the contents of the slot. Intended for accessory packets.
      *
      * @param address int
      * @param payload byte[]
@@ -94,11 +92,7 @@ public class SprogSlot {
     public void set(int address, byte[] payload, int repeat) {
         addr = address;
 
-        // Arrays.copyOf(payload, payload.length), a Java 1.6 construct
-        this.payload = new byte[payload.length];
-        for (int i = 0; i < payload.length; i++) {
-            this.payload[i] = payload[i];
-        }
+        Arrays.copyOf(payload, payload.length);
 
         this.setRepeat(repeat);
         status = SprogConstants.SLOT_IN_USE;
@@ -115,7 +109,7 @@ public class SprogSlot {
         return speedPacket;
     }
 
-    public void setSpeed(int mode, int address, boolean isLongAddress, int speed, boolean forward) {
+    public void setSpeed(SpeedStepMode mode, int address, boolean isLongAddress, int speed, boolean forward) {
         addr = address;
         isLong = isLongAddress;
         spd = speed;
@@ -123,7 +117,7 @@ public class SprogSlot {
         this.speedMode = mode;
         this.f0to4Packet = false;
         this.forward = forward;
-        if ((mode & DccThrottle.SpeedStepMode28) != 0) {
+        if (mode == SpeedStepMode.NMRA_DCC_28) {
             this.payload = jmri.NmraPacket.speedStep28Packet(true, addr,
                     isLong, spd, forward);
         } else {
@@ -316,6 +310,7 @@ public class SprogSlot {
     }
 
     // Access methods
+
     public void clear() {
         status = SprogConstants.SLOT_FREE;
         addr = 0;
@@ -366,7 +361,6 @@ public class SprogSlot {
         return spd;
     }
 
-    @SuppressWarnings("unused")
     public int locoAddr() {
         return addr;
     }
@@ -410,7 +404,7 @@ public class SprogSlot {
     /**
      * Get the payload of this slot. Note - if this slot has a number of
      * repeats, calling this method will also decrement the internal repeat
-     * counter
+     * counter.
      *
      * @return a byte array containing the payload of this slot
      */
@@ -446,9 +440,9 @@ public class SprogSlot {
     }
 
     /**
-     * Get the address from the packet
+     * Get the address from the packet.
      *
-     * @return int
+     * @return int address from payload
      */
     private int addressFromPacket() {
         if (isFree()) {
@@ -461,8 +455,5 @@ public class SprogSlot {
         return payload[0];
     }
 
-    private final static Logger log = LoggerFactory.getLogger(SprogSlot.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(SprogSlot.class);
 }
-
-
-/* @(#)SprogSlot.java */

@@ -17,6 +17,7 @@ import javax.swing.UIManager;
 import jmri.InstanceManager;
 import jmri.swing.PreferencesPanel;
 import jmri.util.swing.FontComboUtil;
+import org.openide.util.lookup.ServiceProvider;
 
 /**
  * Allow certain elements of the System Console to be configured.
@@ -34,6 +35,7 @@ import jmri.util.swing.FontComboUtil;
  *
  * @author Matthew Harris copyright (c) 2010, 2011
  */
+@ServiceProvider(service = PreferencesPanel.class)
 public class SystemConsoleConfigPanel extends JPanel implements PreferencesPanel {
 
     private static final ResourceBundle rbc = ResourceBundle.getBundle("apps.AppsConfigBundle");
@@ -218,7 +220,7 @@ public class SystemConsoleConfigPanel extends JPanel implements PreferencesPanel
     public boolean isDirty() {
         // console preferences take effect immediately, but are not saved
         // immediately, so we can't tell without rereading the preferences.xml,
-        // but it's to expensive to read that file to determine if it matches
+        // but it's too expensive to read that file to determine if it matches
         // the in memory preferences for this console, so simply return false
         return false;
     }

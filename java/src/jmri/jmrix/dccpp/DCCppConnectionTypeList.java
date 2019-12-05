@@ -1,16 +1,18 @@
-// LenzConnectionTypeList.java
 package jmri.jmrix.dccpp;
 
+import jmri.jmrix.ConnectionTypeList;
+import org.openide.util.lookup.ServiceProvider;
+
 /**
- * Returns a list of valid lenz XpressNet Connection Types
- * <P>
+ * Returns a list of valid lenz DCC++ Connection Types
+ *
  * @author Bob Jacobsen Copyright (C) 2010
  * @author Kevin Dickerson Copyright (C) 2010
  * @author Mark Underwood Copyright (C) 2015
- * @version	$Revision$
- *
+  *
  * Based on jmri.jmrix.lenz.LenzConnectionTypeList
  */
+@ServiceProvider(service = ConnectionTypeList.class)
 public class DCCppConnectionTypeList implements jmri.jmrix.ConnectionTypeList {
 
     public static final String DCCPP = "DCC++";
@@ -21,7 +23,8 @@ public class DCCppConnectionTypeList implements jmri.jmrix.ConnectionTypeList {
             "jmri.jmrix.dccpp.serial.ConnectionConfig",
             "jmri.jmrix.dccpp.simulator.ConnectionConfig",
             "jmri.jmrix.dccpp.network.ConnectionConfig",
-            "jmri.jmrix.dccpp.dccppovertcp.ConnectionConfig"
+            "jmri.jmrix.dccpp.dccppovertcp.ConnectionConfig",
+            "jmri.jmrix.dccpp.DCCppStreamConnectionConfig",
         };
     }
 

@@ -7,14 +7,13 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Provides load and store functionality for configuring TamsSensorManagers.
- * <P>
+ * <p>
  * Uses the store method from the abstract base class, but provides a load
  * method here.
  *
  * Based on work by Bob Jacobsen
  *
  * @author	Kevin Dickerson Copyright (C) 2012
- * @version $Revision: 17977 $
  */
 public class TamsSensorManagerXml extends jmri.managers.configurexml.AbstractSensorManagerConfigXML {
 
@@ -22,10 +21,12 @@ public class TamsSensorManagerXml extends jmri.managers.configurexml.AbstractSen
         super();
     }
 
+    @Override
     public void setStoreElementClass(Element sensors) {
         sensors.setAttribute("class", "jmri.jmrix.tams.configurexml.TamsSensorManagerXml");
     }
 
+    @Override
     public void load(Element element, Object o) {
         log.error("Invalid method called");
     }
@@ -38,5 +39,5 @@ public class TamsSensorManagerXml extends jmri.managers.configurexml.AbstractSen
         return loadSensors(shared);
     }
 
-    private final static Logger log = LoggerFactory.getLogger(TamsSensorManagerXml.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(TamsSensorManagerXml.class);
 }

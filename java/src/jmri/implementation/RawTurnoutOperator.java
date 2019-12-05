@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
  * DIRECT, ONESENSOR or TWOSENSOR feedback. This class is based on the
  * NoFeedbackTurnoutOperator class.
  *
- * @author	Paul Bender	Copyright 2008
+ * @author Paul Bender Copyright 2008
  */
 public class RawTurnoutOperator extends TurnoutOperator {
 
@@ -39,7 +39,7 @@ public class RawTurnoutOperator extends TurnoutOperator {
             }
         }
         if (c == null) {
-            c = InstanceManager.getOptionalDefault(CommandStation.class);
+            c = InstanceManager.getNullableDefault(CommandStation.class);
             log.error("No match against the command station for " + sysName + ", so will use the default");
         }
         interval = i;
@@ -58,6 +58,7 @@ public class RawTurnoutOperator extends TurnoutOperator {
      * current operator this throws TurnoutOperatorException which just
      * terminates the thread.
      */
+    @Override
     public void run() {
         try {
             operatorCheck();
@@ -76,5 +77,5 @@ public class RawTurnoutOperator extends TurnoutOperator {
         }
     }
 
-    private final static Logger log = LoggerFactory.getLogger(RawTurnoutOperator.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(RawTurnoutOperator.class);
 }

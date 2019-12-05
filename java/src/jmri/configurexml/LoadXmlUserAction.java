@@ -10,9 +10,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Load configuration information from an XML file.
- * <P>
+ * <p>
  * The file context for this is the "user" file chooser.
- * <P>
+ * <p>
  * This will load whatever information types are present in the file. See
  * {@link jmri.ConfigureManager} for information on the various types of
  * information stored in configuration files.
@@ -37,7 +37,8 @@ public class LoadXmlUserAction extends LoadXmlConfigAction {
     public void actionPerformed(ActionEvent e) {
         JFileChooser userFileChooser = getUserFileChooser();
         userFileChooser.setDialogType(javax.swing.JFileChooser.OPEN_DIALOG);
-        userFileChooser.setApproveButtonText(rb.getString("LoadPanelTitle"));
+        userFileChooser.setApproveButtonText(Bundle.getMessage("ButtonOpen")); // is in jmri.NBBundle
+        // Cancel button can't be localized like userFileChooser.setCancelButtonText() TODO
         userFileChooser.setDialogTitle(rb.getString("LoadPanelTitle"));
 
         boolean results = loadFile(userFileChooser);
@@ -54,9 +55,13 @@ public class LoadXmlUserAction extends LoadXmlConfigAction {
             setCurrentFile(null);
         }
     }
-    
+
     /**
      * Used by e.g. jmri.jmrit.mailreport.ReportPanel et al to know last load
+     *
+     * @return the last file loaded using this action; returns null if this
+     *         action was not called or if the last time this action was called,
+     *         no file was loaded
      */
     public static File getCurrentFile() {
         return currentFile;
@@ -67,6 +72,6 @@ public class LoadXmlUserAction extends LoadXmlConfigAction {
     }
 
     // initialize logging
-    private final static Logger log = LoggerFactory.getLogger(LoadXmlUserAction.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(LoadXmlUserAction.class);
 
 }

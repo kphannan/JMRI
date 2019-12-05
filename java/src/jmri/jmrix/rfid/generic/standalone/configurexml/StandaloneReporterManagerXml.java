@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Provides load and store functionality for configuring StandaloneReporterManagers.
- * <P>
+ * <p>
  * Uses the store method from the abstract base class, but provides a load
  * method here.
  *
@@ -36,5 +36,5 @@ public class StandaloneReporterManagerXml extends jmri.jmrix.rfid.configurexml.R
         return loadReporters(shared);
     }
 
-    private static final Logger log = LoggerFactory.getLogger(StandaloneReporterManagerXml.class.getName());
+    private static final Logger log = LoggerFactory.getLogger(StandaloneReporterManagerXml.class);
 }

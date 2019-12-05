@@ -1,4 +1,3 @@
-// ConnectionConfig.java
 package jmri.jmrix.dcc4pc.serialdriver;
 
 /**
@@ -6,7 +5,6 @@ package jmri.jmrix.dcc4pc.serialdriver;
  * SerialDriverAdapter object.
  *
  * @author Kevin Dickerson Copyright (C) 2001, 2003
- * @version	$Revision: 17977 $
  */
 public class ConnectionConfig extends jmri.jmrix.AbstractSerialConnectionConfig {
 
@@ -19,12 +17,14 @@ public class ConnectionConfig extends jmri.jmrix.AbstractSerialConnectionConfig 
     }
 
     /**
-     * Ctor for a functional Swing object with no prexisting adapter
+     * Ctor for a connection configuration with no preexisting adapter.
+     * {@link #setInstance()} will fill the adapter member.
      */
     public ConnectionConfig() {
         super();
     }
 
+    @Override
     public String name() {
         return "DCC4PC";
     }
@@ -33,7 +33,13 @@ public class ConnectionConfig extends jmri.jmrix.AbstractSerialConnectionConfig 
         return false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @SuppressWarnings("deprecation") // until DCC4PC is migrated to multiple systems
     protected void setInstance() {
         adapter = SerialDriverAdapter.instance();
     }
+
 }

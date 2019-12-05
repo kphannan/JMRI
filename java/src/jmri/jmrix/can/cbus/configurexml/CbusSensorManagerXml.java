@@ -7,12 +7,11 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Provides load and store functionality for configuring CbusSensorManagers.
- * <P>
+ * <p>
  * Uses the store method from the abstract base class, but provides a load
  * method here.
  *
  * @author Bob Jacobsen Copyright: Copyright (c) 2008
- * @version $Revision$
  * @since 2.3.1
  */
 public class CbusSensorManagerXml extends jmri.managers.configurexml.AbstractSensorManagerConfigXML {
@@ -21,10 +20,12 @@ public class CbusSensorManagerXml extends jmri.managers.configurexml.AbstractSen
         super();
     }
 
+    @Override
     public void setStoreElementClass(Element sensors) {
         sensors.setAttribute("class", this.getClass().getName());
     }
 
+    @Override
     public void load(Element element, Object o) {
         log.error("Invalid method called");
     }
@@ -39,5 +40,5 @@ public class CbusSensorManagerXml extends jmri.managers.configurexml.AbstractSen
         return result;
     }
 
-    private final static Logger log = LoggerFactory.getLogger(CbusSensorManagerXml.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(CbusSensorManagerXml.class);
 }

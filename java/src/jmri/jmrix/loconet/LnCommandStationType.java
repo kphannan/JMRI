@@ -17,51 +17,178 @@ import org.slf4j.LoggerFactory;
  * those are still done via port adapters, special packetizers et al.
  * <hr>
  * This file is part of JMRI.
- * <P>
+ * <p>
  * JMRI is free software; you can redistribute it and/or modify it under the
  * terms of version 2 of the GNU General Public License as published by the Free
  * Software Foundation. See the "COPYING" file for a copy of this license.
- * <P>
+ * <p>
  * JMRI is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
  * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- * <P>
- * @author	Bob Jacobsen Copyright (C) 2014
+ *
+ * @author Bob Jacobsen Copyright (C) 2014
+ * @author B. Milhaupt Copyright (C) 2018
  */
-@net.jcip.annotations.Immutable
+@javax.annotation.concurrent.Immutable
 public enum LnCommandStationType {
 
-    //  enum value                 name                         canRead progEndOp   ThrottleManager      SlotManager
-    COMMAND_STATION_DCS100("DCS100 (Chief)", true, false, "LnThrottleManager", "SlotManager"), // NOI18N
-    COMMAND_STATION_DCS240("DCS240 (Advanced Command Station)", true, false, "LnThrottleManager", "SlotManager"), // NOI18N
-    COMMAND_STATION_DCS200("DCS200", true, false, "LnThrottleManager", "SlotManager"), // NOI18N
-    COMMAND_STATION_DCS050("DCS50 (Zephyr)", true, false, "LnThrottleManager", "SlotManager"), // NOI18N
-    COMMAND_STATION_DCS051("DCS51 (Zephyr Xtra)", true, false, "LnThrottleManager", "SlotManager"), // NOI18N
-    COMMAND_STATION_DB150("DB150 (Empire Builder)", false, true, "LnThrottleManager", "SlotManager"), // NOI18N
-    COMMAND_STATION_LBPS("LocoBuffer (PS)", true, false, "LnThrottleManager", "SlotManager"), // NOI18N
-    COMMAND_STATION_MM("Mix-Master", false, true, "LnThrottleManager", "SlotManager"), // NOI18N
-    COMMAND_STATION_IBX_TYPE_1("Intellibox-I", true, true, "Ib1ThrottleManager", "SlotManager"), // NOI18N
-    COMMAND_STATION_IBX_TYPE_2("Intellibox-II", true, true, "Ib2ThrottleManager", "UhlenbrockSlotManager"), // NOI18N
+    //  enum value(name, canRead, progEndOp, ThrottleManager, SlotManager, supportsIdle, supportsMultimeter
+    COMMAND_STATION_DCS100("DCS100 (Chief)",  // NOI18N
+            ReadsFromServiceModeTrack.CAN_READ_ON_SVC_TRACK,
+            ProgDepowersTrack.TRACK_OFF_WHEN_PROGRAMMING,
+            "LnThrottleManager", "SlotManager",  // NOI18N
+            IdleSupport.SUPPORTS_OPC_IDLE,
+            MultiMeterSupport.NO_MULTIMETER_SUPPORT,
+            LocoResetSupport.NO_LOCO_RESET_SUPPORT),
+    COMMAND_STATION_DCS240("DCS240 (Advanced Command Station)",  // NOI18N
+            ReadsFromServiceModeTrack.CAN_READ_ON_SVC_TRACK,
+            ProgDepowersTrack.TRACK_OFF_WHEN_PROGRAMMING,
+            "LnThrottleManager", "SlotManager",  // NOI18N
+            IdleSupport.SUPPORTS_OPC_IDLE,
+            MultiMeterSupport.SUPPORTS_MULTIMETER_FUNCTION,
+            LocoResetSupport.SUPPORTS_LOCO_RESET_FUNCTION),
+    COMMAND_STATION_DCS210("DCS210 (Evolution Command Station)",  // NOI18N
+            ReadsFromServiceModeTrack.CAN_READ_ON_SVC_TRACK,
+            ProgDepowersTrack.TRACK_OFF_WHEN_PROGRAMMING,
+            "LnThrottleManager", "SlotManager",  // NOI18N
+            IdleSupport.SUPPORTS_OPC_IDLE,
+            MultiMeterSupport.SUPPORTS_MULTIMETER_FUNCTION,
+            LocoResetSupport.SUPPORTS_LOCO_RESET_FUNCTION),
+    COMMAND_STATION_DCS200("DCS200",  // NOI18N
+            ReadsFromServiceModeTrack.CAN_READ_ON_SVC_TRACK,
+            ProgDepowersTrack.TRACK_OFF_WHEN_PROGRAMMING,
+            "LnThrottleManager", "SlotManager",  // NOI18N
+            IdleSupport.SUPPORTS_OPC_IDLE,
+            MultiMeterSupport.NO_MULTIMETER_SUPPORT,
+            LocoResetSupport.NO_LOCO_RESET_SUPPORT),
+    COMMAND_STATION_DCS050("DCS50 (Zephyr)",  // NOI18N
+            ReadsFromServiceModeTrack.CAN_READ_ON_SVC_TRACK,
+            ProgDepowersTrack.TRACK_OFF_WHEN_PROGRAMMING,
+            "LnThrottleManager", "SlotManager",  // NOI18N
+            IdleSupport.NO_OPC_IDLE_SUPPORT,
+            MultiMeterSupport.NO_MULTIMETER_SUPPORT,
+            LocoResetSupport.NO_LOCO_RESET_SUPPORT),
+    COMMAND_STATION_DCS051("DCS51 (Zephyr Xtra)",  // NOI18N
+            ReadsFromServiceModeTrack.CAN_READ_ON_SVC_TRACK,
+            ProgDepowersTrack.TRACK_OFF_WHEN_PROGRAMMING,
+            "LnThrottleManager", "SlotManager",  // NOI18N
+            IdleSupport.NO_OPC_IDLE_SUPPORT,
+            MultiMeterSupport.NO_MULTIMETER_SUPPORT,
+            LocoResetSupport.NO_LOCO_RESET_SUPPORT),
+    COMMAND_STATION_DCS052("DCS52 (Zephyr Express)", // NOI18N
+            ReadsFromServiceModeTrack.CAN_READ_ON_SVC_TRACK,
+            ProgDepowersTrack.TRACK_OFF_WHEN_PROGRAMMING,
+            "LnThrottleManager", "SlotManager",  // NOI18N
+            IdleSupport.NO_OPC_IDLE_SUPPORT,
+            MultiMeterSupport.NO_MULTIMETER_SUPPORT,
+            LocoResetSupport.SUPPORTS_LOCO_RESET_FUNCTION),
+    COMMAND_STATION_DB150("DB150 (Empire Builder)", // NOI18N
+            ReadsFromServiceModeTrack.NO_SVC_MODE_READS,
+            ProgDepowersTrack.TRACK_ALIVE_WHEN_PROGRAMMING,
+            "LnThrottleManager", "SlotManager",  // NOI18N
+            IdleSupport.SUPPORTS_OPC_IDLE,
+            MultiMeterSupport.NO_MULTIMETER_SUPPORT,
+            LocoResetSupport.NO_LOCO_RESET_SUPPORT),
 
-    COMMAND_STATION_PR3_ALONE("PR3 standalone programmer", true, false, "LnThrottleManager", "SlotManager"), // NOI18N
-    COMMAND_STATION_PR2_ALONE("PR2 standalone programmer", true, false, "LnThrottleManager", "SlotManager"), // NOI18N
-    COMMAND_STATION_STANDALONE("Stand-alone LocoNet", false, false, "LnThrottleManager", "SlotManager");  // NOI18N
+    // the following command stations are assumed to not support "OPC_IDLE"
+    COMMAND_STATION_LBPS("LocoBuffer (PS)",  // NOI18N
+            ReadsFromServiceModeTrack.CAN_READ_ON_SVC_TRACK,
+            ProgDepowersTrack.TRACK_OFF_WHEN_PROGRAMMING,
+            "LnThrottleManager", "SlotManager",  // NOI18N
+            IdleSupport.NO_OPC_IDLE_SUPPORT,
+            MultiMeterSupport.NO_MULTIMETER_SUPPORT,
+            LocoResetSupport.NO_LOCO_RESET_SUPPORT),
+    COMMAND_STATION_MM("Mix-Master",  // NOI18N
+            ReadsFromServiceModeTrack.NO_SVC_MODE_READS,
+            ProgDepowersTrack.TRACK_ALIVE_WHEN_PROGRAMMING,
+            "LnThrottleManager", "SlotManager",  // NOI18N
+            IdleSupport.NO_OPC_IDLE_SUPPORT,
+            MultiMeterSupport.NO_MULTIMETER_SUPPORT,
+            LocoResetSupport.NO_LOCO_RESET_SUPPORT),
+    COMMAND_STATION_IBX_TYPE_1("Intellibox-I",  // NOI18N
+            ReadsFromServiceModeTrack.CAN_READ_ON_SVC_TRACK,
+            ProgDepowersTrack.TRACK_ALIVE_WHEN_PROGRAMMING,
+            "Ib1ThrottleManager", "SlotManager",  // NOI18N
+            IdleSupport.NO_OPC_IDLE_SUPPORT,
+            MultiMeterSupport.NO_MULTIMETER_SUPPORT,
+            LocoResetSupport.NO_LOCO_RESET_SUPPORT),
+    COMMAND_STATION_IBX_TYPE_2("Intellibox-II",  // NOI18N
+            ReadsFromServiceModeTrack.CAN_READ_ON_SVC_TRACK,
+            ProgDepowersTrack.TRACK_ALIVE_WHEN_PROGRAMMING,
+            "Ib2ThrottleManager", "UhlenbrockSlotManager",  // NOI18N
+            IdleSupport.NO_OPC_IDLE_SUPPORT,
+            MultiMeterSupport.NO_MULTIMETER_SUPPORT,
+            LocoResetSupport.NO_LOCO_RESET_SUPPORT),
+
+    // the following command stations are known to not support "OPC_IDLE"
+    COMMAND_STATION_PR3_ALONE("PR3 standalone programmer",  // NOI18N
+            ReadsFromServiceModeTrack.CAN_READ_ON_SVC_TRACK,
+            ProgDepowersTrack.TRACK_OFF_WHEN_PROGRAMMING,
+            "LnThrottleManager", "SlotManager",  // NOI18N
+            IdleSupport.NO_OPC_IDLE_SUPPORT,
+            MultiMeterSupport.NO_MULTIMETER_SUPPORT,
+            LocoResetSupport.NO_LOCO_RESET_SUPPORT),
+    COMMAND_STATION_PR2_ALONE("PR2 standalone programmer",  // NOI18N
+            ReadsFromServiceModeTrack.CAN_READ_ON_SVC_TRACK,
+            ProgDepowersTrack.TRACK_OFF_WHEN_PROGRAMMING,
+            "LnThrottleManager", "SlotManager",  // NOI18N
+            IdleSupport.NO_OPC_IDLE_SUPPORT,
+            MultiMeterSupport.NO_MULTIMETER_SUPPORT,
+            LocoResetSupport.NO_LOCO_RESET_SUPPORT),
+    COMMAND_STATION_STANDALONE("Stand-alone LocoNet",  // NOI18N
+            ReadsFromServiceModeTrack.NO_SVC_MODE_READS,
+            ProgDepowersTrack.TRACK_OFF_WHEN_PROGRAMMING,
+            "LnThrottleManager", "SlotManager",  // NOI18N
+            IdleSupport.NO_OPC_IDLE_SUPPORT,
+            MultiMeterSupport.NO_MULTIMETER_SUPPORT,
+            LocoResetSupport.NO_LOCO_RESET_SUPPORT),
+    COMMAND_STATION_PR4_ALONE("PR4 standalone programmer",  // NOI18N
+            ReadsFromServiceModeTrack.CAN_READ_ON_SVC_TRACK,
+            ProgDepowersTrack.TRACK_OFF_WHEN_PROGRAMMING,
+            "LnThrottleManager", "SlotManager",  // NOI18N
+            IdleSupport.NO_OPC_IDLE_SUPPORT,
+            MultiMeterSupport.NO_MULTIMETER_SUPPORT,
+            LocoResetSupport.NO_LOCO_RESET_SUPPORT),
+    COMMAND_STATION_USB_DCS240_ALONE("DCS240 USB interface as standalone programmer", // NOI18N
+            ReadsFromServiceModeTrack.CAN_READ_ON_SVC_TRACK,
+            ProgDepowersTrack.TRACK_OFF_WHEN_PROGRAMMING,
+            "LnThrottleManager", "SlotManager",  // NOI18N
+            IdleSupport.NO_OPC_IDLE_SUPPORT,
+            MultiMeterSupport.NO_MULTIMETER_SUPPORT,
+            LocoResetSupport.NO_LOCO_RESET_SUPPORT),
+    COMMAND_STATION_USB_DCS52_ALONE("DCS52 USB interface as standalone programmer",  // NOI18N
+            ReadsFromServiceModeTrack.CAN_READ_ON_SVC_TRACK,
+            ProgDepowersTrack.TRACK_OFF_WHEN_PROGRAMMING,
+            "LnThrottleManager", "SlotManager",
+            IdleSupport.NO_OPC_IDLE_SUPPORT, // NOI18N
+            MultiMeterSupport.NO_MULTIMETER_SUPPORT,
+            LocoResetSupport.NO_LOCO_RESET_SUPPORT);
 
     // Note that the convention is that the first word (space-separated token) of the name is the
     // name of a configuration file for loconet.cmdstnconfig
-    LnCommandStationType(String name, boolean canRead, boolean progEndOp, String throttleClassName, String slotManagerClassName) {
+    LnCommandStationType(String name, ReadsFromServiceModeTrack canRead,
+            ProgDepowersTrack progEndOp,
+            String throttleClassName, String slotManagerClassName,
+            IdleSupport supportsIdle, MultiMeterSupport supportMultiMeter,
+            LocoResetSupport supportsLocoReset) {
         this.name = name;
         this.canRead = canRead;
         this.progEndOp = progEndOp;
         this.throttleClassName = throttleClassName;
         this.slotManagerClassName = slotManagerClassName;
+        this.supportsIdle = supportsIdle;
+        this.supportsMultiMeter = supportMultiMeter;
+        this.supportsLocoReset = supportsLocoReset;
     }
 
     final String name;
-    final boolean canRead;
-    final boolean progEndOp;
+    final ReadsFromServiceModeTrack canRead;
+    final ProgDepowersTrack progEndOp;
     final String throttleClassName;
     final String slotManagerClassName;
+    final IdleSupport supportsIdle;
+    final MultiMeterSupport supportsMultiMeter;
+    final LocoResetSupport supportsLocoReset;
 
     public String getName() {
         return name;
@@ -69,20 +196,23 @@ public enum LnCommandStationType {
 
     /**
      * Can this command station read back from decoders?
+     * @return whether the command station can perform CV reads
      */
     public boolean getCanRead() {
-        return canRead;
+        return canRead == ReadsFromServiceModeTrack.CAN_READ_ON_SVC_TRACK;
     }
 
+    @Override
     public String toString() {
         return name;
     }
 
     /**
      * Does a programming operation turn track power off?
+     * @return whether the programming operation turns track power off
      */
     public boolean getProgPowersOff() {
-        return progEndOp;
+        return progEndOp == ProgDepowersTrack.TRACK_OFF_WHEN_PROGRAMMING;
     }
 
     static public LnCommandStationType getByName(String name) {
@@ -91,17 +221,20 @@ public enum LnCommandStationType {
                 return p;
             }
         }
-        throw new java.lang.IllegalArgumentException("argument value [" + name + "] not valid");
+        throw new java.lang.IllegalArgumentException("argument value [" + name + "] not valid"); // NOI18N
     }
 
     /**
      * Get a new ThrottleManager of the right type for this command station.
+     *
+     * @param memo the LocoNetSystemConnectionMemo object which hosts throttles
+     * @return the ThrottleManager object for the connection and the command station
      */
     public ThrottleManager getThrottleManager(LocoNetSystemConnectionMemo memo) {
         try {
             // uses reflection
-            String className = "jmri.jmrix.loconet." + throttleClassName;
-            log.debug("attempting to create {}", className);
+            String className = "jmri.jmrix.loconet." + throttleClassName; // NOI18N
+            log.debug("attempting to create {}", className); // NOI18N
             Class<?> c = Class.forName(className);
             java.lang.reflect.Constructor<?>[] allConstructors = c.getDeclaredConstructors();
             for (java.lang.reflect.Constructor<?> ctor : allConstructors) {
@@ -126,18 +259,21 @@ public enum LnCommandStationType {
 
     /**
      * Get a new SlotManager of the right type for this command station.
+     *
+     * @param tc the LnTrafficController object which hosts the slot manager
+     * @return the SlogManager object for the connection and the command station
      */
     public SlotManager getSlotManager(LnTrafficController tc) {
         try {
             // uses reflection
-            String className = "jmri.jmrix.loconet." + slotManagerClassName;
+            String className = "jmri.jmrix.loconet." + slotManagerClassName; // NOI18N
             log.debug("attempting to create {}", className);
             Class<?> c = Class.forName(className);
             java.lang.reflect.Constructor<?>[] allConstructors = c.getDeclaredConstructors();
             for (java.lang.reflect.Constructor<?> ctor : allConstructors) {
                 Class<?>[] pType = ctor.getParameterTypes();
                 if (pType.length == 1 && pType[0].equals(LnTrafficController.class)) {
-                    // this is the right ctor
+                    // this is the correct ctor
                     return (SlotManager) ctor.newInstance(tc);
                 }
             }
@@ -154,5 +290,56 @@ public enum LnCommandStationType {
         return null;
     }
 
-    private final static Logger log = LoggerFactory.getLogger(LnCommandStationType.class.getName());
+    /**
+     * Returns command station's support for OPC_IDLE
+     *
+     * @return true if OPC_IDLE forces broadcast of "stop", else false
+     */
+    public boolean getImplementsIdle() {
+        return supportsIdle == IdleSupport.SUPPORTS_OPC_IDLE;
+    }
+
+    /**
+     * Returns whether CS supports a multimeter
+     * @return true is Multimeter support
+     */
+    public boolean getSupportsMultimeter() {
+        return supportsMultiMeter == MultiMeterSupport.SUPPORTS_MULTIMETER_FUNCTION;
+    }
+
+    /**
+     * Returns whether CS supports a Loco Reset feature.
+     *
+     * For this purpose "supports" means that the command station will send
+     * OPC_RE_LOCO_RESET when it clears all slots.
+     *
+     * @return true if command station supports OPC_RE_LOCO_RESET message
+     */
+    public boolean getSupportsLocoReset() {
+
+        return supportsLocoReset == LocoResetSupport.SUPPORTS_LOCO_RESET_FUNCTION;
+    }
+
+    protected enum ReadsFromServiceModeTrack {
+        NO_SVC_MODE_READS, CAN_READ_ON_SVC_TRACK
+    }
+
+    protected enum ProgDepowersTrack {
+        TRACK_OFF_WHEN_PROGRAMMING, TRACK_ALIVE_WHEN_PROGRAMMING
+    }
+
+    protected enum IdleSupport {
+        NO_OPC_IDLE_SUPPORT, SUPPORTS_OPC_IDLE
+    }
+
+    protected enum MultiMeterSupport {
+        NO_MULTIMETER_SUPPORT, SUPPORTS_MULTIMETER_FUNCTION
+    }
+
+    protected enum LocoResetSupport {
+        NO_LOCO_RESET_SUPPORT, SUPPORTS_LOCO_RESET_FUNCTION
+    }
+
+
+    private final static Logger log = LoggerFactory.getLogger(LnCommandStationType.class);
 }

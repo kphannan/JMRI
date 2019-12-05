@@ -1,9 +1,10 @@
 package jmri.jmrix.lenz.hornbyelite;
 
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import jmri.util.JUnitUtil;
+import org.junit.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Assert;
 
 /**
  * HornbyEliteCommandStationTest.java
@@ -13,38 +14,23 @@ import junit.framework.TestSuite;
  *
  * @author	Paul Bender
  */
-public class HornbyEliteCommandStationTest extends TestCase {
+public class HornbyEliteCommandStationTest {
 
+    @Test
     public void testCtor() {
 
         HornbyEliteCommandStation c = new HornbyEliteCommandStation();
         Assert.assertNotNull(c);
     }
 
-    // from here down is testing infrastructure
-    public HornbyEliteCommandStationTest(String s) {
-        super(s);
+    @Before
+    public void setUp() {
+        JUnitUtil.setUp();
     }
 
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading", HornbyEliteCommandStationTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(HornbyEliteCommandStationTest.class);
-        return suite;
-    }
-
-    // The minimal setup for log4J
-    protected void setUp() {
-        apps.tests.Log4JFixture.setUp();
-    }
-
-    protected void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
+    @After
+    public void tearDown() {
+        JUnitUtil.tearDown();
     }
 
 }

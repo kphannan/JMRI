@@ -1,5 +1,6 @@
 package jmri.jmrix.can;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Arrays;
 import jmri.jmrix.AbstractMRListener;
 import jmri.jmrix.AbstractMRMessage;
@@ -11,12 +12,12 @@ import org.slf4j.LoggerFactory;
 /**
  * Abstract base for TrafficControllers in a CANbus based Message/Reply
  * protocol.
- * <P>
+ * <p>
  * AbstractMRTrafficController is extended to allow for the translation between
  * CAN messages and the message format of the CAN adapter that connects to the
  * layout.
  *
- * @author	Andrew Crosland Copyright (C) 2008
+ * @author Andrew Crosland Copyright (C) 2008
  */
 abstract public class AbstractCanTrafficController
         extends AbstractMRTrafficController
@@ -27,17 +28,13 @@ abstract public class AbstractCanTrafficController
         allowUnexpectedReply = true;
     }
 
-    @Override
-    @Deprecated
-    protected void setInstance() {
-
-    }
-
     // The methods to implement the CAN Interface
+    @Override
     public synchronized void addCanListener(CanListener l) {
         this.addListener(l);
     }
 
+    @Override
     public synchronized void removeCanListener(CanListener l) {
         this.removeListener(l);
     }
@@ -48,6 +45,7 @@ abstract public class AbstractCanTrafficController
      * Overridden to include translation to the correct CAN hardware message
      * format
      */
+    @Override
     protected void forwardToPort(AbstractMRMessage m, AbstractMRListener reply) {
 //        if (log.isDebugEnabled()) log.debug("forwardToPort message: ["+m+"]");
         log.debug("forwardToPort message: [" + m + "]");//warn
@@ -61,10 +59,8 @@ abstract public class AbstractCanTrafficController
         Runnable r = new XmtNotifier(m, mLastSender, this);
         javax.swing.SwingUtilities.invokeLater(r);
 
-        // Create the correct concrete class for sending to the hardware
-        AbstractMRMessage hm = newMessage();
-
-        // Encode the message to be sent
+        // Create the correct concrete class for sending to the hardware and encode the message to be sent
+        AbstractMRMessage hm;
         if (((CanMessage) m).isTranslated()) {
             hm = m;
         } else {
@@ -116,7 +112,7 @@ abstract public class AbstractCanTrafficController
                             }
                         } catch (InterruptedException e) {
                             Thread.currentThread().interrupt(); // retain if needed later
-                            log.error("retry wait interupted");
+                            log.error("retry wait interrupted");
                         }
                     } else {
                         log.warn("sendMessage: port not ready for data sending: " + Arrays.toString(msg));
@@ -126,7 +122,7 @@ abstract public class AbstractCanTrafficController
                 // no stream connected
                 connectionWarn();
             }
-        } catch (Exception e) {
+        } catch (java.io.IOException | RuntimeException e) {
             portWarn(e);
         }
     }
@@ -135,29 +131,33 @@ abstract public class AbstractCanTrafficController
      * Default implementations of some of the abstract classes to save having
      * to implement them in every sub class
      */
+    @Override
     protected AbstractMRMessage pollMessage() {
         return null;
     }
 
+    @Override
     protected AbstractMRListener pollReplyHandler() {
         return null;
     }
 
     /*
-     * enterProgMode() and enterNormalMode() return any message that 
+     * enterProgMode() and enterNormalMode() return any message that
      * needs to be returned to the command station to change modes.
-     * 
+     *
      * If no message is needed, you may return null.
-     * 
-     * If the programmerIdle() function returns true, enterNormalMode() is 
-     * called after a timeout while in IDLESTATE durring programing to 
-     * return the system to normal mode.  
-     * 
+     *
+     * If the programmerIdle() function returns true, enterNormalMode() is
+     * called after a timeout while in IDLESTATE during programming to
+     * return the system to normal mode.
+     *
      */
+    @Override
     protected AbstractMRMessage enterProgMode() {
         return null;
     }
 
+    @Override
     protected AbstractMRMessage enterNormalMode() {
         return null;
     }
@@ -173,12 +173,13 @@ abstract public class AbstractCanTrafficController
 
     /**
      * Handle each reply when complete.
-     * <P>
+     * <p>
      * Overridden to include translation form the CAN hardware format
      *
      */
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "DLS_DEAD_LOCAL_STORE")
+    @SuppressFBWarnings(value = "DLS_DEAD_LOCAL_STORE")
     // Ignore false positive that msg is never used
+    @Override
     public void handleOneIncomingReply() throws java.io.IOException {
         // we sit in this until the message is complete, relying on
         // threading to let other stuff happen
@@ -276,8 +277,7 @@ abstract public class AbstractCanTrafficController
                                     + mCurrentState + " was " + msg.toString());
                         }
                     } else {
-                        log.error("reply complete in unexpected state: "
-                                + mCurrentState + " was " + msg.toString());
+                        unexpectedReplyStateError(mCurrentState,msg.toString());
                     }
                 }
             }
@@ -290,16 +290,10 @@ abstract public class AbstractCanTrafficController
     public void distributeOneReply(CanReply msg, AbstractMRListener mLastSender) {
         // forward the message to the registered recipients,
         // which includes the communications monitor
-        // return a notification via the Swing event queue to ensure proper thread
         Runnable r = newRcvNotifier(msg, mLastSender, this);
-        try {
-            javax.swing.SwingUtilities.invokeAndWait(r);
-        } catch (Exception e) {
-            log.error("Unexpected exception in invokeAndWait:" + e);
-            e.printStackTrace();
-        }
+        distributeReply(r);
     }
 
-    private final static Logger log = LoggerFactory.getLogger(AbstractCanTrafficController.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(AbstractCanTrafficController.class);
 
 }

@@ -1,4 +1,3 @@
-// DccSpeedProfile.java
 package jmri.jmrix.bachrus;
 
 import java.io.FileOutputStream;
@@ -12,7 +11,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.ResourceBundle;
 import javax.swing.JFileChooser;
 import jmri.util.FileUtil;
 import org.slf4j.Logger;
@@ -21,9 +19,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Class to represent a dimensionless speed profile of a DCC decoder.
  *
- * @author	Andrew Crosland Copyright (C) 2010
- * @author	Dennis Miller Copyright (C) 2015
- * @version	$Revision$
+ * @author Andrew Crosland Copyright (C) 2010
+ * @author Dennis Miller Copyright (C) 2015
  */
 public class DccSpeedProfile {
 
@@ -33,8 +30,6 @@ public class DccSpeedProfile {
     // index of last valid data point, -1 means no data
     protected int _lastPoint;
     protected List<String> dccProfileData = new ArrayList<String>();
-
-    static ResourceBundle rb = ResourceBundle.getBundle("jmri.jmrix.bachrus.BachrusBundle");
 
     public DccSpeedProfile(int len) {
         _length = len;
@@ -104,9 +99,9 @@ public class DccSpeedProfile {
             formatter = new SimpleDateFormat("EEE d MMM yyyy", Locale.getDefault());
             today = new Date();
             result = formatter.format(today);
-            // title	
-            String annotate = "Bachrus MTS-DCC " + rb.getString("ProfileFor") + " "
-                    + address + " " + rb.getString("CreatedOn")
+            // title 
+            String annotate = "Bachrus MTS-DCC " + Bundle.getMessage("ProfileFor") + " "
+                    + address + " " + Bundle.getMessage("CreatedOn")
                     + " " + result;
             p.print(annotate);
             p.println();
@@ -188,21 +183,21 @@ public class DccSpeedProfile {
         // handle selection or cancel
         if (retVal == JFileChooser.APPROVE_OPTION) {
             fileName = fileChooser.getSelectedFile().getPath();
-        }
-        try {
-            // Create a print writer based on the file, so we can print to it.
-            out = new FileOutputStream(fileName);
-            p = new PrintWriter(out, true);
-        } catch (IOException ex) {
-            if (log.isDebugEnabled()) {
-                log.debug("Problem creating output stream " + ex);
+            try {
+                // Create a print writer based on the file, so we can print to it.
+                out = new FileOutputStream(fileName);
+                p = new PrintWriter(out, true);
+            } catch (IOException ex) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Problem creating output stream " + ex);
+                }
             }
-        }
-        if (out == null) {
-            log.error("Null File Output Stream");
-        }
-        if (p == null) {
-            log.error("Null Print Writer");
+            if (out == null) {
+                log.error("Null File Output Stream");
+            }
+            if (p == null) {
+                log.error("Null Print Writer");
+            }
         }
     }
 
@@ -274,5 +269,6 @@ public class DccSpeedProfile {
         }
     }
 
-    private final static Logger log = LoggerFactory.getLogger(DccSpeedProfile.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(DccSpeedProfile.class);
+
 }

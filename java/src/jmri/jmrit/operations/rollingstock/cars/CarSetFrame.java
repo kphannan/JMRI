@@ -1,56 +1,53 @@
-// CarSetFrame.java
 package jmri.jmrit.operations.rollingstock.cars;
 
 import java.awt.GridBagLayout;
 import java.text.MessageFormat;
 import java.util.List;
 import java.util.ResourceBundle;
-import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
+
+import javax.swing.*;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import jmri.InstanceManager;
 import jmri.jmrit.operations.OperationsXml;
 import jmri.jmrit.operations.locations.Location;
 import jmri.jmrit.operations.locations.LocationManager;
 import jmri.jmrit.operations.locations.Track;
-import jmri.jmrit.operations.rollingstock.RollingStock;
 import jmri.jmrit.operations.rollingstock.RollingStockSetFrame;
+import jmri.jmrit.operations.rollingstock.cars.tools.CarAttributeEditFrame;
+import jmri.jmrit.operations.rollingstock.cars.tools.CarLoadEditFrame;
+import jmri.jmrit.operations.rollingstock.cars.tools.EnableDestinationAction;
 import jmri.jmrit.operations.setup.Setup;
 import jmri.jmrit.operations.trains.Train;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import jmri.jmrit.operations.trains.tools.TrainByCarTypeFrame;
 
 /**
  * Frame for user to place car on the layout
  *
  * @author Dan Boudreau Copyright (C) 2008, 2010, 2011, 2013, 2014
- * @version $Revision$
  */
-public class CarSetFrame extends RollingStockSetFrame implements java.beans.PropertyChangeListener {
+public class CarSetFrame extends RollingStockSetFrame<Car> {
 
     protected static final ResourceBundle rb = ResourceBundle
             .getBundle("jmri.jmrit.operations.rollingstock.cars.JmritOperationsCarsBundle");
 
-    CarManager carManager = CarManager.instance();
+    CarManager carManager = InstanceManager.getDefault(CarManager.class);
 
     Car _car;
 
     // combo boxes
-    protected JComboBox<Location> destReturnWhenEmptyBox = LocationManager.instance().getComboBox();
+    protected JComboBox<Location> destReturnWhenEmptyBox = InstanceManager.getDefault(LocationManager.class).getComboBox();
     protected JComboBox<Track> trackReturnWhenEmptyBox = new JComboBox<>();
-    protected JComboBox<String> loadReturnWhenEmptyBox = CarLoads.instance().getComboBox(null);
-    JComboBox<String> loadComboBox = CarLoads.instance().getComboBox(null);
+    protected JComboBox<String> loadReturnWhenEmptyBox = InstanceManager.getDefault(CarLoads.class).getComboBox(null);
+    JComboBox<String> loadComboBox = InstanceManager.getDefault(CarLoads.class).getComboBox(null);
     JComboBox<String> kernelComboBox = carManager.getKernelComboBox();
 
     // buttons
-    JButton editLoadButton = new JButton(Bundle.getMessage("Edit"));
-    JButton editKernelButton = new JButton(Bundle.getMessage("Edit"));
+    JButton editLoadButton = new JButton(Bundle.getMessage("ButtonEdit"));
+    JButton editKernelButton = new JButton(Bundle.getMessage("ButtonEdit"));
 
     // check boxes
     protected JCheckBox ignoreRWECheckBox = new JCheckBox(Bundle.getMessage("Ignore"));
@@ -80,6 +77,11 @@ public class CarSetFrame extends RollingStockSetFrame implements java.beans.Prop
         menuBar.add(toolMenu);
         setJMenuBar(menuBar);
         addHelpMenu("package.jmri.jmrit.operations.Operations_CarsSet", true); // NOI18N
+        
+        editLoadButton.setToolTipText(MessageFormat.format(Bundle.getMessage("TipAddDeleteReplace"),
+                new Object[]{Bundle.getMessage("load")})); // initial caps for some languages i.e. German
+        editKernelButton.setToolTipText(MessageFormat.format(Bundle.getMessage("TipAddDeleteReplace"),
+                new Object[]{Bundle.getMessage("Kernel").toLowerCase()}));
 
         // optional panel return when empty, load, and kernel
         paneOptional.setBorder(BorderFactory.createTitledBorder(Bundle.getMessage("BorderLayoutOptional")));
@@ -147,7 +149,7 @@ public class CarSetFrame extends RollingStockSetFrame implements java.beans.Prop
         autoReturnWhenEmptyTrackCheckBox.setToolTipText(Bundle.getMessage("rsTipAutoTrack"));
 
         // get notified if combo box gets modified
-        CarLoads.instance().addPropertyChangeListener(this);
+        InstanceManager.getDefault(CarLoads.class).addPropertyChangeListener(this);
         carManager.addPropertyChangeListener(this);
 
         packFrame();
@@ -158,6 +160,11 @@ public class CarSetFrame extends RollingStockSetFrame implements java.beans.Prop
         load(car);
         updateLoadComboBox();
         updateKernelComboBox();
+    }
+    
+    @Override
+    protected ResourceBundle getRb() {
+        return rb;
     }
 
     @Override
@@ -172,7 +179,7 @@ public class CarSetFrame extends RollingStockSetFrame implements java.beans.Prop
 
     @Override
     protected void enableComponents(boolean enabled) {
-        // If routing is disable, the RWE and Final Destination fields do not work
+        // If routing is disabled, the RWE and Final Destination fields do not work
         if (!Setup.isCarRoutingEnabled()) {
             ignoreRWECheckBox.setSelected(true);
             ignoreFinalDestinationCheckBox.setSelected(true);
@@ -209,10 +216,9 @@ public class CarSetFrame extends RollingStockSetFrame implements java.beans.Prop
                 & enabled);
     }
 
-    // location combo box
+    // combo boxes
     @Override
     public void comboBoxActionPerformed(java.awt.event.ActionEvent ae) {
-        _disableComboBoxUpdate = true; // stop updates
         super.comboBoxActionPerformed(ae);
         if (ae.getSource() == finalDestinationBox) {
             updateFinalDestination();
@@ -220,10 +226,8 @@ public class CarSetFrame extends RollingStockSetFrame implements java.beans.Prop
         if (ae.getSource() == destReturnWhenEmptyBox) {
             updateReturnWhenEmpty();
         }
-        _disableComboBoxUpdate = false;
     }
 
-    private boolean editActive = false;
     CarAttributeEditFrame f;
 
     @Override
@@ -238,13 +242,12 @@ public class CarSetFrame extends RollingStockSetFrame implements java.beans.Prop
             lef.initComponents(_car.getTypeName(), (String) loadComboBox.getSelectedItem());
         }
         if (ae.getSource() == editKernelButton) {
-            if (editActive) {
+            if (f != null) {
                 f.dispose();
             }
             f = new CarAttributeEditFrame();
             f.setLocationRelativeTo(this);
             f.addPropertyChangeListener(this);
-            editActive = true;
             f.initComponents(Bundle.getMessage("Kernel"), (String) kernelComboBox.getSelectedItem());
         }
     }
@@ -258,9 +261,10 @@ public class CarSetFrame extends RollingStockSetFrame implements java.beans.Prop
         return false;
     }
 
+    TrainByCarTypeFrame tctf = null;
     protected boolean askKernelChange = true;
 
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD", justification = "GUI ease of use")
+    @SuppressFBWarnings(value = "ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD", justification = "GUI ease of use")
     protected boolean change(Car car) {
         // save the auto button
         autoReturnWhenEmptyTrackCheckBoxSelected = autoReturnWhenEmptyTrackCheckBox.isSelected();
@@ -269,7 +273,7 @@ public class CarSetFrame extends RollingStockSetFrame implements java.beans.Prop
         if (!ignoreLoadCheckBox.isSelected() && loadComboBox.getSelectedItem() != null) {
             String load = (String) loadComboBox.getSelectedItem();
             if (!car.getLoadName().equals(load)) {
-                if (CarLoads.instance().containsName(car.getTypeName(), load)) {
+                if (InstanceManager.getDefault(CarLoads.class).containsName(car.getTypeName(), load)) {
                     car.setLoadName(load);
                     updateComboBoxesLoadChange();
                 } else {
@@ -290,12 +294,14 @@ public class CarSetFrame extends RollingStockSetFrame implements java.beans.Prop
                     finalDestTrack = (Track) finalDestTrackBox.getSelectedItem();
                 }
                 if (finalDestTrack != null && car.getFinalDestinationTrack() != finalDestTrack
-                        && finalDestTrack.getTrackType().equals(Track.STAGING)) {
+                        && finalDestTrack.isStaging()) {
                     log.debug("Destination track ({}) is staging", finalDestTrack.getName());
                     JOptionPane.showMessageDialog(this, Bundle.getMessage("rsDoNotSelectStaging"), Bundle
                             .getMessage("rsCanNotFinal"), JOptionPane.ERROR_MESSAGE);
                     return false;
                 }
+                car.setFinalDestination((Location) finalDestinationBox.getSelectedItem());
+                car.setFinalDestinationTrack(finalDestTrack);
                 String status = car.testDestination((Location) finalDestinationBox.getSelectedItem(),
                         finalDestTrack);
                 if (!status.equals(Track.OKAY)) {
@@ -303,8 +309,6 @@ public class CarSetFrame extends RollingStockSetFrame implements java.beans.Prop
                             .getMessage("rsCanNotFinalMsg"), new Object[]{car.toString(), status}), Bundle
                             .getMessage("rsCanNotFinal"), JOptionPane.WARNING_MESSAGE);
                 }
-                car.setFinalDestination((Location) finalDestinationBox.getSelectedItem());
-                car.setFinalDestinationTrack(finalDestTrack);
             }
         }
         // kernel
@@ -328,7 +332,7 @@ public class CarSetFrame extends RollingStockSetFrame implements java.beans.Prop
         // return when empty fields
         if (!ignoreRWECheckBox.isSelected()) {
             // check that RWE load is valid for this car's type
-            if (CarLoads.instance().getNames(car.getTypeName()).contains(loadReturnWhenEmptyBox.getSelectedItem())) {
+            if (InstanceManager.getDefault(CarLoads.class).getNames(car.getTypeName()).contains(loadReturnWhenEmptyBox.getSelectedItem())) {
                 car.setReturnWhenEmptyLoadName((String) loadReturnWhenEmptyBox.getSelectedItem());
             } else {
                 log.debug("Car ({}) type ({}) doesn't support RWE load ({})", car.toString(), car.getTypeName(),
@@ -345,7 +349,7 @@ public class CarSetFrame extends RollingStockSetFrame implements java.beans.Prop
                 if (trackReturnWhenEmptyBox.getSelectedItem() != null) {
                     Track trackRWE = (Track) trackReturnWhenEmptyBox.getSelectedItem();
                     // warn user if they selected a staging track
-                    if (trackRWE != null && trackRWE.getTrackType().equals(Track.STAGING)) {
+                    if (trackRWE != null && trackRWE.isStaging()) {
                         log.debug("Return when empty track ({}) is staging", trackRWE.getName());
                         JOptionPane.showMessageDialog(this, Bundle.getMessage("rsDoNotSelectStaging"), Bundle
                                 .getMessage("rsCanNotRWE"), JOptionPane.ERROR_MESSAGE);
@@ -400,19 +404,28 @@ public class CarSetFrame extends RollingStockSetFrame implements java.beans.Prop
                 JOptionPane.showMessageDialog(this, MessageFormat.format(Bundle
                         .getMessage("carTrainNotServLoad"), new Object[]{car.getLoadName(), train.getName()}),
                         Bundle.getMessage("rsNotMove"), JOptionPane.ERROR_MESSAGE);
+                // prevent rs from being picked up and delivered
+                setRouteLocationAndDestination(car, train, null, null);
                 return false;
             }
             if (car.getLocation() != null && car.getDestination() != null && !train.services(car)) {
                 JOptionPane.showMessageDialog(this, MessageFormat.format(Bundle.getMessage("carTrainNotService"),
                         new Object[]{car.toString(), train.getName()}), Bundle.getMessage("rsNotMove"),
                         JOptionPane.ERROR_MESSAGE);
+                // show the train's route and car location
+                if (tctf != null) {
+                    tctf.dispose();
+                }
+                tctf = new TrainByCarTypeFrame(car);
+                // prevent rs from being picked up and delivered
+                setRouteLocationAndDestination(car, train, null, null);
                 return false;
             }
         }
         checkTrain(car);
         // is this car part of a kernel?
         if (askKernelChange && car.getKernel() != null) {
-            List<RollingStock> list = car.getKernel().getGroup();
+            List<Car> list = car.getKernel().getGroup();
             if (list.size() > 1) {
                 if (JOptionPane.showConfirmDialog(this, MessageFormat.format(
                         Bundle.getMessage("carInKernel"), new Object[]{car.toString()}), MessageFormat
@@ -447,9 +460,8 @@ public class CarSetFrame extends RollingStockSetFrame implements java.beans.Prop
     }
 
     @Override
-    protected boolean updateGroup(List<RollingStock> list) {
-        for (RollingStock rs : list) {
-            Car car = (Car) rs;
+    protected boolean updateGroup(List<Car> list) {
+        for (Car car : list) {
             if (car == _car) {
                 continue;
             }
@@ -464,7 +476,7 @@ public class CarSetFrame extends RollingStockSetFrame implements java.beans.Prop
             }
             // update car load
             if (!ignoreLoadCheckBox.isSelected()
-                    && CarLoads.instance().containsName(car.getTypeName(), _car.getLoadName())) {
+                    && InstanceManager.getDefault(CarLoads.class).containsName(car.getTypeName(), _car.getLoadName())) {
                 car.setLoadName(_car.getLoadName());
             }
             // update kernel
@@ -477,7 +489,6 @@ public class CarSetFrame extends RollingStockSetFrame implements java.beans.Prop
 
     @Override
     public void checkBoxActionPerformed(java.awt.event.ActionEvent ae) {
-        _disableComboBoxUpdate = true; // stop updates
         super.checkBoxActionPerformed(ae);
         if (ae.getSource() == autoFinalDestTrackCheckBox) {
             updateFinalDestination();
@@ -502,7 +513,6 @@ public class CarSetFrame extends RollingStockSetFrame implements java.beans.Prop
             kernelComboBox.setEnabled(!ignoreKernelCheckBox.isSelected());
             editKernelButton.setEnabled(!ignoreKernelCheckBox.isSelected());
         }
-        _disableComboBoxUpdate = false;
     }
 
     protected void updateReturnWhenEmptyComboBoxes() {
@@ -554,9 +564,9 @@ public class CarSetFrame extends RollingStockSetFrame implements java.beans.Prop
     protected void updateLoadComboBox() {
         if (_car != null) {
             log.debug("Updating load box for car ({})", _car.toString());
-            CarLoads.instance().updateComboBox(_car.getTypeName(), loadComboBox);
+            InstanceManager.getDefault(CarLoads.class).updateComboBox(_car.getTypeName(), loadComboBox);
             loadComboBox.setSelectedItem(_car.getLoadName());
-            CarLoads.instance().updateRweComboBox(_car.getTypeName(), loadReturnWhenEmptyBox);
+            InstanceManager.getDefault(CarLoads.class).updateRweComboBox(_car.getTypeName(), loadReturnWhenEmptyBox);
             loadReturnWhenEmptyBox.setSelectedItem(_car.getReturnWhenEmptyLoadName());
         }
     }
@@ -593,7 +603,7 @@ public class CarSetFrame extends RollingStockSetFrame implements java.beans.Prop
         return c;
     }
 
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD", justification = "GUI ease of use")
+    @SuppressFBWarnings(value = "ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD", justification = "GUI ease of use")
     public void setDestinationEnabled(boolean enable) {
         enableDestination = !enableDestination;
         enableDestinationFields(!locationUnknownCheckBox.isSelected());
@@ -601,7 +611,7 @@ public class CarSetFrame extends RollingStockSetFrame implements java.beans.Prop
 
     @Override
     public void dispose() {
-        CarLoads.instance().removePropertyChangeListener(this);
+        InstanceManager.getDefault(CarLoads.class).removePropertyChangeListener(this);
         carManager.removePropertyChangeListener(this);
         super.dispose();
     }
@@ -630,9 +640,9 @@ public class CarSetFrame extends RollingStockSetFrame implements java.beans.Prop
             enableDestinationFields(!locationUnknownCheckBox.isSelected());
         }
         if (e.getPropertyName().equals(CarAttributeEditFrame.DISPOSE)) {
-            editActive = false;
+            f = null;
         }
     }
 
-    private final static Logger log = LoggerFactory.getLogger(CarSetFrame.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(CarSetFrame.class);
 }

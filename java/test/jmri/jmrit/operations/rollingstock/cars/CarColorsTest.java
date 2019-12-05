@@ -1,28 +1,34 @@
 package jmri.jmrit.operations.rollingstock.cars;
 
 import javax.swing.JComboBox;
+import jmri.InstanceManager;
 import jmri.jmrit.operations.OperationsTestCase;
 import org.junit.Assert;
-import junit.framework.Test;
-import junit.framework.TestSuite;
+import org.junit.Test;
 
 /**
- * Tests for the Operations RollingStock CarColors class Last manually cross-checked
- * on 20090131
- *
+ * Tests for the Operations RollingStock CarColors class Last manually
+ * cross-checked on 20090131
+ * <p>
  * Still to do: Everything
  *
  * @author	Bob Coleman Copyright (C) 2008, 2009
  */
 public class CarColorsTest extends OperationsTestCase {
 
-    public void testCarColors() {
-        CarColors cc1 = CarColors.instance();
+    @Test
+    public void testDefaultCarColors() {
+        CarColors cc1 = InstanceManager.getDefault(CarColors.class);
         cc1.getNames();	// load predefined colors
 
         Assert.assertTrue("Car Color Predefined Red", cc1.containsName("Red"));
         Assert.assertTrue("Car Color Predefined Blue", cc1.containsName("Blue"));
+    }
 
+    @Test
+    public void testAddAndDeleteCarColors() {
+        CarColors cc1 = InstanceManager.getDefault(CarColors.class);
+        cc1.getNames();	// load predefined colors
         cc1.addName("BoxCar Red");
         Assert.assertTrue("Car Color Add", cc1.containsName("BoxCar Red"));
         Assert.assertFalse("Car Color Never Added Dirty Blue", cc1.containsName("Dirty Blue"));
@@ -39,32 +45,5 @@ public class CarColorsTest extends OperationsTestCase {
         Assert.assertFalse("Car Color Delete Ugly Brown", cc1.containsName("Ugly Brown"));
         cc1.deleteName("BoxCar Red");
         Assert.assertFalse("Car Color Delete BoxCar Red", cc1.containsName("BoxCar Red"));
-    }
-
-    @Override
-    protected void setUp() throws Exception{
-        super.setUp();
-    }
-
-    public CarColorsTest(String s) {
-        super(s);
-    }
-
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading", CarColorsTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(CarColorsTest.class);
-        return suite;
-    }
-
-    // The minimal setup for log4J
-    @Override
-    protected void tearDown() throws Exception {
-       super.tearDown();
     }
 }

@@ -1,4 +1,3 @@
-// ReportPanel.java
 package jmri.jmrit.mailreport;
 
 import apps.PerformFileModel;
@@ -9,8 +8,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import javax.mail.internet.AddressException;
@@ -36,21 +34,12 @@ import org.slf4j.LoggerFactory;
  * <p>
  * The report is sent to a dedicated SourceForge mailing list, from which people
  * can retrieve it.
- * <P>
+ *
  * @author Bob Jacobsen Copyright (C) 2009
  * @author Matthew Harris Copyright (c) 2014
- * @version $Revision$
  */
 public class ReportPanel extends JPanel {
 
-    /**
-     *
-     */
-    private static final long serialVersionUID = 8455989563494151294L;
-
-    static java.util.ResourceBundle rb = null;
-
-    // member declarations
     JButton sendButton;
     JTextField emailField = new JTextField(40);
     JTextField summaryField = new JTextField(40);
@@ -64,12 +53,10 @@ public class ReportPanel extends JPanel {
 
     // Define which profile sub-directories to include
     // In lowercase as I was too lazy to do a proper case-insensitive check...
-    String[] profDirs = {"networkservices", "programmers", "throttle"};
+    String[] profDirs = {"networkservices", "profile", "programmers", "throttle"};
 
     public ReportPanel() {
-        if (rb == null) {
-            rb = java.util.ResourceBundle.getBundle("jmri.jmrit.mailreport.ReportBundle");
-        }
+        ResourceBundle rb = java.util.ResourceBundle.getBundle("jmri.jmrit.mailreport.ReportBundle");
 
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
@@ -154,11 +141,14 @@ public class ReportPanel extends JPanel {
             }
         });
         add(sendButton);
-
     }
+    
+    // made static, public, not final so can be changed via script
+    static public String requestURL = "http://jmri.org/problem-report.php";  //NOI18N
 
     @SuppressWarnings("unchecked")
     public void sendButtonActionPerformed(java.awt.event.ActionEvent e) {
+        ResourceBundle rb = ResourceBundle.getBundle("jmri.jmrit.mailreport.ReportBundle");
         try {
             sendButton.setEnabled(false);
             log.debug("initial checks");
@@ -167,7 +157,6 @@ public class ReportPanel extends JPanel {
 
             log.debug("start send");
             String charSet = "UTF-8";  //NO18N
-            String requestURL = "http://jmri.org/problem-report.php";  //NOI18N
 
             MultipartMessage msg = new MultipartMessage(requestURL, charSet);
 
@@ -197,17 +186,17 @@ public class ReportPanel extends JPanel {
                 for (PerformFileModel m : InstanceManager.getDefault(StartupActionsManager.class).getActions(PerformFileModel.class)) {
                     String fn = m.getFileName();
                     File f = new File(fn);
-                    log.debug("add startup panel file: {}", f);
+                    log.info("Add panel file loaded at startup: {}", f);
                     msg.addFilePart("logfileupload[]", f);
                 }
                 // Check that a manual panel file has been loaded
                 File file = jmri.configurexml.LoadXmlUserAction.getCurrentFile();
                 if (file != null) {
-                    log.debug("add manual panel file: {}", file.getPath());
+                    log.info("Adding manually-loaded panel file: {}", file.getPath());
                     msg.addFilePart("logfileupload[]", jmri.configurexml.LoadXmlUserAction.getCurrentFile());
                 } else {
-                    // No panel file loaded
-                    log.warn("No manual panel file loaded - not sending");
+                    // No panel file loaded by manual action
+                    log.debug("No panel file manually loaded");
                 }
             }
 
@@ -215,24 +204,26 @@ public class ReportPanel extends JPanel {
             if (checkProfile.isSelected()) {
                 log.debug("prepare profile attachment");
                 // Check that a profile has been loaded
-                Profile profile = ProfileManager.defaultManager().getActiveProfile();
-                File file = profile.getPath();
-                if (file != null) {
-                    log.debug("add profile: {}", file.getPath());
-                    // Now zip-up contents of profile
-                    // Create temp file that will be deleted when Java quits
-                    File temp = File.createTempFile("profile", ".zip");
-                    temp.deleteOnExit();
+                Profile profile = ProfileManager.getDefault().getActiveProfile();
+                if (profile != null) {
+                    File file = profile.getPath();
+                    if (file != null) {
+                        log.debug("add profile: {}", file.getPath());
+                        // Now zip-up contents of profile
+                        // Create temp file that will be deleted when Java quits
+                        File temp = File.createTempFile("profile", ".zip");
+                        temp.deleteOnExit();
 
-                    FileOutputStream out = new FileOutputStream(temp);
-                    ZipOutputStream zip = new ZipOutputStream(out);
+                        FileOutputStream out = new FileOutputStream(temp);
+                        ZipOutputStream zip = new ZipOutputStream(out);
 
-                    addDirectory(zip, file);
+                        addDirectory(zip, file);
 
-                    zip.close();
-                    out.close();
+                        zip.close();
+                        out.close();
 
-                    msg.addFilePart("logfileupload[]", temp);
+                        msg.addFilePart("logfileupload[]", temp);
+                    }
                 } else {
                     // No profile loaded
                     log.warn("No profile loaded - not sending");
@@ -278,7 +269,7 @@ public class ReportPanel extends JPanel {
                 // close containing Frame
                 getTopLevelAncestor().setVisible(false);
             } else {
-                JOptionPane.showMessageDialog(null, rb.getString("ErrMessage"), rb.getString("ErrTitle"), JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(null, rb.getString("ErrMessage"), rb.getString("ErrTitle"), JOptionPane.ERROR_MESSAGE); // TODO add Bundle to folder and use ErrorTitle key in NamedBeanBundle props
                 sendButton.setEnabled(true);
             }
 
@@ -287,7 +278,7 @@ public class ReportPanel extends JPanel {
             sendButton.setEnabled(true);
         } catch (AddressException ex) {
             log.error("Invalid email address: " + ex);
-            JOptionPane.showMessageDialog(null, rb.getString("ErrAddress"), rb.getString("ErrTitle"), JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(null, rb.getString("ErrAddress"), rb.getString("ErrTitle"), JOptionPane.ERROR_MESSAGE); // TODO add Bundle to folder and use ErrorTitle key in NamedBeanBundle props
             sendButton.setEnabled(true);
         }
     }
@@ -325,15 +316,16 @@ public class ReportPanel extends JPanel {
                 if (!directory.equals("") || file.getName().toLowerCase().matches(".*(config\\.xml|\\.properties)")) {
                     log.debug("Add file: {}{}", directory, file.getName());
                     byte[] buffer = new byte[1024];
-                    FileInputStream in = new FileInputStream(file);
-                    out.putNextEntry(new ZipEntry(directory + file.getName()));
+                    try (FileInputStream in = new FileInputStream(file)) {
+                        out.putNextEntry(new ZipEntry(directory + file.getName()));
 
-                    int length;
-                    while ((length = in.read(buffer)) > 0) {
-                        out.write(buffer, 0, length);
+                        int length;
+                        while ((length = in.read(buffer)) > 0) {
+                            out.write(buffer, 0, length);
+                        }
+                        out.closeEntry();
+                        in.close();
                     }
-                    out.closeEntry();
-                    in.close();
                 } else {
                     log.debug("Skip file: {}{}", directory, file.getName());
                 }
@@ -345,5 +337,5 @@ public class ReportPanel extends JPanel {
         }
     }
 
-    private static final Logger log = LoggerFactory.getLogger(ReportPanel.class.getName());
+    private static final Logger log = LoggerFactory.getLogger(ReportPanel.class);
 }

@@ -1,6 +1,3 @@
-/**
- * XnTcpXNetPacketizer.java
- */
 package jmri.jmrix.lenz.xntcp;
 
 import jmri.jmrix.lenz.XNetPacketizer;
@@ -10,12 +7,12 @@ import org.slf4j.LoggerFactory;
 /**
  * This is an extension of the XNetPacketizer to handle the device specific
  * requirements of the XnTcp.
- * <P>
+ * <p>
  * In particular, XnTcpXNetPacketizer counts the number of commands received.
  *
- * @author	Giorgio Terdina Copyright (C) 2008-2011, based on LIUSB packetizer by
+ * @author Giorgio Terdina Copyright (C) 2008-2011, based on LIUSB packetizer by
  * Paul Bender, Copyright (C) 2005
- * @version $Revision$ GT - May 2011 - Removed calls to deprecated
+ *  GT - May 2011 - Removed calls to deprecated
  * method "XnTcpAdapter.instance()"
  *
  */
@@ -28,9 +25,9 @@ public class XnTcpXNetPacketizer extends XNetPacketizer {
 
     /**
      * Get characters from the input source, and fill a message.
-     * <P>
+     * <p>
      * Returns only when the message is complete.
-     * <P>
+     * <p>
      * Only used in the Receive thread.
      *
      * @param msg     message to fill
@@ -54,7 +51,7 @@ public class XnTcpXNetPacketizer extends XNetPacketizer {
                 }
                 // Store the byte.
                 msg.setElement(i++, (byte) char1 & 0xFF);
-                log.debug("XnTcpNetPacketizer: received " + Integer.toHexString(char1 & 0xff));
+                log.debug("XnTcpNetPacketizer: received {}", Integer.toHexString(char1 & 0xff));
                 // If the XpressNet packet is completed, exit the loop
                 if (endOfMessage(msg)) {
                     break;
@@ -66,6 +63,8 @@ public class XnTcpXNetPacketizer extends XNetPacketizer {
 
             ((XnTcpAdapter) controller).xnTcpSetPendingPackets(-1);
             log.debug("XnTcpNetPacketizer: received end of packet");
+        } catch (java.io.InterruptedIOException ex) {
+            return;
         } catch (java.io.IOException ex) {
             ((XnTcpAdapter) controller).xnTcpError();
             throw ex;
@@ -73,7 +72,6 @@ public class XnTcpXNetPacketizer extends XNetPacketizer {
 
     }
 
-    private final static Logger log = LoggerFactory.getLogger(XnTcpXNetPacketizer.class.getName());
-}
+    private final static Logger log = LoggerFactory.getLogger(XnTcpXNetPacketizer.class);
 
-/* @(#)XnTcpXNetPacketizer.java */
+}

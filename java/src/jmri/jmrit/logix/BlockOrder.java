@@ -4,12 +4,12 @@ package jmri.jmrit.logix;
 //import jmri.Path;
 //import jmri.SignalHead;
 /**
- * An BlockOrder is a row in the warrant. It contains the directives the
- * Engineer must do when in a block
- * <P>
+ * A BlockOrder is a row in the route of the warrant. It contains 
+ * where the warranted train enters a block, the path it takes and
+ * where it exits the block.
+ * The Engineer is notified when the train enters the block.
  *
- *
- * @author	Pete Cressman Copyright (C) 2009
+ * @author Pete Cressman Copyright (C) 2009
  */
 public class BlockOrder {
 
@@ -17,6 +17,7 @@ public class BlockOrder {
     private String _pathName;  // path the train is to take in the block
     private String _entryName; // Name of entry Portal
     private String _exitName;  // Name of exit Portal
+    private float _tempPathLen; // hold user's input for this session
 
     public BlockOrder(OBlock block) {
         _block = block;
@@ -25,6 +26,7 @@ public class BlockOrder {
     /**
      * Create BlockOrder.
      *
+     * @param block OBlock of this order
      * @param path  MUST be a path in the blocK
      * @param entry MUST be a name of a Portal to the path
      * @param exit  MUST be a name of a Portal to the path
@@ -79,18 +81,29 @@ public class BlockOrder {
      }
      return null;
      }
-     */
+
+    protected String getPermissibleExitSpeed() {
+        Portal portal = _block.getPortalByName(getEntryName());
+        if (portal != null) {
+            return portal.getPermissibleSpeed(_block, false);
+        }
+        // OK if this is first block
+//        log.warn("getPermissibleSpeed (Exit), no entry portal! {}", this.toString());
+        return null;
+    }
 
     protected boolean validateOrder() {
         return true;
-    }
+    }*/
 
     /**
      * Set Path. Note that the Path's 'fromPortal' and 'toPortal' have no
      * bearing on the BlockOrder's entryPortal and exitPortal.
+     * @param path  Name of the OPath connecting the entry and exit Portals
      */
     protected void setPathName(String path) {
         _pathName = path;
+        _tempPathLen =0.0f;
     }
 
     public String getPathName() {
@@ -110,6 +123,14 @@ public class BlockOrder {
             }
         }
         return msg;
+    }
+    
+    protected void setTempPathLen(float len) {
+        _tempPathLen = len;
+    }
+
+    protected float getTempPathLen() {
+        return _tempPathLen;
     }
 
     protected void setBlock(OBlock block) {
@@ -142,10 +163,10 @@ public class BlockOrder {
     protected String getPermissibleEntranceSpeed() {
         Portal portal = _block.getPortalByName(getEntryName());
         if (portal != null) {
-            return portal.getPermissibleEntranceSpeed(_block);
+            return portal.getPermissibleSpeed(_block, true);
         }
         // OK if this is first block
-        //log.warn("getPermissibleEntranceSpeed, no entry portal! "+this.toString());
+        //log.warn("getPermissibleSpeed (Entrance), no entry portal! {}", this.toString());
         return null;
     }
 
@@ -157,26 +178,29 @@ public class BlockOrder {
         return 0;
     }
 
-    protected String getPermissibleExitSpeed() {
-        Portal portal = _block.getPortalByName(getEntryName());
-        if (portal != null) {
-            return portal.getPermissibleExitSpeed(_block);
+    /**
+     * Get the signal protecting entry into the block of this blockorder
+     * @return signal
+     */
+    protected jmri.NamedBean getSignal() {
+        Portal portal = getEntryPortal();
+        if (portal != null) {            
+            return portal.getSignalProtectingBlock(_block);
         }
-        // OK if this is first block
-//        log.warn("getPermissibleExitSpeed, no entry portal! "+this.toString());
         return null;
     }
-
-    protected jmri.NamedBean getSignal() {
-        return _block.getPortalByName(getEntryName()).getSignalProtectingBlock(_block);
-    }
-
-    protected String hash() {
-        return _block.getDisplayName() + _pathName + _entryName + _exitName;
-    }
-
+    
+    @Override
     public String toString() {
-        return ("BlockOrder: Block \"" + _block.getDisplayName() + "\" has Path \"" + _pathName
-                + "\" with Portals \"" + _entryName + "\" and \"" + _exitName + "\"");
+        StringBuilder sb = new StringBuilder("BlockOrder: Block \"");
+        sb.append( _block.getDisplayName());
+        sb.append("\" has Path \"");
+        sb.append(_pathName);
+        sb.append("\" with Portals, entry= \"");
+        sb.append(_entryName);
+        sb.append("\" and exit= \"");
+        sb.append(_exitName);
+        sb.append("\"");
+        return sb.toString();
     }
 }

@@ -10,12 +10,11 @@ import org.slf4j.LoggerFactory;
 /**
  * This is an extention of the XNetPacketizer to handle the device specific
  * requirements of the ZTC640.
- * <P>
+ * <p>
  * In particular, ZTC640XNetPacketizer adds functions to add and remove the 0xFF
  * bytes that appear prior to some messages.
  *
- * @author	Paul Bender Copyright (C) 2006
- * @version $Revision$
+ * @author Paul Bender Copyright (C) 2006
  *
  */
 public class ZTC640XNetPacketizer extends XNetPacketizer {
@@ -27,15 +26,16 @@ public class ZTC640XNetPacketizer extends XNetPacketizer {
 
     /**
      * Get characters from the input source, and file a message.
-     * <P>
+     * <p>
      * Returns only when the message is complete.
-     * <P>
+     * <p>
      * Only used in the Receive thread.
      *
      * @param msg     message to fill
      * @param istream character source.
      * @throws java.io.IOException when presented by the input source.
      */
+    @Override
     protected void loadChars(jmri.jmrix.AbstractMRReply msg, java.io.DataInputStream istream) throws java.io.IOException {
         int i;
         if (log.isDebugEnabled()) {
@@ -63,7 +63,7 @@ public class ZTC640XNetPacketizer extends XNetPacketizer {
         }
     }
 
-    private final static Logger log = LoggerFactory.getLogger(ZTC640XNetPacketizer.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(ZTC640XNetPacketizer.class);
 }
 
-/* @(#)ZTC640XNetPacketizer.java */
+

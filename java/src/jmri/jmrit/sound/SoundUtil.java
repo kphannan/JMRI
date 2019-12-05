@@ -14,14 +14,14 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Provide simple way to load and play Java 2 sounds in JMRI.
- * <P>
+ * <p>
  * This is placed in the jmri.jmrit.sound package by process of elimination. It
  * doesn't belong in the base jmri package, as it's not a basic interface. Nor
  * is it a specific implementation of a basic interface, which would put it in
  * jmri.jmrix.
  *
  *
- * @author	Bob Jacobsen Copyright (C) 2004, 2006
+ * @author Bob Jacobsen Copyright (C) 2004, 2006
  */
 public class SoundUtil {
 
@@ -108,5 +108,5 @@ public class SoundUtil {
         return abAudioData;
     }
 
-    private final static Logger log = LoggerFactory.getLogger(SoundUtil.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(SoundUtil.class);
 }

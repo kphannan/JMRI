@@ -1,4 +1,3 @@
-// ConnectionConfig.java
 package jmri.jmrix.lenz.xntcp;
 
 import java.awt.event.ActionEvent;
@@ -9,16 +8,15 @@ import javax.swing.JTextField;
 import jmri.jmrix.JmrixConfigPane;
 
 /**
- * Handle configuring an XPressNet layout connection via a XnTcp adapter.
- * <P>
+ * Handle configuring an XpressNet layout connection via a XnTcp adapter.
+ * <p>
  * This uses the {@link XnTcpAdapter} class to do the actual connection.
  *
- * @author	Giorgio Terdina Copyright (C) 2008-2011, based on LI100 Action by Bob
+ * @author Giorgio Terdina Copyright (C) 2008-2011, based on LI100 Action by Bob
  * Jacobsen, Copyright (C) 2003
- * @version	$Revision$ GT - May 2008 - Added possibility of manually
- * defining the IP address and the TCP port number GT - May 2011 - Fixed
- * problems arising from recent refactoring GT - Dec 2011 - Fixed problems in
- * 2.14 arising from changes introduced since May
+ * GT - May 2008 - Added possibility of manually defining the IP address and the TCP port number
+ * GT - May 2011 - Fixed problems arising from recent refactoring
+ * GT - Dec 2011 - Fixed problems in 2.14 arising from changes introduced since May
  *
  * @see XnTcpAdapter
  */
@@ -44,19 +42,20 @@ public class ConnectionConfig extends jmri.jmrix.AbstractNetworkConnectionConfig
     }
 
     /**
-     * Ctor for a functional Swing object with no prexisting adapter
+     * Ctor for a connection configuration with no preexisting adapter.
+     * {@link #setInstance()} will fill the adapter member.
      */
     public ConnectionConfig() {
         super();
     }
 
+    @Override
     public String name() {
-        return "XnTcp";
+        return Bundle.getMessage("XnTcpName");
     }
 
     /**
-     * Load the adapter with an appropriate object
-     * <i>unless</i> it has already been set.
+     * {@inheritDoc}
      */
     @Override
     protected void setInstance() {
@@ -67,12 +66,12 @@ public class ConnectionConfig extends jmri.jmrix.AbstractNetworkConnectionConfig
 
     @Override
     public String getInfo() {
-// GT 2.14 retrieving adapter name from CurrentOption1Setting, since Opt1Box now returns null
+        // GT 2.14 retrieving adapter name from CurrentOption1Setting, since Opt1Box now returns null
         String x = adapter.getOptionState("XnTcpInterface");
         if (x == null) {
             return JmrixConfigPane.NONE;
         }
-        if (x.equals("Manual")) {
+        if (x.equals(Bundle.getMessage("Manual"))) {
             x = "";
         } else {
             x += ":";
@@ -89,6 +88,9 @@ public class ConnectionConfig extends jmri.jmrix.AbstractNetworkConnectionConfig
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @SuppressWarnings("unchecked")
     @Override
     public void loadDetails(final JPanel d) {
@@ -96,6 +98,7 @@ public class ConnectionConfig extends jmri.jmrix.AbstractNetworkConnectionConfig
 
         if (options.get("XnTcpInterface").getComponent() instanceof JComboBox) {
             ((JComboBox<Option>) options.get("XnTcpInterface").getComponent()).addActionListener(new ActionListener() {
+                @Override
                 public void actionPerformed(ActionEvent e) {
                     enableInput();
                 }
@@ -103,6 +106,7 @@ public class ConnectionConfig extends jmri.jmrix.AbstractNetworkConnectionConfig
         }
     }
 
+    @Override
     protected void showAdvancedItems() {
         super.showAdvancedItems();
         enableInput();
@@ -111,9 +115,9 @@ public class ConnectionConfig extends jmri.jmrix.AbstractNetworkConnectionConfig
 
     private void enableInput() {
         String choice = options.get("XnTcpInterface").getItem();
-//GT 2.14 - Added test for null, now returned by opt1Box at startup (somewhere the initialization is missing)
+        //GT 2.14 - Added test for null, now returned by opt1Box at startup (somewhere the initialization is missing)
         if (choice != null) {
-            manualInput = choice.equals("Manual");
+            manualInput = (choice.equals(Bundle.getMessage("Manual")) || choice.equals("Manual")); // support pre-i18n configurations
         } else {
             manualInput = false;
         }
@@ -136,6 +140,7 @@ public class ConnectionConfig extends jmri.jmrix.AbstractNetworkConnectionConfig
         manufacturerName = manu;
     }
 
+    @Override
     public boolean isHostNameAdvanced() {
         return true;
     }

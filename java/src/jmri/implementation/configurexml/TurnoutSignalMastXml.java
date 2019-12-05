@@ -2,6 +2,7 @@ package jmri.implementation.configurexml;
 
 import java.util.List;
 import jmri.InstanceManager;
+import jmri.JmriException;
 import jmri.SignalAppearanceMap;
 import jmri.Turnout;
 import jmri.implementation.TurnoutSignalMast;
@@ -10,10 +11,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Handle XML configuration for a DefaultSignalMastManager objects.
+ * Handle XML configuration for TurnoutSignalMast objects.
  *
  * @author Bob Jacobsen Copyright: Copyright (c) 2009
- * @version $Revision: 18102 $
  */
 public class TurnoutSignalMastXml
         extends jmri.managers.configurexml.AbstractNamedBeanManagerConfigXML {
@@ -28,6 +28,7 @@ public class TurnoutSignalMastXml
      * @param o Object to store, of type TripleTurnoutSignalHead
      * @return Element containing the complete info
      */
+    @Override
     public Element store(Object o) {
         TurnoutSignalMast p = (TurnoutSignalMast) o;
         Element e = new Element("turnoutsignalmast");
@@ -86,7 +87,13 @@ public class TurnoutSignalMastXml
     public boolean load(Element shared, Element perNode) {
         TurnoutSignalMast m;
         String sys = getSystemName(shared);
-        m = new jmri.implementation.TurnoutSignalMast(sys);
+        try {
+            m = (TurnoutSignalMast) InstanceManager.getDefault(jmri.SignalMastManager.class)
+                    .provideCustomSignalMast(sys, TurnoutSignalMast.class);
+        } catch (JmriException e) {
+            log.error("Failed to load TurnoutSignalMast {}: {}", sys, e);
+            return false;
+        }
 
         if (getUserName(shared) != null) {
             m.setUserName(getUserName(shared));
@@ -136,15 +143,13 @@ public class TurnoutSignalMastXml
             m.resetPreviousStates(true);
         }
 
-        InstanceManager.getDefault(jmri.SignalMastManager.class)
-                .register(m);
-
         return true;
     }
 
+    @Override
     public void load(Element element, Object o) {
         log.error("Invalid method called");
     }
 
-    private final static Logger log = LoggerFactory.getLogger(TurnoutSignalMastXml.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(TurnoutSignalMastXml.class);
 }

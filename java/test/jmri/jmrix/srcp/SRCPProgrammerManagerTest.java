@@ -1,19 +1,21 @@
 package jmri.jmrix.srcp;
 
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import jmri.util.JUnitUtil;
+import org.junit.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Assert;
 
 /**
  * SRCPProgrammerManagerTest.java
  *
- * Description:	tests for the jmri.jmrix.srcp.SRCPProgrammerManager class
+ * Description: tests for the jmri.jmrix.srcp.SRCPProgrammerManager class
  *
- * @author	Bob Jacobsen
+ * @author Bob Jacobsen
  */
-public class SRCPProgrammerManagerTest extends TestCase {
+public class SRCPProgrammerManagerTest {
 
+    @Test
     public void testCtor() {
         SRCPBusConnectionMemo sm = new SRCPBusConnectionMemo(new SRCPTrafficController() {
             @Override
@@ -24,31 +26,14 @@ public class SRCPProgrammerManagerTest extends TestCase {
         Assert.assertNotNull(s);
     }
 
-    // from here down is testing infrastructure
-    public SRCPProgrammerManagerTest(String s) {
-        super(s);
+    @Before
+    public void setUp() {
+        JUnitUtil.setUp();
     }
 
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading", SRCPProgrammerManagerTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(SRCPProgrammerManagerTest.class);
-        return suite;
-    }
-
-    // The minimal setup for log4J
-    @Override
-    protected void setUp() {
-        apps.tests.Log4JFixture.setUp();
-    }
-
-    @Override
-    protected void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
+    @After
+    public void tearDown() {
+        JUnitUtil.clearShutDownManager(); // put in place because AbstractMRTrafficController implementing subclass was not terminated properly
+        JUnitUtil.tearDown();
     }
 }

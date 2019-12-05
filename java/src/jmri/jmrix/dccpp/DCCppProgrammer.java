@@ -2,25 +2,25 @@ package jmri.jmrix.dccpp;
 
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nonnull;
+import jmri.ProgListener;
+import jmri.Programmer;
 import jmri.ProgrammingMode;
 import jmri.jmrix.AbstractProgrammer;
-import jmri.managers.DefaultProgrammerManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 
 /**
  * Programmer support for DCC++.
- * <P>
+ * <p>
  * The read operation state sequence is:
- * <UL>
- * <LI>Send Register Mode / Paged mode /Direct Mode read request
- * <LI>Wait for results reply, interpret
- * </UL>
+ * <ul>
+ * <li>Send Register Mode / Paged mode /Direct Mode read request
+ * <li>Wait for results reply, interpret
+ * </ul>
  *
  * @author Bob Jacobsen Copyright (c) 2002, 2007
  * @author Paul Bender Copyright (c) 2003-2010
  * @author Giorgio Terdina Copyright (c) 2007
+ * @author Mark Underwood Copyright (c) 2015
  */
 public class DCCppProgrammer extends AbstractProgrammer implements DCCppListener {
 
@@ -45,23 +45,25 @@ public class DCCppProgrammer extends AbstractProgrammer implements DCCppListener
                 | DCCppInterface.INTERFACE,
                 this);
 
-        setMode(DefaultProgrammerManager.DIRECTBYTEMODE);
+        setMode(ProgrammingMode.DIRECTBYTEMODE);
     }
 
-    /**
-     * Types implemented here.
+    /** 
+     * {@inheritDoc}
      */
     @Override
     public List<ProgrammingMode> getSupportedModes() {
         List<ProgrammingMode> ret = new ArrayList<ProgrammingMode>();
-        //ret.add(DefaultProgrammerManager.PAGEMODE);
-        ret.add(DefaultProgrammerManager.DIRECTBITMODE);
-        ret.add(DefaultProgrammerManager.DIRECTBYTEMODE);
-        //ret.add(DefaultProgrammerManager.REGISTERMODE);
+        //ret.add(ProgrammingMode.PAGEMODE);
+        ret.add(ProgrammingMode.DIRECTBITMODE);
+        ret.add(ProgrammingMode.DIRECTBYTEMODE);
+        //ret.add(ProgrammingMode.REGISTERMODE);
         return ret;
     }
 
-    /**
+    /** 
+     * {@inheritDoc}
+     *
      * Can we read from a specific CV in the specified mode? Answer may not be
      * correct if the command station type and version sent by the command
      * station mimics one of the known command stations.
@@ -74,14 +76,16 @@ public class DCCppProgrammer extends AbstractProgrammer implements DCCppListener
         if (!getCanRead()) {
             return false; // check basic implementation first
         }
-        if (getMode().equals(DefaultProgrammerManager.DIRECTBITMODE) || getMode().equals(DefaultProgrammerManager.DIRECTBYTEMODE)) {
-	    return Integer.parseInt(addr) <= DCCppConstants.MAX_DIRECT_CV;
+        if (getMode().equals(ProgrammingMode.DIRECTBITMODE) || getMode().equals(ProgrammingMode.DIRECTBYTEMODE)) {
+     return Integer.parseInt(addr) <= DCCppConstants.MAX_DIRECT_CV;
         } else {
             return Integer.parseInt(addr) <= 256;
         }
     }
 
-    /**
+    /** 
+     * {@inheritDoc}
+     *
      * Can we write to a specific CV in the specified mode? Answer may not be
      * correct if the command station type and version sent by the command
      * station mimics one of the known command stations.
@@ -95,12 +99,19 @@ public class DCCppProgrammer extends AbstractProgrammer implements DCCppListener
         if (!getCanWrite()) {
             return false; // check basic implementation first
         }
-        if (getMode().equals(DefaultProgrammerManager.DIRECTBITMODE) || getMode().equals(DefaultProgrammerManager.DIRECTBYTEMODE)) {
-	    return Integer.parseInt(addr) <= DCCppConstants.MAX_DIRECT_CV;
+        if (getMode().equals(ProgrammingMode.DIRECTBITMODE) || getMode().equals(ProgrammingMode.DIRECTBYTEMODE)) {
+     return Integer.parseInt(addr) <= DCCppConstants.MAX_DIRECT_CV;
         } else {
             return Integer.parseInt(addr) <= 256;
         }
     }
+
+    /** 
+     * {@inheritDoc}
+     */
+    @Nonnull
+    @Override
+    public Programmer.WriteConfirmMode getWriteConfirmMode(String addr) { return WriteConfirmMode.DecoderReply; }
 
     // members for handling the programmer interface
     protected int progState = 0;
@@ -108,12 +119,17 @@ public class DCCppProgrammer extends AbstractProgrammer implements DCCppListener
     static protected final int REQUESTSENT = 1; // waiting reply to command to go into programming mode
     static protected final int INQUIRESENT = 2; // read/write command sent, waiting reply
     protected boolean _progRead = false;
-    protected int _val;	// remember the value being read/written for confirmative reply
-    protected int _cv;	// remember the cv being read/written
+    protected int _val; // remember the value being read/written for confirmative reply
+    protected int _cv; // remember the cv being read/written
 
     // programming interface
 
-    synchronized public void writeCV(int CV, int val, jmri.ProgListener p) throws jmri.ProgrammerException {
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
+    synchronized public void writeCV(String CVname, int val, ProgListener p) throws jmri.ProgrammerException {
+        final int CV = Integer.parseInt(CVname);
         if (log.isDebugEnabled()) {
             log.debug("writeCV " + CV + " listens " + p);
         }
@@ -129,35 +145,43 @@ public class DCCppProgrammer extends AbstractProgrammer implements DCCppListener
             restartTimer(DCCppProgrammerTimeout);
 
             // format and send message to go to program mode
-            if (getMode().equals(DefaultProgrammerManager.PAGEMODE)) {
+            if (getMode().equals(ProgrammingMode.PAGEMODE)) {
                 //DCCppMessage msg = DCCppMessage.getWritePagedCVMsg(CV, val);
                 //controller().sendDCCppMessage(msg, this);
-            } else if (getMode().equals(DefaultProgrammerManager.DIRECTBITMODE) || getMode().equals(DefaultProgrammerManager.DIRECTBYTEMODE)) {
+            } else if (getMode().equals(ProgrammingMode.DIRECTBITMODE) || getMode().equals(ProgrammingMode.DIRECTBYTEMODE)) {
                 DCCppMessage msg = DCCppMessage.makeWriteDirectCVMsg(CV, val);
                 controller().sendDCCppMessage(msg, this);
             } else { // register mode by elimination 
                 //DCCppMessage msg = DCCppMessage.getWriteRegisterMsg(registerFromCV(CV), val);
                 //controller().sendDCCppessage(msg, this);
             }
-	    //} catch (jmri.ProgrammerException e) {
+     //} catch (jmri.ProgrammerException e) {
             //progState = NOTPROGRAMMING;
             //throw e;
-	    //}
+     //}
     }
 
+    /** 
+     * {@inheritDoc}
+     */
     @Override
-    synchronized public void confirmCV(String CV, int val, jmri.ProgListener p) throws jmri.ProgrammerException {
+    synchronized public void confirmCV(String CV, int val, ProgListener p) throws jmri.ProgrammerException {
         readCV(CV, p);
     }
 
-    synchronized public void readCV(int CV, jmri.ProgListener p) throws jmri.ProgrammerException {
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
+    synchronized public void readCV(String CVname, ProgListener p) throws jmri.ProgrammerException {
+        final int CV = Integer.parseInt(CVname);
         if (log.isDebugEnabled()) {
             log.debug("readCV " + CV + " listens " + p);
         }
         // If can't read (e.g. multiMaus CS), this shouldnt be invoked, but
         // still we need to do something rational by returning a NotImplemented error
         if (!getCanRead()) {
-            p.programmingOpReply(CV, jmri.ProgListener.NotImplemented);
+            notifyProgListenerEnd(p,CV,ProgListener.NotImplemented);
             return;
         }
         useProgrammer(p);
@@ -170,27 +194,27 @@ public class DCCppProgrammer extends AbstractProgrammer implements DCCppListener
             restartTimer(DCCppProgrammerTimeout);
 
             // format and send message to go to program mode
-            if (getMode().equals(DefaultProgrammerManager.PAGEMODE)) {
+            if (getMode().equals(ProgrammingMode.PAGEMODE)) {
                 //DCCppMessage msg = DCCppMessage.getReadPagedCVMsg(CV);
                 //controller().sendDCCppMessage(msg, this);
-            } else if (getMode().equals(DefaultProgrammerManager.DIRECTBITMODE) || getMode().equals(DefaultProgrammerManager.DIRECTBYTEMODE)) {
+            } else if (getMode().equals(ProgrammingMode.DIRECTBITMODE) || getMode().equals(ProgrammingMode.DIRECTBYTEMODE)) {
                 DCCppMessage msg = DCCppMessage.makeReadDirectCVMsg(CV);
                 controller().sendDCCppMessage(msg, this);
             } else { // register mode by elimination    
                 //DCCppMessage msg = DCCppMessage.getReadRegisterMsg(registerFromCV(CV));
                 //controller().sendDCCppMessage(msg, this);
             }
-	    //} catch (jmri.ProgrammerException e) {
+     //} catch (jmri.ProgrammerException e) {
             //progState = NOTPROGRAMMING;
             //throw e;
-	    //}
+     //}
 
     }
 
-    private jmri.ProgListener _usingProgrammer = null;
+    private ProgListener _usingProgrammer = null;
 
     // internal method to remember who's using the programmer
-    protected void useProgrammer(jmri.ProgListener p) throws jmri.ProgrammerException {
+    protected void useProgrammer(ProgListener p) throws jmri.ProgrammerException {
         // test for only one!
         if (_usingProgrammer != null && _usingProgrammer != p) {
             if (log.isInfoEnabled()) {
@@ -203,28 +227,42 @@ public class DCCppProgrammer extends AbstractProgrammer implements DCCppListener
         }
     }
 
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
     synchronized public void message(DCCppReply m) {
-	if (progState == NOTPROGRAMMING) {
-	    return;
-	}
-	if (m.getElement(0) == DCCppConstants.PROGRAM_REPLY) {
+         if (progState == NOTPROGRAMMING) {
+             return;
+         }
+         if (m.getElement(0) == DCCppConstants.PROGRAM_REPLY) {
             if (log.isDebugEnabled()) {
                 log.debug("reply in REQUESTSENT state");
             }
-	    log.debug("DCC++ Programming Reply value = {}", m.getCVString());
-	    // CALLBACKNUM = mt.group(1)
-	    // CALLBACKSUB = mt.group(2)
-	    _val = m.getReadValueInt();
-	    progState = NOTPROGRAMMING;
-	    notifyProgListenerEnd(_val, jmri.ProgListener.OK);
-	}
+             log.debug("DCC++ Programming Reply value = {}", m.getCVString());
+             // CALLBACKNUM = mt.group(1)
+             // CALLBACKSUB = mt.group(2)
+             _val = m.getReadValueInt();
+             progState = NOTPROGRAMMING;
+            if (_val == -1) {
+                log.debug("Reporting NoAck");
+                notifyProgListenerEnd(_val, ProgListener.NoAck);
+            } else {
+                log.debug("Reporting OK");
+                notifyProgListenerEnd(_val, ProgListener.OK);
+            }
+        }
     }
 
-    // listen for the messages to the LI100/LI101
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
     synchronized public void message(DCCppMessage l) {
     }
 
     // Handle a timeout notification
+    @Override
     public void notifyTimeout(DCCppMessage msg) {
         if (log.isDebugEnabled()) {
             log.debug("Notified of timeout on message" + msg.toString());
@@ -239,8 +277,8 @@ public class DCCppProgrammer extends AbstractProgrammer implements DCCppListener
         return (progState != NOTPROGRAMMING);
     }
 
-    /**
-     * Internal routine to handle a timeout
+    /** 
+     * {@inheritDoc}
      */
     @Override
     synchronized protected void timeout() {
@@ -252,9 +290,9 @@ public class DCCppProgrammer extends AbstractProgrammer implements DCCppListener
             // perhaps no loco present? Fail back to end of programming
             progState = NOTPROGRAMMING;
             if (getCanRead()) {
-                notifyProgListenerEnd(_val, jmri.ProgListener.FailedTimeout);
+                notifyProgListenerEnd(_val, ProgListener.FailedTimeout);
             } else {
-                notifyProgListenerEnd(_val, jmri.ProgListener.OK);
+                notifyProgListenerEnd(_val, ProgListener.OK);
             }
         }
     }
@@ -268,7 +306,7 @@ public class DCCppProgrammer extends AbstractProgrammer implements DCCppListener
         // clear the current listener _first_
         jmri.ProgListener temp = _usingProgrammer;
         _usingProgrammer = null;
-        temp.programmingOpReply(value, status);
+        notifyProgListenerEnd(temp,value,status);
     }
 
     DCCppTrafficController _controller = null;
@@ -277,6 +315,6 @@ public class DCCppProgrammer extends AbstractProgrammer implements DCCppListener
         return _controller;
     }
 
-    private final static Logger log = LoggerFactory.getLogger(DCCppProgrammer.class.getName());
+    private final static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(DCCppProgrammer.class);
 
 }

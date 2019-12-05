@@ -1,7 +1,7 @@
-// RpsBlock.java
 package jmri.jmrix.rps;
 
 import java.util.List;
+import jmri.LocoAddress;
 import jmri.DccLocoAddress;
 import jmri.DccThrottle;
 import jmri.SignalHead;
@@ -10,11 +10,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Create a Block that can control a locomotive within a specific Block based on
- * an RpsSensor. It sets speed based on aspect of a specific signal
- *
+ * an RpsSensor. It sets speed based on aspect of a specific signal.
  *
  * @author	Bob Jacobsen Copyright (C) 2007
- * @version $Revision$
  */
 public class RpsBlock implements java.beans.PropertyChangeListener, jmri.ThrottleListener {
 
@@ -38,6 +36,7 @@ public class RpsBlock implements java.beans.PropertyChangeListener, jmri.Throttl
     SignalHead signal = null;
     RpsSensor sensor = null;
 
+    @Override
     public void propertyChange(java.beans.PropertyChangeEvent e) {
         handleParameterChange(e.getPropertyName(),
                 e.getOldValue(), e.getNewValue(),
@@ -47,10 +46,7 @@ public class RpsBlock implements java.beans.PropertyChangeListener, jmri.Throttl
     void handleParameterChange(String property,
             Object oldState, Object newState,
             Object source) {
-        if (log.isDebugEnabled()) {
-            log.debug("Change " + property + " from " + source);
-        }
-
+        log.debug("Change {} from {}", property, source);
         if (property.equals("Arriving")) {
             arriving((Integer) newState);
         } else if (property.equals("Leaving")) {
@@ -83,13 +79,34 @@ public class RpsBlock implements java.beans.PropertyChangeListener, jmri.Throttl
         }
     }
 
+    @Override
     public void notifyThrottleFound(DccThrottle t) {
         // put in map
         Integer num = Integer.valueOf(((DccLocoAddress) t.getLocoAddress()).getNumber());
         throttleTable.put(num, t);
     }
 
-    public void notifyFailedThrottleRequest(DccLocoAddress address, String reason) {
+    @Override
+    public void notifyFailedThrottleRequest(LocoAddress address, String reason) {
+    }
+    
+    /**
+     * {@inheritDoc}
+     * @deprecated since 4.15.7; use #notifyDecisionRequired
+     */
+    @Override
+    @Deprecated
+    public void notifyStealThrottleRequired(jmri.LocoAddress address) {
+        jmri.InstanceManager.throttleManagerInstance().responseThrottleDecision(address, this, DecisionType.STEAL );
+    }
+
+    /**
+     * No steal or share decisions made locally
+     * <p>
+     * {@inheritDoc}
+     */
+    @Override
+    public void notifyDecisionRequired(jmri.LocoAddress address, DecisionType question) {
     }
 
     void updateCurrentThrottles() {
@@ -106,10 +123,9 @@ public class RpsBlock implements java.beans.PropertyChangeListener, jmri.Throttl
             if (t != null) {
                 updateOneThrottle(t);
             } else {
-                log.warn("Throttle not yet available for: " + num);
+                log.warn("Throttle not yet available for: {}", num);
             }
         }
-
     }
 
     void updateOneThrottle(DccThrottle t) {
@@ -134,8 +150,6 @@ public class RpsBlock implements java.beans.PropertyChangeListener, jmri.Throttl
 
     static java.util.Hashtable<Integer, DccThrottle> throttleTable = new java.util.Hashtable<Integer, DccThrottle>();
 
-    private final static Logger log = LoggerFactory.getLogger(RpsBlock.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(RpsBlock.class);
 
 }
-
-/* @(#)RpsBlock.java */

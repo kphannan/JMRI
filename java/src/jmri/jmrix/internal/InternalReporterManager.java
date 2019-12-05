@@ -1,32 +1,27 @@
 package jmri.jmrix.internal;
 
 import jmri.Reporter;
-import jmri.implementation.AbstractReporter;
 
 /**
  * Implementation of the InternalReporterManager interface.
  *
- * @author	Bob Jacobsen Copyright (C) 2010
+ * @author Bob Jacobsen Copyright (C) 2010
  * @since 2.9.4
  */
 public class InternalReporterManager extends jmri.managers.AbstractReporterManager {
 
+    public InternalReporterManager(InternalSystemConnectionMemo memo) {
+        super(memo);
+    }
+
     /**
-     * Create an internal (dummy) reporter object
+     * Create an internal TrackReporter object
      *
      * @return new null
      */
+    @Override
     protected Reporter createNewReporter(String systemName, String userName) {
-        return new AbstractReporter(systemName, userName) {
-            public int getState() {
-                return state;
-            }
-
-            public void setState(int s) {
-                state = s;
-            }
-            int state = 0;
-        };
+        return new TrackReporter(systemName, userName);
     }
 
     @Override
@@ -34,7 +29,11 @@ public class InternalReporterManager extends jmri.managers.AbstractReporterManag
         return true;
     }
 
-    public String getSystemPrefix() {
-        return "I";
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public InternalSystemConnectionMemo getMemo() {
+        return (InternalSystemConnectionMemo) memo;
     }
 }

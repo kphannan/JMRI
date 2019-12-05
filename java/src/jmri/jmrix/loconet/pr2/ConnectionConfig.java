@@ -1,4 +1,3 @@
-// ConnectionConfig.java
 package jmri.jmrix.loconet.pr2;
 
 /**
@@ -6,32 +5,39 @@ package jmri.jmrix.loconet.pr2;
  * PR2Adapter object.
  *
  * @author Bob Jacobsen Copyright (C) 2001, 2003
- * @version	$Revision$
  */
 public class ConnectionConfig extends jmri.jmrix.AbstractSerialConnectionConfig {
 
     /**
      * Ctor for an object being created during load process; Swing init is
      * deferred.
+     * @param p the SerialPortAdapter to associate with this connection
      */
     public ConnectionConfig(jmri.jmrix.SerialPortAdapter p) {
         super(p);
     }
 
     /**
-     * Ctor for a functional Swing object with no prexisting adapter
+     * Ctor for a connection configuration with no preexisting adapter.
+     * {@link #setInstance()} will fill the adapter member.
      */
     public ConnectionConfig() {
         super();
     }
 
+    @Override
     public String name() {
-        return "LocoNet PR2";
+        return "LocoNet PR2"; // NOI18N
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     protected void setInstance() {
         if (adapter == null) {
             adapter = new PR2Adapter();
         }
     }
+
 }

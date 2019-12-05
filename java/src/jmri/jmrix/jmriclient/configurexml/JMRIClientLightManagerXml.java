@@ -7,12 +7,11 @@ import org.slf4j.LoggerFactory;
 /**
  * Provides load and store functionality for configuring
  * JMRIClientLightManagers.
- * <P>
+ * <p>
  * Uses the store method from the abstract base class, but provides a load
  * method here.
  *
  * @author Bob Jacobsen Copyright: Copyright (c) 2008
- * @version $Revision$
  */
 public class JMRIClientLightManagerXml extends jmri.managers.configurexml.AbstractLightManagerConfigXML {
 
@@ -20,10 +19,12 @@ public class JMRIClientLightManagerXml extends jmri.managers.configurexml.Abstra
         super();
     }
 
+    @Override
     public void setStoreElementClass(Element lights) {
         lights.setAttribute("class", "jmri.jmrix.jmriclient.configurexml.JMRIClientLightManagerXml");
     }
 
+    @Override
     public void load(Element element, Object o) {
         log.error("Invalid method called");
     }
@@ -35,5 +36,5 @@ public class JMRIClientLightManagerXml extends jmri.managers.configurexml.Abstra
     }
 
     // initialize logging
-    private final static Logger log = LoggerFactory.getLogger(JMRIClientLightManagerXml.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(JMRIClientLightManagerXml.class);
 }

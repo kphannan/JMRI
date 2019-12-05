@@ -1,36 +1,41 @@
 package jmri.jmrit.dispatcher;
 
 import java.util.ArrayList;
-import java.util.ResourceBundle;
+import jmri.InstanceManager;
 
 /**
  * This class holds information and options for an AllocationRequestt.
- * <P>
+ * <p>
  * An AllocationRequest holds the following information: Section to be allocated
  * Active Train requesting the allocation
- * <P>
+ * <p>
  * A AllocationRequests is referenced via a list in DispatcherFrame, which
  * serves as a manager for AllocationRequest objects.
- * <P>
+ * <p>
  * AllocationRequests are transient, and are not saved to disk.
  *
- * <P>
+ * <p>
  * This file is part of JMRI.
- * <P>
+ * <p>
  * JMRI is open source software; you can redistribute it and/or modify it under
  * the terms of version 2 of the GNU General Public License as published by the
  * Free Software Foundation. See the "COPYING" file for a copy of this license.
- * <P>
+ * <p>
  * JMRI is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
  * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  *
- * @author	Dave Duchamp Copyright (C) 2008-2010
+ * @author Dave Duchamp Copyright (C) 2008-2010
  */
 public class AllocationRequest {
 
     /**
-     * Main constructor method
+     * Create an AllocationRequest.
+     *
+     * @param s   the requested section
+     * @param num the sequence number for the requested section
+     * @param dir the direction the train is traveling on the section
+     * @param at  the train for which the section is requested
      */
     public AllocationRequest(jmri.Section s, int num, int dir, ActiveTrain at) {
         mSection = s;
@@ -40,15 +45,13 @@ public class AllocationRequest {
         // listen for changes in Section occupancy
         if (mSection != null) {
             mSection.addPropertyChangeListener(mSectionListener = new java.beans.PropertyChangeListener() {
+                @Override
                 public void propertyChange(java.beans.PropertyChangeEvent e) {
                     handleSectionChange(e);
                 }
             });
         }
     }
-
-    static final ResourceBundle rb = ResourceBundle
-            .getBundle("jmri.jmrit.dispatcher.DispatcherBundle");
 
     // instance variables
     private jmri.Section mSection = null;
@@ -60,9 +63,9 @@ public class AllocationRequest {
     private boolean mWaitingForTrain = false;
     private ArrayList<ActiveTrain> mMeetingTrainList = new ArrayList<ActiveTrain>();
 
-    /**
-     * Access methods
-     */
+    //
+    // Access methods
+    //
     public jmri.Section getSection() {
         return mSection;
     }
@@ -94,12 +97,12 @@ public class AllocationRequest {
 
     protected String getSectionDirectionName() {
         if (mSectionDirection == jmri.Section.FORWARD) {
-            return rb.getString("FORWARD");
+            return Bundle.getMessage("FORWARD");
         }
         if (mSectionDirection == jmri.Section.REVERSE) {
-            return rb.getString("REVERSE");
+            return Bundle.getMessage("REVERSE");
         }
-        return rb.getString("UNKNOWN");
+        return Bundle.getMessage("UNKNOWN");
     }
 
     protected boolean getWaitingForTrain() {
@@ -131,11 +134,11 @@ public class AllocationRequest {
      * Methods
      */
     private void handleSectionChange(java.beans.PropertyChangeEvent e) {
-        DispatcherFrame.instance().sectionOccupancyChanged();
+        InstanceManager.getDefault(DispatcherFrame.class).sectionOccupancyChanged();
         //This forces us to rescan the allocation list if the section has gone unoccupied, thus this might get re-allocated
         if (e.getPropertyName().equals("occupancy")) {
             if (((Integer) e.getNewValue()).intValue() == jmri.Section.UNOCCUPIED) {
-                DispatcherFrame.instance().forceScanOfAllocation();
+                InstanceManager.getDefault(DispatcherFrame.class).forceScanOfAllocation();
             }
         }
     }
@@ -168,11 +171,12 @@ public class AllocationRequest {
     public void setWaitingForSignalMast(jmri.SignalMast sm) {
         if (mSignalMastListener == null) {
             mSignalMastListener = new java.beans.PropertyChangeListener() {
+                @Override
                 public void propertyChange(java.beans.PropertyChangeEvent e) {
                     if (e.getPropertyName().equals("Held")) {
                         if (!((Boolean) e.getNewValue()).booleanValue()) {
                             mWaitingForSignalMast.removePropertyChangeListener(mSignalMastListener);
-                            DispatcherFrame.instance().forceScanOfAllocation();
+                            InstanceManager.getDefault(DispatcherFrame.class).forceScanOfAllocation();
                         }
                     }
                 }
@@ -193,11 +197,12 @@ public class AllocationRequest {
     protected void setWaitingOnBlock(jmri.Block b) {
         if (mWaitingOnBlockListener == null) {
             mWaitingOnBlockListener = new java.beans.PropertyChangeListener() {
+                @Override
                 public void propertyChange(java.beans.PropertyChangeEvent e) {
                     if (e.getPropertyName().equals("state")) {
                         if (((Integer) e.getNewValue()).intValue() == jmri.Block.UNOCCUPIED) {
                             mWaitingOnBlock.removePropertyChangeListener(mWaitingOnBlockListener);
-                            DispatcherFrame.instance().forceScanOfAllocation();
+                            InstanceManager.getDefault(DispatcherFrame.class).forceScanOfAllocation();
                         }
                     }
                 }

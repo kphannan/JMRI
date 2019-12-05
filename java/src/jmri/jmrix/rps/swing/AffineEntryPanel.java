@@ -11,7 +11,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 /**
- * Panel for entry and modifiation of an Affine Transform
+ * Panel for entry and modifiation of an Affine Transform.
  *
  * @author	Bob Jacobsen Copyright (C) 2008
  */
@@ -48,6 +48,7 @@ public class AffineEntryPanel extends javax.swing.JPanel {
 
         JButton b = new JButton("Set");
         b.addActionListener(new ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent event) {
                 update();
             }
@@ -94,5 +95,7 @@ public class AffineEntryPanel extends javax.swing.JPanel {
         m12.setText("" + tnew.getTranslateY());
         update();
     }
+
     AffineTransform t = new AffineTransform();
+
 }

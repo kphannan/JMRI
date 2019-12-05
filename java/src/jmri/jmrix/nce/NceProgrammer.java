@@ -2,19 +2,18 @@ package jmri.jmrix.nce;
 
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nonnull;
+
 import jmri.ProgrammingMode;
 import jmri.jmrix.AbstractProgrammer;
-import jmri.managers.DefaultProgrammerManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Convert the jmri.Programmer interface into commands for the NCE power house.
- * <P>
+ * <p>
  * This has two states: NOTPROGRAMMING, and COMMANDSENT. The transitions to and
  * from programming mode are now handled in the TrafficController code.
  *
- * @author	Bob Jacobsen Copyright (C) 2001, 2016
+ * @author Bob Jacobsen Copyright (C) 2001, 2016
  * @author kcameron Copyright (C) 2014
  */
 public class NceProgrammer extends AbstractProgrammer implements NceListener {
@@ -30,77 +29,103 @@ public class NceProgrammer extends AbstractProgrammer implements NceListener {
         }
     }
 
-    /**
-     * Programming modes available depend on settings
+    /** 
+     * {@inheritDoc}
+     *
+     * NCE programming modes available depend on settings
      */
     @Override
+    @Nonnull
     public List<ProgrammingMode> getSupportedModes() {
         List<ProgrammingMode> ret = new ArrayList<ProgrammingMode>();
-        if (tc != null && tc.getUsbSystem() != NceTrafficController.USB_SYSTEM_POWERCAB
-                && tc.getUsbSystem() != NceTrafficController.USB_SYSTEM_NONE) {
-            log.warn("NCE USB-SB3/SB5/TWIN getSupportedModes returns no modes, should not have been called", new Exception("traceback"));
-            return ret;  // empty list
+        if (tc == null) {
+            log.warn("getSupportedModes called with null tc", new Exception("traceback"));
+        }
+        java.util.Objects.requireNonNull(tc, "TrafficController reference needed");
+
+        if (tc.getUsbSystem() != NceTrafficController.USB_SYSTEM_NONE) {
+            // USB connection
+            switch (tc.getUsbSystem()) {
+                case NceTrafficController.USB_SYSTEM_POWERCAB:
+                case NceTrafficController.USB_SYSTEM_TWIN:
+                    ret.add(ProgrammingMode.DIRECTMODE);
+                    ret.add(ProgrammingMode.PAGEMODE);
+                    ret.add(ProgrammingMode.REGISTERMODE);
+                    return ret;
+
+                case NceTrafficController.USB_SYSTEM_SB3:
+                case NceTrafficController.USB_SYSTEM_SB5:
+                case NceTrafficController.USB_SYSTEM_POWERPRO:
+                    log.trace("no programming modes available for USB {}", tc.getUsbSystem());
+                    return ret;
+
+                default:
+                    log.warn("should not have hit default");
+                    return ret;
+            }
         }
 
-        if (tc != null && tc.getCommandOptions() >= NceTrafficController.OPTION_2006) {
-            ret.add(DefaultProgrammerManager.DIRECTMODE);
+        // here not USB
+        if (tc.getCommandOptions() >= NceTrafficController.OPTION_2006) {
+            ret.add(ProgrammingMode.DIRECTMODE);
         }
 
-        ret.add(DefaultProgrammerManager.PAGEMODE);
-        ret.add(DefaultProgrammerManager.REGISTERMODE);
+        ret.add(ProgrammingMode.PAGEMODE);
+        ret.add(ProgrammingMode.REGISTERMODE);
 
         return ret;
     }
 
+    /** 
+     * {@inheritDoc}
+     */
     @Override
     public boolean getCanRead() {
-        if (tc != null && tc.getUsbSystem() != NceTrafficController.USB_SYSTEM_POWERCAB
-                && tc.getUsbSystem() != NceTrafficController.USB_SYSTEM_NONE) {
-            return false;
-        } else {
-            return true;
-        }
+        return !(tc != null && tc.getUsbSystem() != NceTrafficController.USB_SYSTEM_POWERCAB
+                && tc.getUsbSystem() != NceTrafficController.USB_SYSTEM_TWIN
+                && tc.getUsbSystem() != NceTrafficController.USB_SYSTEM_NONE);
     }
 
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
     public boolean getCanWrite(String cv) {
         return getCanWrite(Integer.parseInt(cv));
     }
 
     boolean getCanWrite(int cv) {
-        // prevent writing Prog Track mode CV > 256 on PowerHouse 2007C and earlier
-        if (    (cv > 256)
-                && ((getMode() == DefaultProgrammerManager.PAGEMODE)
-                    || (getMode() == DefaultProgrammerManager.DIRECTMODE)
-                    || (getMode() == DefaultProgrammerManager.REGISTERMODE))
+        // prevent writing Prog Track mode CV > 256 on PowerPro 2007C and earlier
+        return !((cv > 256)
+                && ((getMode() == ProgrammingMode.PAGEMODE)
+                || (getMode() == ProgrammingMode.DIRECTMODE)
+                || (getMode() == ProgrammingMode.REGISTERMODE))
                 && ((tc != null)
-                        && ((tc.getCommandOptions() == NceTrafficController.OPTION_1999)
-                            || (tc.getCommandOptions() == NceTrafficController.OPTION_2004)
-                            || (tc.getCommandOptions() == NceTrafficController.OPTION_2006)
-                            )
-                    )
-                ) {
-            return false;
-        } else {
-            return true;
-        }
+                && ((tc.getCommandOptions() == NceTrafficController.OPTION_1999)
+                || (tc.getCommandOptions() == NceTrafficController.OPTION_2004)
+                || (tc.getCommandOptions() == NceTrafficController.OPTION_2006))));
     }
 
     // members for handling the programmer interface
     int progState = 0;
     static final int NOTPROGRAMMING = 0;// is notProgramming
-    static final int COMMANDSENT = 2; 	// read/write command sent, waiting reply
-    static final int COMMANDSENT_2 = 4;	// ops programming mode, send msg twice
+    static final int COMMANDSENT = 2;  // read/write command sent, waiting reply
+    static final int COMMANDSENT_2 = 4; // ops programming mode, send msg twice
     boolean _progRead = false;
-    int _val;	// remember the value being read/written for confirmative reply
-    int _cv;	// remember the cv being read/written
+    int _val; // remember the value being read/written for confirmative reply
+    int _cv; // remember the cv being read/written
 
-    // programming interface
-    public synchronized void writeCV(int CV, int val, jmri.ProgListener p) throws jmri.ProgrammerException {
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
+    public synchronized void writeCV(String CVname, int val, jmri.ProgListener p) throws jmri.ProgrammerException {
+        final int CV = Integer.parseInt(CVname);
         if (log.isDebugEnabled()) {
             log.debug("writeCV " + CV + " listens " + p);
         }
         useProgrammer(p);
-        // prevent writing Prog Track mode CV > 256 on PowerHouse 2007C and earlier
+        // prevent writing Prog Track mode CV > 256 on PowerPro 2007C and earlier
         if (!getCanWrite(CV)) {
             throw new jmri.ProgrammerException("CV number not supported");
         }
@@ -122,12 +147,20 @@ public class NceProgrammer extends AbstractProgrammer implements NceListener {
         }
     }
 
+    /** 
+     * {@inheritDoc}
+     */
     @Override
     public void confirmCV(String CV, int val, jmri.ProgListener p) throws jmri.ProgrammerException {
         readCV(CV, p);
     }
 
-    public synchronized void readCV(int CV, jmri.ProgListener p) throws jmri.ProgrammerException {
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
+    public synchronized void readCV(String CVname, jmri.ProgListener p) throws jmri.ProgrammerException {
+        final int CV = Integer.parseInt(CVname);
         if (log.isDebugEnabled()) {
             log.debug("readCV " + CV + " listens " + p);
         }
@@ -171,18 +204,18 @@ public class NceProgrammer extends AbstractProgrammer implements NceListener {
         // val = -1 for read command; mode is direct, etc
         if (val < 0) {
             // read
-            if (mode == DefaultProgrammerManager.PAGEMODE) {
+            if (mode == ProgrammingMode.PAGEMODE) {
                 return NceMessage.getReadPagedCV(tc, cvnum);
-            } else if (mode == DefaultProgrammerManager.DIRECTMODE) {
+            } else if (mode == ProgrammingMode.DIRECTMODE) {
                 return NceMessage.getReadDirectCV(tc, cvnum);
             } else {
                 return NceMessage.getReadRegister(tc, registerFromCV(cvnum));
             }
         } else {
             // write
-            if (mode == DefaultProgrammerManager.PAGEMODE) {
+            if (mode == ProgrammingMode.PAGEMODE) {
                 return NceMessage.getWritePagedCV(tc, cvnum, val);
-            } else if (mode == DefaultProgrammerManager.DIRECTMODE) {
+            } else if (mode == ProgrammingMode.DIRECTMODE) {
                 return NceMessage.getWriteDirectCV(tc, cvnum, val);
             } else {
                 return NceMessage.getWriteRegister(tc, registerFromCV(cvnum), val);
@@ -190,10 +223,18 @@ public class NceProgrammer extends AbstractProgrammer implements NceListener {
         }
     }
 
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
     public void message(NceMessage m) {
         log.error("message received unexpectedly: " + m.toString());
     }
 
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
     public synchronized void reply(NceReply m) {
         if (progState == NOTPROGRAMMING) {
             // we get the complete set of replies now, so ignore these
@@ -240,9 +281,12 @@ public class NceProgrammer extends AbstractProgrammer implements NceListener {
         }
     }
 
-    /**
+    /** 
+     * {@inheritDoc}
+     *
      * Internal routine to handle a timeout
      */
+    @Override
     protected synchronized void timeout() {
         if (progState != NOTPROGRAMMING) {
             // we're programming, time to stop
@@ -270,9 +314,9 @@ public class NceProgrammer extends AbstractProgrammer implements NceListener {
         // clear the current listener _first_
         jmri.ProgListener temp = _usingProgrammer;
         _usingProgrammer = null;
-        temp.programmingOpReply(value, status);
+        notifyProgListenerEnd(temp, value, status);
     }
 
-    private final static Logger log = LoggerFactory.getLogger(NceProgrammer.class.getName());
+    private final static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(NceProgrammer.class);
 
 }

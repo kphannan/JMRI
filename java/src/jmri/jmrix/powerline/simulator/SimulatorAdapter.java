@@ -4,23 +4,25 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.util.Arrays;
+
 import jmri.jmrix.powerline.SerialPortController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Implement simulator for powerline serial systems
- * <P>
- * System names are "PLnnn", where nnn is the bit number without padding.
- * <P>
- * This is based on the NCE simulator.
+ * Implement simulator for Powerline serial systems.
+ * <p>
+ * System names are "PLnnn", where P is the user-configurable system prefix,
+ * nnn is the bit number without padding.
+ * <p>
+ * Based on the NCE simulator.
  *
- * @author	Dave Duchamp Copyright (C) 2004
- * @author	Bob Jacobsen Copyright (C) 2006, 2007, 2008 Converted to multiple connection
+ * @author Dave Duchamp Copyright (C) 2004
+ * @author Bob Jacobsen Copyright (C) 2006, 2007, 2008 Converted to multiple connection
  * @author kcameron Copyright (C) 2011
  */
-public class SimulatorAdapter extends SerialPortController implements
-        jmri.jmrix.SerialPortAdapter, Runnable {
+public class SimulatorAdapter extends SerialPortController implements Runnable {
 
     // private control members
     private boolean opened = false;
@@ -28,7 +30,7 @@ public class SimulatorAdapter extends SerialPortController implements
 
     // streams to share with user class
     private DataOutputStream pout = null; // this is provided to classes who want to write to us
-    private DataInputStream pin = null; // this is provided to class who want data from us
+    private DataInputStream pin = null; // this is provided to classes who want data from us
 
     // internal ends of the pipes
     @SuppressWarnings("unused")
@@ -40,6 +42,7 @@ public class SimulatorAdapter extends SerialPortController implements
         super(new SpecificSystemConnectionMemo());
     }
 
+    @Override
     public String openPort(String portName, String appName) {
         try {
             PipedOutputStream tempPipeI = new PipedOutputStream();
@@ -56,9 +59,10 @@ public class SimulatorAdapter extends SerialPortController implements
     }
 
     /**
-     * set up all of the other objects to simulate operation with an command
+     * Set up all of the other objects to simulate operation with an command
      * station.
      */
+    @Override
     public void configure() {
         SpecificTrafficController tc = new SpecificTrafficController(this.getSystemConnectionMemo());
 
@@ -79,6 +83,7 @@ public class SimulatorAdapter extends SerialPortController implements
     }
 
     // base class methods for the PortController interface
+    @Override
     public DataInputStream getInputStream() {
         if (!opened || pin == null) {
             log.error("getInputStream called before load(), stream not available");
@@ -86,6 +91,7 @@ public class SimulatorAdapter extends SerialPortController implements
         return pin;
     }
 
+    @Override
     public DataOutputStream getOutputStream() {
         if (!opened || pout == null) {
             log.error("getOutputStream called before load(), stream not available");
@@ -93,22 +99,39 @@ public class SimulatorAdapter extends SerialPortController implements
         return pout;
     }
 
+    @Override
     public boolean status() {
         return opened;
     }
 
     /**
-     * Get an array of valid baud rates.
+     * {@inheritDoc}
      */
+    @Override
     public String[] validBaudRates() {
         log.debug("validBaudRates should not have been invoked");
-        return null;
+        return new String[]{};
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int[] validBaudNumbers() {
+        return new int[]{};
+    }
+
+    @Override
     public String getCurrentBaudRate() {
         return "";
     }
 
+    @Override
+    public String getCurrentPortName(){
+        return "";
+    }
+
+    @Override
     public void run() { // start a new thread
         // Simulator thread just reports start and ends
         if (log.isInfoEnabled()) {
@@ -117,6 +140,6 @@ public class SimulatorAdapter extends SerialPortController implements
     }
 
     private final static Logger log = LoggerFactory
-            .getLogger(SimulatorAdapter.class.getName());
+            .getLogger(SimulatorAdapter.class);
 
 }

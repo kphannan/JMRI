@@ -1,153 +1,118 @@
 package jmri.server.json.power;
 
-import apps.tests.Log4JFixture;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.Locale;
+import com.fasterxml.jackson.databind.node.NullNode;
+
 import javax.servlet.http.HttpServletResponse;
 import jmri.InstanceManager;
 import jmri.JmriException;
 import jmri.PowerManager;
 import jmri.server.json.JSON;
 import jmri.server.json.JsonException;
+import jmri.server.json.JsonHttpServiceTestBase;
 import jmri.util.JUnitUtil;
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
-import junit.textui.TestRunner;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  *
  * @author Paul Bender
- * @author Randall Wood
+ * @author Randall Wood Copyright 2018, 2019
  */
-public class JsonPowerHttpServiceTest extends TestCase {
+public class JsonPowerHttpServiceTest extends JsonHttpServiceTestBase<JsonPowerHttpService> {
 
-    private final static Logger log = LoggerFactory.getLogger(JsonPowerHttpServiceTest.class);
-
-    public void testCtorSuccess() {
-        JsonPowerHttpService service = new JsonPowerHttpService(new ObjectMapper());
-        Assert.assertNotNull(service);
-    }
-
-    public void testDoGet() throws JmriException {
-        JsonPowerHttpService service = new JsonPowerHttpService(new ObjectMapper());
+    @Test
+    public void testDoGet() throws JmriException, JsonException {
         PowerManager power = InstanceManager.getDefault(PowerManager.class);
-        JsonNode result;
-        try {
-            power.setPower(PowerManager.UNKNOWN);
-            result = service.doGet(JsonPowerServiceFactory.POWER, null, Locale.ENGLISH);
-            Assert.assertNotNull(result);
-            Assert.assertEquals(JSON.UNKNOWN, result.path(JSON.DATA).path(JSON.STATE).asInt());
-            power.setPower(PowerManager.ON);
-            result = service.doGet(JsonPowerServiceFactory.POWER, null, Locale.ENGLISH);
-            Assert.assertNotNull(result);
-            Assert.assertEquals(JSON.ON, result.path(JSON.DATA).path(JSON.STATE).asInt());
-            power.setPower(PowerManager.OFF);
-            result = service.doGet(JsonPowerServiceFactory.POWER, null, Locale.ENGLISH);
-            Assert.assertNotNull(result);
-            Assert.assertEquals(JSON.OFF, result.path(JSON.DATA).path(JSON.STATE).asInt());
-        } catch (JsonException ex) {
-            log.error("Threw", ex);
-            Assert.fail("Unexpected Exception");
-        }
+        power.setPower(PowerManager.UNKNOWN);
+        JsonNode result = service.doGet(JsonPowerServiceFactory.POWER, "", NullNode.getInstance(), locale, 42);
+        this.validate(result);
+        Assert.assertNotNull(result);
+        Assert.assertEquals(JsonPowerServiceFactory.POWER, result.path(JSON.TYPE).asText());
+        Assert.assertEquals(JSON.UNKNOWN, result.path(JSON.DATA).path(JSON.STATE).asInt());
+        power.setPower(PowerManager.ON);
+        result = service.doGet(JsonPowerServiceFactory.POWER, "", NullNode.getInstance(), locale, 42);
+        this.validate(result);
+        Assert.assertNotNull(result);
+        Assert.assertEquals(JSON.ON, result.path(JSON.DATA).path(JSON.STATE).asInt());
+        power.setPower(PowerManager.OFF);
+        result = service.doGet(JsonPowerServiceFactory.POWER, "", NullNode.getInstance(), locale, 42);
+        this.validate(result);
+        Assert.assertNotNull(result);
+        Assert.assertEquals(JSON.OFF, result.path(JSON.DATA).path(JSON.STATE).asInt());
     }
 
-    public void testDoPost() throws JmriException {
-        ObjectMapper mapper = new ObjectMapper();
-        JsonPowerHttpService service = new JsonPowerHttpService(mapper);
+    @Test
+    public void testDoPost() throws JmriException, JsonException {
         PowerManager power = InstanceManager.getDefault(PowerManager.class);
         JsonNode result;
         JsonNode message;
+        power.setPower(PowerManager.UNKNOWN);
+        message = mapper.createObjectNode().put(JSON.STATE, JSON.ON);
+        result = service.doPost(JsonPowerServiceFactory.POWER, "", message, locale, 42);
+        this.validate(result);
+        Assert.assertEquals(PowerManager.ON, power.getPower());
+        Assert.assertNotNull(result);
+        Assert.assertEquals(JSON.ON, result.path(JSON.DATA).path(JSON.STATE).asInt());
+        message = mapper.createObjectNode().put(JSON.STATE, JSON.OFF);
+        result = service.doPost(JsonPowerServiceFactory.POWER, "", message, locale, 42);
+        this.validate(result);
+        Assert.assertEquals(PowerManager.OFF, power.getPower());
+        Assert.assertNotNull(result);
+        Assert.assertEquals(JSON.OFF, result.path(JSON.DATA).path(JSON.STATE).asInt());
+        message = mapper.createObjectNode().put(JSON.STATE, JSON.UNKNOWN);
+        result = service.doPost(JsonPowerServiceFactory.POWER, "", message, locale, 42);
+        this.validate(result);
+        Assert.assertEquals(PowerManager.OFF, power.getPower());
+        Assert.assertEquals(JSON.OFF, result.path(JSON.DATA).path(JSON.STATE).asInt());
+        message = mapper.createObjectNode().put(JSON.STATE, 42); // Invalid value
+        JsonException exception = null;
         try {
-            power.setPower(PowerManager.UNKNOWN);
-            message = mapper.createObjectNode().put(JSON.STATE, JSON.ON);
-            result = service.doPost(JsonPowerServiceFactory.POWER, null, message, Locale.ENGLISH);
-            Assert.assertEquals(PowerManager.ON, power.getPower());
-            Assert.assertNotNull(result);
-            Assert.assertEquals(JSON.ON, result.path(JSON.DATA).path(JSON.STATE).asInt());
-            message = mapper.createObjectNode().put(JSON.STATE, JSON.OFF);
-            result = service.doPost(JsonPowerServiceFactory.POWER, null, message, Locale.ENGLISH);
-            Assert.assertEquals(PowerManager.OFF, power.getPower());
-            Assert.assertNotNull(result);
-            Assert.assertEquals(JSON.OFF, result.path(JSON.DATA).path(JSON.STATE).asInt());
-            message = mapper.createObjectNode().put(JSON.STATE, JSON.UNKNOWN);
-            result = service.doPost(JsonPowerServiceFactory.POWER, null, message, Locale.ENGLISH);
-            Assert.assertEquals(PowerManager.OFF, power.getPower());
-            Assert.assertEquals(JSON.OFF, result.path(JSON.DATA).path(JSON.STATE).asInt());
-            message = mapper.createObjectNode().put(JSON.STATE, 42); // Invalid value
-            JsonException exception = null;
-            try {
-                service.doPost(JsonPowerServiceFactory.POWER, null, message, Locale.ENGLISH);
-            } catch (JsonException ex) {
-                exception = ex;
-            }
-            Assert.assertEquals(PowerManager.OFF, power.getPower());
-            Assert.assertNotNull(exception);
-            Assert.assertEquals(HttpServletResponse.SC_BAD_REQUEST, exception.getCode());
+            service.doPost(JsonPowerServiceFactory.POWER, "", message, locale, 42);
         } catch (JsonException ex) {
-            log.error("Threw", ex);
-            Assert.fail("Unexpected Exception");
+            exception = ex;
         }
+        Assert.assertEquals(PowerManager.OFF, power.getPower());
+        Assert.assertNotNull(exception);
+        Assert.assertEquals(HttpServletResponse.SC_BAD_REQUEST, exception.getCode());
     }
 
+    @Test
     public void testDoPut() {
         try {
-            (new JsonPowerHttpService(new ObjectMapper())).doPut(JsonPowerServiceFactory.POWER, null, null, Locale.ENGLISH);
+            service.doPut(JsonPowerServiceFactory.POWER, "", NullNode.getInstance(), locale, 42);
+            Assert.fail("Expected exception not thrown");
         } catch (JsonException ex) {
             Assert.assertEquals(HttpServletResponse.SC_METHOD_NOT_ALLOWED, ex.getCode());
-            return;
         }
-        Assert.fail("Did not throw expected error.");
-    }
-    
-    public void testDoGetList() {
-        try {
-            (new JsonPowerHttpService(new ObjectMapper())).doGetList(JsonPowerServiceFactory.POWER, Locale.ENGLISH);
-        } catch (JsonException ex) {
-            Assert.assertEquals(HttpServletResponse.SC_METHOD_NOT_ALLOWED, ex.getCode());
-            return;
-        }
-        Assert.fail("Did not throw expected error.");
-    }
-    
-    public void testDelete() {
-        try {
-            (new JsonPowerHttpService(new ObjectMapper())).doDelete(JsonPowerServiceFactory.POWER, null, Locale.ENGLISH);
-        } catch (JsonException ex) {
-            Assert.assertEquals(HttpServletResponse.SC_METHOD_NOT_ALLOWED, ex.getCode());
-            return;
-        }
-        Assert.fail("Did not throw expected error.");
-    }
-    
-    // from here down is testing infrastructure
-    public JsonPowerHttpServiceTest(String s) {
-        super(s);
     }
 
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {JsonPowerHttpServiceTest.class.getName()};
-        TestRunner.main(testCaseName);
+    @Test
+    public void testDoGetList() throws JsonException {
+        JsonNode result = service.doGetList(JsonPowerServiceFactory.POWER, NullNode.getInstance(), locale, 0);
+        this.validate(result);
+        Assert.assertTrue(result.isArray());
+        Assert.assertEquals(1, result.size());
     }
 
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(JsonPowerHttpServiceTest.class);
-
-        return suite;
-    }
-
-    // The minimal setup for log4J
+    @Test
     @Override
-    protected void setUp() throws Exception {
-        Log4JFixture.setUp();
+    public void testDoDelete() {
+        try {
+            service.doDelete(JsonPowerServiceFactory.POWER, "", NullNode.getInstance(), locale, 42);
+            Assert.fail("Expected exception not thrown");
+        } catch (JsonException ex) {
+            Assert.assertEquals(HttpServletResponse.SC_METHOD_NOT_ALLOWED, ex.getCode());
+        }
+    }
+
+    @Before
+    @Override
+    public void setUp() throws Exception {
         super.setUp();
-        JUnitUtil.resetInstanceManager();
+        service = new JsonPowerHttpService(mapper);
         JUnitUtil.initInternalTurnoutManager();
         JUnitUtil.initInternalLightManager();
         JUnitUtil.initInternalSensorManager();
@@ -155,11 +120,10 @@ public class JsonPowerHttpServiceTest extends TestCase {
         JUnitUtil.initDebugPowerManager();
     }
 
+    @After
     @Override
-    protected void tearDown() throws Exception {
-        JUnitUtil.resetInstanceManager();
+    public void tearDown() throws Exception {
         super.tearDown();
-        Log4JFixture.tearDown();
     }
 
 }

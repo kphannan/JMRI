@@ -2,6 +2,7 @@ package jmri.configurexml;
 
 import java.awt.event.ActionEvent;
 import javax.swing.JFileChooser;
+import jmri.ConfigureManager;
 import jmri.InstanceManager;
 import jmri.JmriException;
 import org.slf4j.Logger;
@@ -9,14 +10,14 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Load configuration information from an XML file.
- * <P>
+ * <p>
  * The file context for this is the "config" file chooser.
- * <P>
+ * <p>
  * This will load whatever information types are present in the file. See
  * {@link jmri.ConfigureManager} for information on the various types of
  * information stored in configuration files.
  *
- * @author	Bob Jacobsen Copyright (C) 2002
+ * @author Bob Jacobsen Copyright (C) 2002
  * @see jmri.jmrit.XmlFile
  */
 public class LoadXmlConfigAction extends LoadStoreBaseAction {
@@ -29,6 +30,7 @@ public class LoadXmlConfigAction extends LoadStoreBaseAction {
         super(s);
     }
 
+    @Override
     public void actionPerformed(ActionEvent e) {
         loadFile(getConfigFileChooser());
     }
@@ -43,12 +45,17 @@ public class LoadXmlConfigAction extends LoadStoreBaseAction {
         java.io.File file = getFile(fileChooser);
         if (file != null) {
             try {
-                results = InstanceManager.getOptionalDefault(jmri.ConfigureManager.class).load(file);
-                if (results) {
-                    // insure logix etc fire up
-                    InstanceManager.getDefault(jmri.LogixManager.class).activateAllLogixs();
-                    InstanceManager.getDefault(jmri.jmrit.display.layoutEditor.LayoutBlockManager.class).initializeLayoutBlockPaths();
-                    new jmri.jmrit.catalog.configurexml.DefaultCatalogTreeManagerXml().readCatalogTrees();
+                ConfigureManager cm = InstanceManager.getNullableDefault(jmri.ConfigureManager.class);
+                if (cm == null) {
+                    log.error("Failed to get default configure manager");
+                } else {
+                    results = cm.load(file);
+                    if (results) {
+                        // insure logix etc fire up
+                        InstanceManager.getDefault(jmri.LogixManager.class).activateAllLogixs();
+                        InstanceManager.getDefault(jmri.jmrit.display.layoutEditor.LayoutBlockManager.class).initializeLayoutBlockPaths();
+                        new jmri.jmrit.catalog.configurexml.DefaultCatalogTreeManagerXml().readCatalogTrees();
+                    }
                 }
             } catch (JmriException e) {
                 log.error("Unhandled problem in loadFile: " + e);
@@ -77,6 +84,6 @@ public class LoadXmlConfigAction extends LoadStoreBaseAction {
     }
 
     // initialize logging
-    private final static Logger log = LoggerFactory.getLogger(LoadXmlConfigAction.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(LoadXmlConfigAction.class);
 
 }

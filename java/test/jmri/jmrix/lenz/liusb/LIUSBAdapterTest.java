@@ -1,9 +1,10 @@
 package jmri.jmrix.lenz.liusb;
 
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import jmri.util.JUnitUtil;
+import org.junit.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Assert;
 
 /**
  * LIUSBAdapterTest.java
@@ -12,37 +13,22 @@ import junit.framework.TestSuite;
  *
  * @author	Paul Bender
  */
-public class LIUSBAdapterTest extends TestCase {
+public class LIUSBAdapterTest {
 
+    @Test
     public void testCtor() {
         LIUSBAdapter a = new LIUSBAdapter();
         Assert.assertNotNull(a);
     }
 
-    // from here down is testing infrastructure
-    public LIUSBAdapterTest(String s) {
-        super(s);
+    @Before
+    public void setUp() {
+        JUnitUtil.setUp();
     }
 
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading", LIUSBAdapterTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(LIUSBAdapterTest.class);
-        return suite;
-    }
-
-    // The minimal setup for log4J
-    protected void setUp() {
-        apps.tests.Log4JFixture.setUp();
-    }
-
-    protected void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
+    @After
+    public void tearDown() {
+        JUnitUtil.tearDown();
     }
 
 }

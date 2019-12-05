@@ -13,14 +13,13 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Handle XML persistance of layout connections.
- * <P>
+ * <p>
  * This class is named as being the persistant form of the JmrixConfigPane
  * class, but there's no object of that form created or used. Instead, this
  * interacts forwards to a similar class in one of the protocol-specific
  * packages, e.g. jmrix.easydcc.serialdriver.configurexml
  *
  * @author Bob Jacobsen Copyright: Copyright (c) 2003
- * @version $Revision$
  */
 public class JmrixConfigPaneXml extends AbstractXmlAdapter {
 
@@ -30,6 +29,7 @@ public class JmrixConfigPaneXml extends AbstractXmlAdapter {
     /**
      * Forward to the configurexml class for the specific object type.
      */
+    @Override
     public Element store(Object o) {
         ConnectionConfig oprime = ((JmrixConfigPane) o).getCurrentObject();
         if (oprime == null) {
@@ -38,11 +38,10 @@ public class JmrixConfigPaneXml extends AbstractXmlAdapter {
         String adapter = ConfigXmlManager.adapterName(oprime);
         log.debug("forward to " + adapter);
         try {
-            XmlAdapter x = (XmlAdapter) Class.forName(adapter).newInstance();
+            XmlAdapter x = (XmlAdapter) Class.forName(adapter).getDeclaredConstructor().newInstance();
             return x.store(oprime);
-        } catch (Exception e) {
-            log.error("Exception: " + e);
-            e.printStackTrace();
+        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | NoSuchMethodException | java.lang.reflect.InvocationTargetException e) {
+            log.error("Exception: ", e);
             return null;
         }
     }
@@ -112,10 +111,12 @@ public class JmrixConfigPaneXml extends AbstractXmlAdapter {
      * @param element Top level Element to unpack.
      * @param o       ignored
      */
+    @Override
     public void load(Element element, Object o) {
         jmri.jmrit.symbolicprog.ProgDefault.setDefaultProgFile(element.getAttribute("defaultFile").getValue());
     }
+
     // initialize logging
-    private final static Logger log = LoggerFactory.getLogger(JmrixConfigPaneXml.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(JmrixConfigPaneXml.class);
 
 }

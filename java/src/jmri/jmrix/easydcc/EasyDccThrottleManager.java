@@ -1,61 +1,70 @@
 package jmri.jmrix.easydcc;
 
+import java.util.EnumSet;
 import jmri.DccLocoAddress;
-import jmri.DccThrottle;
 import jmri.LocoAddress;
+import jmri.SpeedStepMode;
 import jmri.jmrix.AbstractThrottleManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * EasyDCC implementation of a ThrottleManager.
- * <P>
+ * <p>
  * Based on early NCE code.
  *
- * @author	Bob Jacobsen Copyright (C) 2001, 2005
+ * @author Bob Jacobsen Copyright (C) 2001, 2005
  * @author Modified by Kelly Loyd
- * @version $Revision$
  */
 public class EasyDccThrottleManager extends AbstractThrottleManager {
 
+    private EasyDccSystemConnectionMemo _memo = null;
+
     /**
-     * Constructor.
+     * Constructor
      */
     public EasyDccThrottleManager(EasyDccSystemConnectionMemo memo) {
         super(memo);
+        _memo = memo;
     }
 
+    @Override
     public void requestThrottleSetup(LocoAddress address, boolean control) {
-        // KSL 20040409 - EasyDcc does not require feedback afaik
-        // don't quite know if the EasyDcc requires feedback.
-        // may need to extend this.
-        /* KSL - appears that the first command sent to the Queue in EasyDcc
+        // Not sure if EasyDcc requires feedback. May need to extend this.
+        /* It appears that the first command sent to the Queue in EasyDcc
          is 'lost' - so it may be beneficial to send a 'Send' command 
          just to wake up the command station.
          This was tested on v418 - also appears as an issue with the
          radio throttles. 
          */
-        log.debug("new EasyDccThrottle for " + address);
-        notifyThrottleKnown(new EasyDccThrottle((EasyDccSystemConnectionMemo) adapterMemo, (DccLocoAddress) address), address);
+        if (address instanceof DccLocoAddress ) {
+            log.debug("new EasyDccThrottle for {}", address);
+            notifyThrottleKnown(new EasyDccThrottle(_memo, (DccLocoAddress) address), address);
+        }
+        else {
+            log.error("LocoAddress {} is not a DccLocoAddress",address);
+            failedThrottleRequest(address, "LocoAddress " +address+ " is not a DccLocoAddress");
+        }
     }
 
-    // KSL 20040409 - EasyDcc does not have a 'dispatch' function.
+    // EasyDcc does not have a 'dispatch' function.
+    @Override
     public boolean hasDispatchFunction() {
         return false;
     }
 
     /**
-     * Address 100 and above is a long address
-     *
+     * Address 100 and above is a long address.
      */
+    @Override
     public boolean canBeLongAddress(int address) {
         return isLongAddress(address);
     }
 
     /**
-     * Address 99 and below is a short address
-     *
+     * Address 99 and below is a short address.
      */
+    @Override
     public boolean canBeShortAddress(int address) {
         return !isLongAddress(address);
     }
@@ -63,21 +72,24 @@ public class EasyDccThrottleManager extends AbstractThrottleManager {
     /**
      * Are there any ambiguous addresses (short vs long) on this system?
      */
+    @Override
     public boolean addressTypeUnique() {
         return true;
     }
 
     /*
-     * Local method for deciding short/long address
+     * Local method for deciding short/long address.
      */
     static boolean isLongAddress(int num) {
         return (num >= 100);
     }
 
-    public int supportedSpeedModes() {
-        return (DccThrottle.SpeedStepMode128 | DccThrottle.SpeedStepMode28);
+    @Override
+    public EnumSet<SpeedStepMode> supportedSpeedModes() {
+        return EnumSet.of(SpeedStepMode.NMRA_DCC_128, SpeedStepMode.NMRA_DCC_28);
     }
 
+    @Override
     public boolean disposeThrottle(jmri.DccThrottle t, jmri.ThrottleListener l) {
         if (super.disposeThrottle(t, l)) {
             int value = 0;
@@ -99,25 +111,27 @@ public class EasyDccThrottleManager extends AbstractThrottleManager {
                 i = i + 2;
                 m.setElement(i++, ' ');
                 m.addIntAsTwoHex(result[1] & 0xFF, i);
-                i = i + 2;
-
             } else { // short address
                 m.setElement(i++, ' ');
                 m.addIntAsTwoHex(0, i);
                 i = i + 2;
                 m.setElement(i++, ' ');
                 m.addIntAsTwoHex(result[0] & 0xFF, i);
-                i = i + 2;
             }
 
-            EasyDccTrafficController.instance().sendEasyDccMessage(m, null);
-            EasyDccThrottle lnt = (EasyDccThrottle) t;
-            lnt.throttleDispose();
-            return true;
+            _memo.getTrafficController().sendEasyDccMessage(m, null);
+            if (t instanceof EasyDccThrottle) {
+                EasyDccThrottle lnt = (EasyDccThrottle) t;
+                lnt.throttleDispose();
+                return true;
+            }
+            else {
+                log.error("DccThrottle {} is not an EasyDccThrottle",t);
+            }
         }
         return false;
     }
 
-    private final static Logger log = LoggerFactory.getLogger(EasyDccThrottleManager.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(EasyDccThrottleManager.class);
 
 }

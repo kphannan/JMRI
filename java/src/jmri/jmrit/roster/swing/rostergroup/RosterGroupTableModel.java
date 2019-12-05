@@ -4,14 +4,12 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import jmri.jmrit.roster.Roster;
 import jmri.jmrit.roster.RosterEntry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Table data model for display of Rosters entries to a specific Roster Group.
- * <P>
+ * <p>
  * Any desired ordering, etc, is handled outside this class.
- * <P>
+ * <p>
  * The initial implementation doesn't automatically update when roster entries
  * change, it only allows the setting of a roster entry, to a roster group.
  * Based Upon RosterTableModel
@@ -33,30 +31,33 @@ public class RosterGroupTableModel extends javax.swing.table.AbstractTableModel 
 
     static final int NUMCOL = ADDTOGROUPCOL + 1;
 
+    @Override
     public int getRowCount() {
-        return Roster.instance().numEntries();
+        return Roster.getDefault().numEntries();
     }
 
+    @Override
     public int getColumnCount() {
         return NUMCOL;
     }
 
+    @Override
     public String getColumnName(int col) {
         switch (col) {
             case IDCOL:
-                return "ID";
+                return Bundle.getMessage("FieldID");
             case ROADNUMBERCOL:
-                return "Road Number";
+                return Bundle.getMessage("FieldRoadNumber");
             case ROADNAMECOL:
-                return "Road Name";
+                return Bundle.getMessage("FieldRoadName");
             case MFGCOL:
-                return "Manufacturer";
+                return Bundle.getMessage("FieldManufacturer");
             case ADDTOGROUPCOL:
-                return "Include";
+                return Bundle.getMessage("Include");
             case OWNERCOL:
-                return "Owner";
+                return Bundle.getMessage("FieldOwner");
             default:
-                return "<UNKNOWN>";
+                return "<UNKNOWN>"; // flags unforeseen case, NOI18N
         }
     }
 
@@ -79,6 +80,7 @@ public class RosterGroupTableModel extends javax.swing.table.AbstractTableModel 
         }
     }
 
+    @Override
     public Class<?> getColumnClass(int col) {
         if (col == ADDTOGROUPCOL) {
             return Boolean.class;
@@ -90,6 +92,7 @@ public class RosterGroupTableModel extends javax.swing.table.AbstractTableModel 
     /**
      * This implementation can't edit the values yet
      */
+    @Override
     public boolean isCellEditable(int row, int col) {
         switch (col) {
             case ADDTOGROUPCOL:
@@ -102,9 +105,10 @@ public class RosterGroupTableModel extends javax.swing.table.AbstractTableModel 
     /**
      * Provides the empty String if attribute doesn't exist.
      */
+    @Override
     public Object getValueAt(int row, int col) {
         // get roster entry for row
-        RosterEntry re = Roster.instance().getEntry(row);
+        RosterEntry re = Roster.getDefault().getEntry(row);
 
         switch (col) {
             case IDCOL:
@@ -155,8 +159,9 @@ public class RosterGroupTableModel extends javax.swing.table.AbstractTableModel 
         //getManager().removePropertyChangeListener(this);
     }
 
+    @Override
     public void setValueAt(Object value, int row, int col) {
-        RosterEntry re = Roster.instance().getEntry(row);
+        RosterEntry re = Roster.getDefault().getEntry(row);
         if ((col == ADDTOGROUPCOL) && (!group.equals("RosterGroup:"))) {
             if (value.toString().equals("true")) {
                 re.putAttribute(group, "yes");
@@ -164,11 +169,11 @@ public class RosterGroupTableModel extends javax.swing.table.AbstractTableModel 
                 re.deleteAttribute(group);
             }
             re.updateFile();
-            Roster.writeRosterFile();
+            Roster.getDefault().writeRoster();
 
         }
         //re.updateFile();
-        //Roster.instance().writeRosterFile();
+        //Roster.getDefault().writeRosterFile();
     }
 
     public void setGroup(String grp) {
@@ -179,5 +184,5 @@ public class RosterGroupTableModel extends javax.swing.table.AbstractTableModel 
 
     }
 
-    private final static Logger log = LoggerFactory.getLogger(RosterGroupTableModel.class.getName());
+    // private final static Logger log = LoggerFactory.getLogger(RosterGroupTableModel.class);
 }

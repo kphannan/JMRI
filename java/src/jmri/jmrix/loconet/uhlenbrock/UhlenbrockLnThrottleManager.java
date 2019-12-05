@@ -15,16 +15,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * LocoNet implementation of a ThrottleManager.
- * <P>
+ * LocoNet implementation of a ThrottleManager for Uhlenbrock.
+ * <p>
  * Works in cooperation with the SlotManager, which actually handles the
  * communications.
  *
  * @see jmri.jmrix.loconet.SlotManager
- * @author	Bob Jacobsen Copyright (C) 2001
- * @version $Revision: 19121 $
+ * @author Bob Jacobsen Copyright (C) 2001
  */
-public class UhlenbrockLnThrottleManager extends LnThrottleManager implements ThrottleManager, SlotListener {
+public class UhlenbrockLnThrottleManager extends LnThrottleManager {
 
     public UhlenbrockLnThrottleManager(UhlenbrockSystemConnectionMemo memo) {
         super(memo);
@@ -39,7 +38,13 @@ public class UhlenbrockLnThrottleManager extends LnThrottleManager implements Th
      * no response is received from the command station after 2 seconds.
      * Otherwise it will send a failthrottlerequest message out.
      */
+    @Override
     public void requestThrottleSetup(LocoAddress address, boolean control) {
+        if (!(address instanceof DccLocoAddress)){
+            log.error("{} is not a DCCLocoAddress",address);
+            failedThrottleRequest(address, "Address" + address + " is not a DccLocoAddress");
+            return;
+        }
         slotManager.slotFromLocoAddress(((DccLocoAddress) address).getNumber(), this);
 
         class RetrySetup implements Runnable {
@@ -52,6 +57,7 @@ public class UhlenbrockLnThrottleManager extends LnThrottleManager implements Th
                 this.list = list;
             }
 
+            @Override
             public void run() {
                 int count = 0;
                 while (count < 3) {
@@ -61,10 +67,10 @@ public class UhlenbrockLnThrottleManager extends LnThrottleManager implements Th
                         return;
                     }
                     slotManager.slotFromLocoAddress(address.getNumber(), list);
-                    log.warn("No response to requesting loco " + address + ", will try again " + count);
+                    log.warn("No response to requesting loco {}, will try again {}", address, count);
                     count++;
                 }
-                log.error("No response to requesting loco " + address + " after " + count + " attempts, will cancel the request");
+                log.error("No response to requesting loco {} after {} attempts; will cancel the request", address, count);
                 failedThrottleRequest(address, "Failed to get response from command station");
             }
         }
@@ -80,6 +86,7 @@ public class UhlenbrockLnThrottleManager extends LnThrottleManager implements Th
      * This method creates a throttle for all ThrottleListeners of that address
      * and notifies them via the ThrottleListener.notifyThrottleFound method.
      */
+    @Override
     public void notifyChangedSlot(LocoNetSlot s) {
         DccThrottle throttle = new LocoNetThrottle((LocoNetSystemConnectionMemo) adapterMemo, s);
         notifyThrottleKnown(throttle, new DccLocoAddress(s.locoAddr(), isLongAddress(s.locoAddr())));
@@ -93,7 +100,7 @@ public class UhlenbrockLnThrottleManager extends LnThrottleManager implements Th
     }
 
     @Override
-    public void failedThrottleRequest(DccLocoAddress address, String reason) {
+    public void failedThrottleRequest(LocoAddress address, String reason) {
         if (waitingForNotification.containsKey(address.getNumber())) {
             waitingForNotification.get(address.getNumber()).interrupt();
             waitingForNotification.remove(address.getNumber());
@@ -102,21 +109,21 @@ public class UhlenbrockLnThrottleManager extends LnThrottleManager implements Th
     }
 
     /**
-     * Cancel a request for a throttle
+     * Cancel a request for a throttle.
      *
      * @param address The decoder address desired.
-     * @param isLong  True if this is a request for a DCC long (extended)
-     *                address.
      * @param l       The ThrottleListener cancelling request for a throttle.
      */
     @Override
-    public void cancelThrottleRequest(int address, boolean isLong, ThrottleListener l) {
-        if (waitingForNotification.containsKey(address)) {
-            waitingForNotification.get(address).interrupt();
-            waitingForNotification.remove(address);
+    public void cancelThrottleRequest(LocoAddress address, ThrottleListener l) {
+        int loconumber = address.getNumber();
+        if (waitingForNotification.containsKey(loconumber)) {
+            waitingForNotification.get(loconumber).interrupt();
+            waitingForNotification.remove(loconumber);
         }
-        super.cancelThrottleRequest(address, isLong, l);
+        super.cancelThrottleRequest(address, l);
     }
 
-    private final static Logger log = LoggerFactory.getLogger(UhlenbrockLnThrottleManager.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(UhlenbrockLnThrottleManager.class);
+
 }

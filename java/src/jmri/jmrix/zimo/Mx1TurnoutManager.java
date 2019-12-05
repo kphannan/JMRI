@@ -1,38 +1,40 @@
-// MxTurnoutManager.java
 package jmri.jmrix.zimo;
 
 import jmri.Turnout;
 
 /**
- * New Mx1 Turnout Manager
- * <P>
- * System names are "ZTnnn", where nnn is the turnout number without padding.
+ * Implement turnout manager for Mx1 Turnouts.
+ * <p>
+ * System names are "ZTnnn", where Z is the user configurable system prefix,
+ * nnn is the turnout number without padding.
  *
  * @author	Kevin Dickerson (C) 2014
- * @version	$Revision: 22821 $
  */
 public class Mx1TurnoutManager extends jmri.managers.AbstractTurnoutManager {
 
-    public Mx1TurnoutManager(Mx1TrafficController tc, String prefix) {
-        super();
-        this.prefix = prefix;
-        this.tc = tc;
+    public Mx1TurnoutManager(Mx1SystemConnectionMemo memo) {
+        super(memo);
     }
 
-    String prefix = "";
-    Mx1TrafficController tc = null;
-
-    public String getSystemPrefix() {
-        return prefix;
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Mx1SystemConnectionMemo getMemo() {
+        return (Mx1SystemConnectionMemo) memo;
     }
 
+    @Override
     public Turnout createNewTurnout(String systemName, String userName) {
-        int addr = Integer.valueOf(systemName.substring(getSystemPrefix().length() + 1)).intValue();
-        Turnout t = new Mx1Turnout(addr, tc, getSystemPrefix());
+        int addr = Integer.parseInt(systemName.substring(getSystemPrefix().length() + 1));
+        Turnout t = new Mx1Turnout(addr, getMemo().getMx1TrafficController(), getSystemPrefix());
         t.setUserName(userName);
         return t;
     }
 
-}
+    @Override
+    public boolean allowMultipleAdditions(String systemName) {
+        return true;
+    }
 
-/* @(#)Mx1TurnoutManager.java */
+}

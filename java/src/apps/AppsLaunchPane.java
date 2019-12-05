@@ -1,5 +1,6 @@
 package apps;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -29,11 +30,11 @@ import org.slf4j.LoggerFactory;
 /**
  * Base class for pane filling main frame (window) of traditional-style JMRI
  * applications
- * <P>
+ * <p>
  * This is for launching after the system is initialized, so it does none of
  * that.
  *
- * @author	Bob Jacobsen Copyright 2003, 2007, 2008, 2010, 2014
+ * @author Bob Jacobsen Copyright 2003, 2007, 2008, 2010, 2014
  * @author Dennis Miller Copyright 2005
  * @author Giorgio Terdina Copyright 2008
  * @author Matthew Harris Copyright (C) 2011
@@ -64,20 +65,12 @@ public abstract class AppsLaunchPane extends JPanel implements PropertyChangeLis
     }
 
     /**
-     * @deprecated since 4.5.1
-     */
-    @Deprecated
-    protected final void addToActionModel() {
-        // StartupActionModelUtil populates itself, so do nothing
-    }
-
-    /**
      * Prepare the JPanel to contain buttons in the startup GUI. Since it's
      * possible to add buttons via the preferences, this space may have
      * additional buttons appended to it later. The default implementation here
      * just creates an empty space for these to be added to.
      */
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD",
+    @SuppressFBWarnings(value = "ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD",
             justification = "only one application at a time")
     protected void setButtonSpace() {
         _buttonSpace = new JPanel();
@@ -85,7 +78,7 @@ public abstract class AppsLaunchPane extends JPanel implements PropertyChangeLis
     }
     static JComponent _jynstrumentSpace = null;
 
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD",
+    @SuppressFBWarnings(value = "ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD",
             justification = "only one application at a time")
     protected void setJynstrumentSpace() {
         _jynstrumentSpace = new JPanel();
@@ -175,14 +168,13 @@ public abstract class AppsLaunchPane extends JPanel implements PropertyChangeLis
         if (name == null) {
             name = conn.getManufacturer();
         }
-        if (ConnectionStatus.instance().isConnectionOk(conn.getInfo())) {
+        if (ConnectionStatus.instance().isConnectionOk(null, conn.getInfo())) {
             cs.setForeground(Color.black);
             String cf = Bundle.getMessage("ConnectionSucceeded", name, conn.name(), conn.getInfo());
             cs.setText(cf);
         } else {
             cs.setForeground(Color.red);
             String cf = Bundle.getMessage("ConnectionFailed", name, conn.name(), conn.getInfo());
-            cf = cf.toUpperCase();
             cs.setText(cf);
         }
 
@@ -275,17 +267,17 @@ public abstract class AppsLaunchPane extends JPanel implements PropertyChangeLis
 
     /**
      * Set up the configuration file name at startup.
-     * <P>
+     * <p>
      * The Configuration File name variable holds the name used to load the
      * configuration file during later startup processing. Applications invoke
      * this method to handle the usual startup hierarchy:
-     * <UL>
-     * <LI>If an absolute filename was provided on the command line, use it
-     * <LI>If a filename was provided that's not absolute, consider it to be in
+     * <ul>
+     * <li>If an absolute filename was provided on the command line, use it
+     * <li>If a filename was provided that's not absolute, consider it to be in
      * the preferences directory
-     * <LI>If no filename provided, use a default name (that's application
+     * <li>If no filename provided, use a default name (that's application
      * specific)
-     * </UL>
+     * </ul>
      * This name will be used for reading and writing the preferences. It need
      * not exist when the program first starts up. This name may be proceeded
      * with <em>config=</em> and may not contain the equals sign (=).
@@ -294,6 +286,10 @@ public abstract class AppsLaunchPane extends JPanel implements PropertyChangeLis
      * @param args Argument array from the main routine
      */
     static protected void setConfigFilename(String def, String[] args) {
+        // if the property org.jmri.Apps.configFilename was set, skip
+        if (System.getProperty("org.jmri.Apps.configFilename") != null) {
+            return;
+        }
         // save the configuration filename if present on the command line
         if (args.length >= 1 && args[0] != null && !args[0].contains("=")) {
             def = args[0];
@@ -318,9 +314,7 @@ public abstract class AppsLaunchPane extends JPanel implements PropertyChangeLis
 
     @Override
     public void propertyChange(PropertyChangeEvent ev) {
-        if (log.isDebugEnabled()) {
-            log.debug("property change: comm port status update");
-        }
+        log.debug("property change: comm port status update");
         if (connection[0] != null) {
             updateLine(connection[0], cs4);
         }
@@ -341,8 +335,10 @@ public abstract class AppsLaunchPane extends JPanel implements PropertyChangeLis
 
     /**
      * Returns the ID for the window's help, which is application specific
+     *
+     * @return the Java Help reference or null if no help is available
      */
     protected abstract String windowHelpID();
 
-    private final static Logger log = LoggerFactory.getLogger(AppsLaunchPane.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(AppsLaunchPane.class);
 }

@@ -3,10 +3,11 @@ package jmri.jmrix.loconet.sdf;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import jmri.util.JUnitUtil;
+import org.junit.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,8 +16,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author Bob Jacobsen Copyright 2007
  */
-public class SdfBufferTest extends TestCase {
+public class SdfBufferTest {
 
+    @Test
     public void testFileCtor() throws java.io.IOException {
         SdfBuffer b = new SdfBuffer("java/test/jmri/jmrix/loconet/sdf/test2.sdf");
 
@@ -47,6 +49,7 @@ public class SdfBufferTest extends TestCase {
         Assert.assertEquals("output as string", g, result);
     }
 
+    @Test
     public void testModify() throws java.io.IOException {
         // get original file
         SdfBuffer original = new SdfBuffer("java/test/jmri/jmrix/loconet/sdf/test2.sdf");
@@ -92,32 +95,16 @@ public class SdfBufferTest extends TestCase {
 
     }
 
-    // from here down is testing infrastructure
-    public SdfBufferTest(String s) {
-        super(s);
+    @Before
+    public void setUp() {
+        JUnitUtil.setUp();
     }
 
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {SdfBufferTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
+    @After
+    public void tearDown() {
+        JUnitUtil.tearDown();
     }
 
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(SdfBufferTest.class);
-        return suite;
-    }
-
-    // The minimal setup for log4J
-    protected void setUp() {
-        apps.tests.Log4JFixture.setUp();
-    }
-
-    protected void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
-    }
-
-    private final static Logger log = LoggerFactory.getLogger(SdfBufferTest.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(SdfBufferTest.class);
 
 }

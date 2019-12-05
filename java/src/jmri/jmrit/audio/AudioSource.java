@@ -6,30 +6,29 @@ import jmri.Audio;
 
 /**
  * Represent an AudioSource, a place to store or control sound information.
- * <P>
+ * <p>
  * The AbstractAudio class contains a basic implementation of the state and
  * messaging code, and forms a useful start for a system-specific
  * implementation. Specific implementations in the jmrix package, e.g. for
  * LocoNet and NCE, will convert to and from the layout commands.
- * <P>
+ * <p>
  * The states and names are Java Bean parameters, so that listeners can be
  * registered to be notified of any changes.
- * <P>
+ * <p>
  * Each AudioSource object has a two names. The "user" name is entirely free
  * form, and can be used for any purpose. The "system" name is provided by the
  * system-specific implementations, and provides a unique mapping to the layout
- * control system (e.g. LocoNet, NCE, etc) and address within that system.
+ * control system (for example LocoNet or NCE) and address within that system.
  * <hr>
  * This file is part of JMRI.
- * <P>
+ * <p>
  * JMRI is free software; you can redistribute it and/or modify it under the
  * terms of version 2 of the GNU General Public License as published by the Free
  * Software Foundation. See the "COPYING" file for a copy of this license.
- * </P><P>
+ * <p>
  * JMRI is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
  * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- * </P>
  *
  * @author Matthew Harris copyright (c) 2009
  */
@@ -233,18 +232,6 @@ public interface AudioSource extends Audio {
      */
     public void setAssignedBuffer(String sysName);
 
-//    /**
-//     * Binds this AudioSource with the specified AudioBuffer
-//     * <p>
-//     * Applies only to sub-types:
-//     * <ul>
-//     * <li>Source
-//     * </ul>
-//     * @param audioBuffer the AudioBuffer to bind to this AudioSource
-//     * @return true if successful
-//     */
-//    @Deprecated
-//    public boolean bindAudioBuffer(AudioBuffer audioBuffer);
     /**
      * Queues the linked AudioBuffer object to this Source's buffer queue
      * <p>
@@ -254,6 +241,7 @@ public interface AudioSource extends Audio {
      * </ul>
      *
      * @param audioBuffers the AudioBuffer object to enqueue to this AudioSource
+     * @return true if successfully queued audioBuffers; false otherwise
      */
     public boolean queueBuffers(Queue<AudioBuffer> audioBuffers);
 
@@ -310,7 +298,7 @@ public interface AudioSource extends Audio {
      * Default value = 1.0f
      * <p>
      * Applies only to sub-types:
-     * </p><ul>
+     * <ul>
      * <li>Listener
      * <li>Source
      * </ul>
@@ -327,7 +315,7 @@ public interface AudioSource extends Audio {
      * Default value = 1.0f
      * <p>
      * Applies only to sub-types:
-     * </p><ul>
+     * <ul>
      * <li>Source
      * </ul>
      *
@@ -343,7 +331,7 @@ public interface AudioSource extends Audio {
      * Default value = 1.0f
      * <p>
      * Applies only to sub-types:
-     * </p><ul>
+     * <ul>
      * <li>Source
      * </ul>
      *
@@ -357,7 +345,7 @@ public interface AudioSource extends Audio {
      * Default value = 1.0f
      * <p>
      * Applies only to sub-types:
-     * </p><ul>
+     * <ul>
      * <li>Source
      * </ul>
      *
@@ -371,14 +359,14 @@ public interface AudioSource extends Audio {
      * Default value = 1.0f
      * <p>
      * The Reference Distance is one of the main parameters you have for
-     * controlling the way that sounds attenutate with distance. A Source with
+     * controlling the way that sounds attenuate with distance. A Source with
      * Reference Distance set to 5 (meters) will be at maximum volume while it
      * is within 5 metere of the listener, and start to fade out as it moves
      * further away. At 10 meters it will be at half volume, and at 20 meters at
      * a quarter volume, etc ...
      * <p>
      * Applies only to sub-types:
-     * </p><ul>
+     * <ul>
      * <li>Source
      * </ul>
      *
@@ -387,7 +375,38 @@ public interface AudioSource extends Audio {
     public void setReferenceDistance(float referenceDistance);
 
     /**
-     * Return the current maximum distance setting
+     * Set the offset in which to start playback of this AudioSource.
+     * <p>
+     * Default value = 0
+     * <p>
+     * Value is clamped between 0 and length of attached AudioBuffer
+     * <p>
+     * Applies only to sub-types:
+     * <ul>
+     * <li>Source
+     * </ul>
+     *
+     * @param offset the offset in samples marking the point to commence
+     *               playback
+     */
+    public void setOffset(long offset);
+
+    /**
+     * Return the offset in which to start playback of this AudioSource.
+     * <p>
+     * Default value = 0
+     * <p>
+     * Applies only to sub-types:
+     * <ul>
+     * <li>Source
+     * </ul>
+     *
+     * @return the offset in samples marking the point to commence playback
+     */
+    public long getOffset();
+
+    /**
+     * Return the current maximum distance setting.
      * <p>
      * Default value = Audio.MAX_DISTANCE
      * <p>
@@ -395,14 +414,15 @@ public interface AudioSource extends Audio {
      * be zero.
      * <p>
      * Applies only to sub-types:
-     * </p><ul>
+     * <ul>
      * <li>Source
      * </ul>
+     * @return the maximum distance
      */
     public float getMaximumDistance();
 
     /**
-     * Set the current maximum distance setting
+     * Set the current maximum distance setting.
      * <p>
      * Default value = Audio.MAX_DISTANCE
      * <p>
@@ -419,7 +439,7 @@ public interface AudioSource extends Audio {
     public void setMaximumDistance(float maximumDistance);
 
     /**
-     * Set the roll-off factor of this AudioSource object
+     * Set the roll-off factor of this AudioSource object.
      * <p>
      * Default value = 1.0f
      * <p>
@@ -433,7 +453,7 @@ public interface AudioSource extends Audio {
     public void setRollOffFactor(float rollOffFactor);
 
     /**
-     * Return the roll-off factor of this AudioSource object
+     * Get the roll-off factor of this AudioSource object.
      * <p>
      * Default value = 1.0f
      * <p>
@@ -441,11 +461,12 @@ public interface AudioSource extends Audio {
      * <ul>
      * <li>Source
      * </ul>
+     * @return the roll-off factor
      */
     public float getRollOffFactor();
 
     /**
-     * Returns a boolean if this AudioSource object will loop or not
+     * Check if this AudioSource object will loop or not.
      * <p>
      * Applies only to sub-types:
      * <ul>
@@ -714,7 +735,7 @@ public interface AudioSource extends Audio {
      * @param dopplerFactor factor to apply in doppler calculations
      */
     @Deprecated
-    public void setDopplerFactor(float dopplerFactor);
+    default public void setDopplerFactor(float dopplerFactor) {}
 
     /**
      * Retrieve the doppler factor of this source
@@ -731,7 +752,7 @@ public interface AudioSource extends Audio {
      * @return factor to apply in doppler calculations
      */
     @Deprecated
-    public float getDopplerFactor();
+    default public float getDopplerFactor() { return 1.0f; }
 
     /**
      * Method to start playing this AudioSource Object

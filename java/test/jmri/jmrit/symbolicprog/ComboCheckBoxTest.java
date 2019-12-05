@@ -3,21 +3,23 @@ package jmri.jmrit.symbolicprog;
 import java.util.HashMap;
 import javax.swing.JComboBox;
 import jmri.progdebugger.ProgDebugger;
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import jmri.util.JUnitUtil;
+
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * @author	Bob Jacobsen Copyright 2005
- * @version	$Revision$
  */
-public class ComboCheckBoxTest extends TestCase {
+public class ComboCheckBoxTest {
 
     ProgDebugger p = new ProgDebugger();
 
+    @Test
     public void testToOriginal() {
         // create an enum variable pointed at CV 81 and connect
         HashMap<String, CvValue> v = createCvMap();
@@ -60,6 +62,7 @@ public class ComboCheckBoxTest extends TestCase {
 
     }
 
+    @Test
     public void testFromOriginal() {
         // create an enum variable pointed at CV 81 and connect
         HashMap<String, CvValue> v = createCvMap();
@@ -103,32 +106,16 @@ public class ComboCheckBoxTest extends TestCase {
         return m;
     }
 
-    // from here down is testing infrastructure
-    public ComboCheckBoxTest(String s) {
-        super(s);
+    @Before
+    public void setUp() {
+        JUnitUtil.setUp();
     }
 
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading", ComboCheckBoxTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
+    @After
+    public void tearDown() {
+        JUnitUtil.tearDown();
     }
 
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(ComboCheckBoxTest.class);
-        return suite;
-    }
-
-    // The minimal setup for log4J
-    protected void setUp() {
-        apps.tests.Log4JFixture.setUp();
-    }
-
-    protected void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
-    }
-
-    private final static Logger log = LoggerFactory.getLogger(ComboCheckBoxTest.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(ComboCheckBoxTest.class);
 
 }

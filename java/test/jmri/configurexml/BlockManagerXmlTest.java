@@ -10,23 +10,23 @@ import jmri.Path;
 import jmri.Sensor;
 import jmri.SignalMast;
 import jmri.implementation.AbstractSensor;
-import jmri.jmrit.display.layoutEditor.LayoutBlockManager;
 import jmri.util.JUnitUtil;
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import org.junit.Test;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
 
 /**
  * Tests for BlockManagerXml.
- * <P>
+ * <p>
  * Just tests Elements, not actual files. Based upon a stub by Bob Jacobsen
  * Copyright 2008
- * <P>
+ *
  * @author Bob Coleman Copyright 2012
-  */
-public class BlockManagerXmlTest extends TestCase {
+ */
+public class BlockManagerXmlTest {
 
+    @Test
     public void testLoadCurrent() throws Exception {
         JUnitUtil.resetInstanceManager();
         JUnitUtil.initConfigureManager();
@@ -39,7 +39,7 @@ public class BlockManagerXmlTest extends TestCase {
         InstanceManager.getDefault(ConfigureManager.class)
                 .load(new java.io.File("java/test/jmri/configurexml/load/BlockManagerXmlTest.xml"));
 
-        // check existance of blocks
+        // check existence of blocks
         Assert.assertNotNull(InstanceManager.getDefault(jmri.BlockManager.class).getBlock("IB1"));
         Assert.assertNull(InstanceManager.getDefault(jmri.BlockManager.class).getBlock("no block"));
         Assert.assertNotNull(InstanceManager.getDefault(jmri.BlockManager.class).getBlock("IB2"));
@@ -90,7 +90,7 @@ public class BlockManagerXmlTest extends TestCase {
 //         Assert.assertNotNull(InstanceManager.getDefault(LayoutBlockManager.class).getLayoutBlock("blockwest"));
 //         Assert.assertNotNull(InstanceManager.getDefault(LayoutBlockManager.class).getLayoutBlock("blockwestsiding"));
 
-        // check existance of turmouts
+        // check existence of turmouts
         Assert.assertNotNull(InstanceManager.turnoutManagerInstance().getTurnout("IT1"));
         Assert.assertNull(InstanceManager.turnoutManagerInstance().getTurnout("no turnout"));
         Assert.assertNotNull(InstanceManager.turnoutManagerInstance().getTurnout("IT2"));
@@ -101,7 +101,7 @@ public class BlockManagerXmlTest extends TestCase {
         Assert.assertNotNull(InstanceManager.turnoutManagerInstance().getTurnout("IT7"));
         Assert.assertNotNull(InstanceManager.turnoutManagerInstance().getTurnout("IT8"));
 
-        // check existance of memories        
+        // check existence of memories
         Assert.assertNotNull(InstanceManager.memoryManagerInstance().getMemory("IM:AUTO:0001"));
         Assert.assertNull(InstanceManager.memoryManagerInstance().getMemory("no memory"));
         Assert.assertNotNull(InstanceManager.memoryManagerInstance().getMemory("IM:AUTO:0002"));
@@ -128,7 +128,7 @@ public class BlockManagerXmlTest extends TestCase {
         Assert.assertNotNull(InstanceManager.memoryManagerInstance().getMemory("blockwestmemory"));
         Assert.assertNotNull(InstanceManager.memoryManagerInstance().getMemory("blockwestsidingmemory"));
 
-        // check existance of sensors
+        // check existence of sensors
         Assert.assertNotNull(InstanceManager.sensorManagerInstance().getSensor("ISBO1"));
         Assert.assertNull(InstanceManager.sensorManagerInstance().getSensor("no sensor"));
         Assert.assertNotNull(InstanceManager.sensorManagerInstance().getSensor("ISBO2"));
@@ -155,7 +155,7 @@ public class BlockManagerXmlTest extends TestCase {
         Assert.assertNotNull(InstanceManager.sensorManagerInstance().getSensor("blockwestoccupied"));
         Assert.assertNotNull(InstanceManager.sensorManagerInstance().getSensor("blockwestsidingoccupied"));
 
-        // check existance of paths between blocks
+        // check existence of paths between blocks
         Block[] blockstotest;
         Sensor[] occupiedsensor;
         int[] expectedpreviouspaths;
@@ -171,9 +171,9 @@ public class BlockManagerXmlTest extends TestCase {
         passnexttest = new Boolean[4];        //Make sure this is bigger than needed
 
         Block[][] previousblock;
-        previousblock = new Block[12][4];         //Make sure this is bigger than the list below
+        previousblock = new Block[12][4];     //Make sure this is bigger than the list below
         Block[][] nextblock;
-        nextblock = new Block[12][4];             //Make sure this is bigger than the list below
+        nextblock = new Block[12][4];         //Make sure this is bigger than the list below
 
         //  This matches up with the test file, ...
         blockstotest[0] = InstanceManager.getDefault(jmri.BlockManager.class).getBlock("blocknorthwest");
@@ -287,6 +287,7 @@ public class BlockManagerXmlTest extends TestCase {
             int expectedcentrepaths = expectedpreviouspaths[testblockfocus] + expectednextpaths[testblockfocus];
             Block focusBlock = blockstotest[testblockfocus];
             Memory expectedtestmemory = InstanceManager.memoryManagerInstance().getMemory("blocknorthmemory");
+            Assert.assertNotNull(expectedtestmemory);
             expectedtestmemory.setValue("Memory test: " + testblockfocus);
             Assert.assertNotNull(expectedtestmemory);
 // TODO: BOB C: Memory Test
@@ -330,13 +331,25 @@ public class BlockManagerXmlTest extends TestCase {
     /**
      * This test checks that the store operation runs, but doesn't check the
      * output for correctness.
+     * 
+     * @throws jmri.JmriException if unanticipated exception is thrown
      */
+    @Test
     public void testStore() throws jmri.JmriException {
+        JUnitUtil.resetInstanceManager();
+        JUnitUtil.initConfigureManager();
+        JUnitUtil.initInternalTurnoutManager();
+        JUnitUtil.initInternalLightManager();
+        JUnitUtil.initInternalSensorManager();
+        JUnitUtil.initMemoryManager();
+        JUnitUtil.initLayoutBlockManager();
+
         Block b1 = InstanceManager.getDefault(jmri.BlockManager.class).createNewBlock("SystemNameb1", "");
 
         Block b2 = InstanceManager.getDefault(jmri.BlockManager.class).createNewBlock("SystemNameb2", "");
-
+        Assert.assertNotNull(b2);
         Sensor s2 = new AbstractSensor("IS2") {
+            @Override
             public void requestUpdateFromLayout() {
             }
         };
@@ -349,9 +362,11 @@ public class BlockManagerXmlTest extends TestCase {
         p21.setFromBlockDirection(Path.RIGHT);
         p21.setToBlockDirection(Path.LEFT);
         p21.addSetting(new BeanSetting(new jmri.implementation.AbstractTurnout("IT1") {
+            @Override
             public void turnoutPushbuttonLockout(boolean b) {
             }
 
+            @Override
             public void forwardCommandChangeToLayout(int i) {
             }
         },
@@ -361,6 +376,7 @@ public class BlockManagerXmlTest extends TestCase {
         //BlockManagerXml tb = new BlockManagerXml();
     }
 
+    @Test
     public void testBlockAndSignalMastTest() throws Exception {
         JUnitUtil.resetInstanceManager();
         JUnitUtil.initConfigureManager();
@@ -392,19 +408,15 @@ public class BlockManagerXmlTest extends TestCase {
         Assert.assertNotNull(m7);
 
         // allow listeners to process, but keep it quick by looking for desired result
-        for (int i = 0; i < 25; i++) {
-            JUnitUtil.releaseThread(this);
-            if (m1.getAspect().equals("Advance Approach")
+        JUnitUtil.waitFor(()->{
+                return (m1.getAspect().equals("Advance Approach")
                     && m2.getAspect().equals("Clear")
                     && m3.getAspect().equals("Clear")
                     && m4.getAspect().equals("Clear")
                     && m5.getAspect().equals("Approach")
                     && m6.getAspect().equals("Stop")
-                    && m7.getAspect().equals("Stop")) {
-                break;
-            }
-        }
-        JUnitUtil.releaseThread(this);
+                    && m7.getAspect().equals("Stop"));
+            },"Mast state ended as \""+m1.getAspect()+"\" \""+m2.getAspect()+"\" \""+m3.getAspect()+"\" \""+m4.getAspect()+"\" \""+m5.getAspect()+"\" \""+m6.getAspect()+"\" \""+m7.getAspect()+"\", desired state AA/C/C/C/A/S/S");
 
         // check for expected mast state 
         Assert.assertEquals("Signal 1", "Advance Approach", InstanceManager.getDefault(jmri.SignalMastManager.class).getSignalMast("IF$vsm:AAR-1946:SL-2-high-abs($0001)").getAspect());
@@ -417,20 +429,15 @@ public class BlockManagerXmlTest extends TestCase {
 
     }
 
-    // from here down is testing infrastructure
-    public BlockManagerXmlTest(String s) {
-        super(s);
+    @Before
+    public void setUp() {
+        JUnitUtil.setUp();
+        JUnitUtil.resetProfileManager();
     }
 
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading",BlockManagerXmlTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
+    @After
+    public void tearDown() {
+        JUnitUtil.tearDown();
     }
 
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(BlockManagerXmlTest.class);
-        return suite;
-    }
 }

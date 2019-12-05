@@ -2,28 +2,30 @@ package jmri.jmrit.roster;
 
 import java.util.HashMap;
 import javax.swing.ImageIcon;
+import jmri.InstanceManager;
+import jmri.InstanceManagerAutoDefault;
 
-/*
+/**
+ * Generate and cache icons at a given height. A managed instance will generate
+ * icons for a default height, while unmanaged instances can be created to
+ * generate icons at different heights.
  * <hr>
  * This file is part of JMRI.
- * <P>
- * JMRI is free software; you can redistribute it and/or modify it under 
- * the terms of version 2 of the GNU General Public License as published 
- * by the Free Software Foundation. See the "COPYING" file for a copy
- * of this license.
- * <P>
- * JMRI is distributed in the hope that it will be useful, but WITHOUT 
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License 
- * for more details.
- * <P>
- * @author	Lionel Jeanson   Copyright (C) 2009
- * @version	$$
+ * <p>
+ * JMRI is free software; you can redistribute it and/or modify it under the
+ * terms of version 2 of the GNU General Public License as published by the Free
+ * Software Foundation. See the "COPYING" file for a copy of this license.
+ * <p>
+ * JMRI is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ *
+ * @author Lionel Jeanson Copyright (C) 2009
  */
-public class RosterIconFactory {
+public class RosterIconFactory implements InstanceManagerAutoDefault {
 
-    private int iconHeight;
-    HashMap<String, ImageIcon> icons = new HashMap<String, ImageIcon>();
+    private final int iconHeight;
+    HashMap<String, ImageIcon> icons = new HashMap<>();
 
     public RosterIconFactory(int h) {
         iconHeight = h;
@@ -37,7 +39,7 @@ public class RosterIconFactory {
         if (id == null) {
             return null;
         }
-        RosterEntry re = Roster.instance().entryFromTitle(id);
+        RosterEntry re = Roster.getDefault().entryFromTitle(id);
         if (re == null) {
             return null;
         }
@@ -61,13 +63,4 @@ public class RosterIconFactory {
         }
         return icon;
     }
-
-    public static RosterIconFactory instance() {
-        if (_instance == null) {
-            _instance = new RosterIconFactory();
-        }
-        return _instance;
-    }
-
-    private static RosterIconFactory _instance;
 }

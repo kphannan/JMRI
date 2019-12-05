@@ -1,5 +1,6 @@
 package jmri.jmrit.operations.setup;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -7,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import jmri.jmrit.XmlFile;
@@ -23,7 +25,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class BackupBase {
 
-    private final static Logger log = LoggerFactory.getLogger(BackupBase.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(BackupBase.class);
 
     // Just for testing......
     // If this is not null, it will be thrown to simulate various IO exceptions
@@ -48,12 +50,12 @@ public abstract class BackupBase {
     }
 
     // These constitute the set of files for a complete backup set.
-    private String[] _backupSetFileNames = new String[]{"Operations.xml", // NOI18N
+    private final String[] _backupSetFileNames = new String[]{"Operations.xml", // NOI18N
             "OperationsCarRoster.xml", "OperationsEngineRoster.xml", // NOI18N
             "OperationsLocationRoster.xml", "OperationsRouteRoster.xml", // NOI18N
             "OperationsTrainRoster.xml"}; // NOI18N
 
-    private String _demoPanelFileName = "Operations Demo Panel.xml"; // NOI18N
+    private final String _demoPanelFileName = "Operations Demo Panel.xml"; // NOI18N
 
     public String[] getBackupSetFileNames() {
         return _backupSetFileNames.clone();
@@ -62,6 +64,7 @@ public abstract class BackupBase {
     /**
      * Creates a BackupBase instance and initializes the Operations root
      * directory to its normal value.
+     * @param rootName Directory name to use.
      */
     protected BackupBase(String rootName) {
         // A root directory name for the backups must be supplied, which will be
@@ -121,14 +124,15 @@ public abstract class BackupBase {
 
     /**
      * Returns a sorted list of the Backup Sets under the backup root.
+     * @return A sorted backup list.
      *
      */
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE",
+    @SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE",
             justification = "not possible")  // NOI18N
     public String[] getBackupSetList() {
         String[] setList = getBackupRoot().list();
         // no guarantee of order, so we need to sort
-        jmri.util.StringUtil.sort(setList);
+        java.util.Arrays.sort(setList);
         return setList;
     }
 
@@ -142,12 +146,13 @@ public abstract class BackupBase {
         return dirs;
     }
 
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE",
+    @SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE",
             justification = "not possible")  // NOI18N
     public BackupSet[] getBackupSets() {
         // This is a bit of a kludge for now, until I learn more about dynamic
         // sets
         File[] dirs = getBackupRoot().listFiles();
+        Arrays.sort(dirs);
         BackupSet[] sets = new BackupSet[dirs.length];
 
         for (int i = 0; i < dirs.length; i++) {
@@ -159,6 +164,7 @@ public abstract class BackupBase {
 
     /**
      * Check to see if the given backup set already exists in the backup store.
+     * @param setName The directory name to check.
      *
      * @return true if it exists
      */
@@ -180,6 +186,7 @@ public abstract class BackupBase {
 
     /**
      * Restores a Backup Set with the given name from the backup store.
+     * @param setName The directory name.
      *
      * @throws java.io.IOException Due to trouble loading files
      */
@@ -189,6 +196,7 @@ public abstract class BackupBase {
 
     /**
      * Restores a Backup Set from the given directory.
+     * @param directory The File directory.
      *
      * @throws java.io.IOException Due to trouble loading files
      */
@@ -204,6 +212,8 @@ public abstract class BackupBase {
      * destination directory if it does not exist.
      *
      * Only copies files that are included in the list of Operations files.
+     * @param sourceDir From Directory
+     * @param destDir To Directory
      *
      * @throws java.io.IOException Due to trouble reading or writing
      */
@@ -278,6 +288,7 @@ public abstract class BackupBase {
     /**
      * Checks to see how many of the Operations files are present in the source
      * directory.
+     * @param sourceDir The Directory to check.
      *
      * @return number of files
      */
@@ -347,13 +358,13 @@ public abstract class BackupBase {
                 return fullName;
             }
 
-            //			This should also work, commented out by D. Boudreau
-            //			The Linux problem turned out to be related to the order
-            //			files names are returned by list().
-            //			File testPath = new File(_backupRoot, fullName);
+            //   This should also work, commented out by D. Boudreau
+            //   The Linux problem turned out to be related to the order
+            //   files names are returned by list().
+            //   File testPath = new File(_backupRoot, fullName);
             //
-            //			if (!testPath.exists()) {
-            //				return fullName; // Found an unused name
+            //   if (!testPath.exists()) {
+            //    return fullName; // Found an unused name
             // Otherwise complain and keep trying...
             log.debug("Operations backup directory: {} already exists", fullName); // NOI18N
         }
@@ -368,7 +379,7 @@ public abstract class BackupBase {
      * Reset Operations by deleting XML files, leaves directories and backup
      * files in place.
      */
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE",
+    @SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE",
             justification = "not possible")  // NOI18N
     public void deleteOperationsFiles() {
         // TODO Maybe this should also only delete specific files used by Operations,
@@ -420,9 +431,13 @@ public abstract class BackupBase {
         /**
          * Copies an existing file to a new file. Overwriting a file of the same
          * name is allowed. The destination directory must exist.
+         * @param sourceFileName From directory name
+         * @param destFileName To directory name
+         * @param overwrite When true overwrite any existing files
+         * @throws IOException Thrown when overwrite false and destination directory exists.
          *
          */
-        @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "OBL_UNSATISFIED_OBLIGATION")
+        @SuppressFBWarnings(value = "OBL_UNSATISFIED_OBLIGATION")
         public static void copy(String sourceFileName, String destFileName,
                 Boolean overwrite) throws IOException {
 

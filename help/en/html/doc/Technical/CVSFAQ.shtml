@@ -1,14 +1,12 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
 "http://www.w3.org/TR/html4/strict.dtd">
-<!-- $Id$ -->
-
 <html lang="en">
 <head>
   <meta name="generator" content=
   "HTML Tidy for Mac OS X (vers 31 October 2006 - Apple Inc. build 15.17), see www.w3.org">
 
   <title>JMRI: CVS FAQ</title>
-  <meta content="Bob Jacobsen" name="Author">
+  <meta name="author" content="Bob Jacobsen">
   <meta name="keywords" content="JMRI technical code CVS FAQ">
   <!-- The combination of "Define" and {Header,Style, Logo and Footer} comments -->
   <!-- are an arbitrary design pattern used by the update.pl script to -->
@@ -23,22 +21,24 @@
   <link rel="stylesheet" type="text/css" href="/css/print.css"
   media="print">
   <link rel="icon" href="/images/jmri.ico" type="image/png">
-  <link rel="home" title="Home" href="/"><!-- /Style -->
-</head><!--#include virtual="/Header" -->
+  <link rel="home" title="Home" href="/">
+  <!-- /Style -->
+</head>
 
 <body>
-  <div id="mBody">
-    <!--#include virtual="Sidebar" -->
-
+<!--#include virtual="/Header.shtml" -->
+<div id="mBody">
+    <!--#include virtual="Sidebar.shtml" -->
     <div id="mainContent">
-      <h1>JMRI: CVS FAQ</h1>This is a list of Frequently Asked
-      Questions for CVS, particularly regarding how we use it with
-      JMRI.
 
-      <p><em>Note: JMRI code is not maintained in CVS any more. To
-      get the current code, please see the pages on the <a href=
-      "getgitcode.shtml">accessing the code via the Git
-      repository.</a></em></p>
+    <h1>JMRI Code: CVS FAQ</h1>
+      <p>This is a list of Frequently Asked Questions for CVS,
+      particularly regarding how we use it with JMRI.</p>
+
+      <p class="important">Note: JMRI code is not maintained in CVS any more. To
+      get the current code, please see the help pages on <a href=
+      "getgitcode.shtml">Accessing the code via the Git
+      repository.</a></p>
 
       <p>See also the <a href="index.shtml">Technical index</a> for
       more information on maintaining JMRI code. <a name="cvstool"
@@ -51,7 +51,7 @@
       "http://sourceforge.net/project/showfiles.php?group_id=10072&amp;release_id=24467">
       WinCVS</a>. A recent version can be downloaded from: <a href=
       "http://prdownloads.sourceforge.net/cvsgui/WinCvs120.zip">http://prdownloads.sourceforge.net/cvsgui/WinCvs120.zip</a>.
-      <a name="jmrisource"></a>
+      <a name="jmrisource" id="jmrisource"></a>
 
       <h3>How can I get my own copy of the JMRI code?</h3>To get a
       copy of the source for your own use, you can use "anonymous
@@ -86,7 +86,7 @@ cvs -d:pserver:anonymous@jmri.cvs.sourceforge.net:/cvsroot/jmri -q update -dA
 </pre>The "-q" option suppresses a lot of routine messages. The
 "-d" option is needed to tell CVS to also bring in new directories.
 The "-A" option, here combined with "-d", means you want the most
-recent contents. <a name="release"></a>
+recent contents. <a name="release" id="release"></a>
 
       <h3>How can I get the code for a particular release?</h3>CVS
       uses "tags" to make specific sets of content. We use these to
@@ -100,14 +100,14 @@ release. You can adjust that as needed. If you already have a
 release checked out and want to update it to a specific release,
 change the "co" command to "update -d"
 
-      <h3><a name="refid">What are those lines like
+      <h3><a name="refid" id="refid">What are those lines like
       <i>$Revision$</i> and <i>$Id$</i>?</a></h3>Those are
       automatically updated by CVS every time a new version of the
       file is checked-in to the repository. Please don't edit
       them!!! If you contribute your changes to the project, those
       line have to be intact in the contributed file.
 
-      <h3><a name="update">How do I update an existing
+      <h3><a name="update1" id="update1">How do I update an existing
       copy of the source to the current version?</a></h3>As the
       common code changes, you might want to update your copy to
       contain the lastest version. To do that, use:
@@ -121,7 +121,7 @@ you should then be up-to-date with your own changes still present.
       command still works if you omit it, but it will be harder to
       see any real error messages.</p>
 
-      <h3><a name="ds_store">What are these messages
+      <h3><a name="ds_store" id="ds_store">What are these messages
       about .DS_Store files?</a></h3>If you're using Mac OS X, CVS
       may give you messages about ".DS_Store" files. These are used
       to keep track of window layouts, etc. To suppress these
@@ -130,7 +130,7 @@ you should then be up-to-date with your own changes still present.
       CVS will then ignore all .DS_Store files in all of your
       checked-out directory trees.
 
-      <h3><a name="tags">What is the convention for tag
+      <h3><a name="tags" id="tags">What is the convention for tag
       names?</a></h3>Typically, three types of tag names are used:
 
       <ol>
@@ -149,8 +149,8 @@ you should then be up-to-date with your own changes still present.
         tag with your initials.</li>
       </ol>
 
-      <h3><a name="structure">How is JMRI stored in
-      CVS?</a></h3><a name="structure">JMRI consists
+      <h3><a name="structure" id="structure">How is JMRI stored in
+      CVS?</a></h3>JMRI consists
       of two large code trees, and a number of auxiliary
       directories. The code is divided into "jmri", the main JMRI
       code, and "test", the set of automated tests. These are kept
@@ -158,7 +158,7 @@ you should then be up-to-date with your own changes still present.
       software, without including the test code. (If you directly
       look at the CVS repository, you'll also see "jmrit" and
       "jmrix" directories; these are obsolete, and kept only for
-      historical reasons.)</a>
+      historical reasons.)
 
       <p>Similarly, auxilary information is kept in separate "lib",
       "xml", "resources", "jython", etc. directories.</p>
@@ -176,12 +176,12 @@ you should then be up-to-date with your own changes still present.
       directories and puts them in the required places for a
       straight-forward build.</p>
 
-      <h3><a name="lcok">Some files appear to be
-      read-only, why is that?</a></h3><a name="lcok">As
+      <h3><a name="lcok" id="lcok">Some files appear to be
+      read-only, why is that?</a></h3>As
       the software evolves, sometimes files become obsolete. If
       they're not needed at all, CVS allows us to delete them from
       future releases. In that case, they don't show up at all when
-      you check out a current copy.</a>
+      you check out a current copy.
 
       <p>But sometimes the file needs to remain, but we don't want
       it to be modified any more. For example, an older schema or
@@ -194,8 +194,8 @@ you should then be up-to-date with your own changes still present.
       effectively lock the file. The checked-out version of the
       file is write-protected so you can't edit it without noticing
       the problem, and changes can't be checked back into CVS
-      unless the file watch is turned off. 
-      <!--#include virtual="/Footer" --></p>
+      unless the file watch is turned off.</p>
+      <!--#include virtual="/Footer.shtml" -->
     </div><!-- closes #mainContent-->
   </div><!-- closes #mBody-->
 </body>

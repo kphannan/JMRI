@@ -1,11 +1,13 @@
 package jmri.configurexml;
 
+import java.io.File;
 import jmri.ConfigureManager;
 import jmri.InstanceManager;
 import jmri.util.JUnitUtil;
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestSuite;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * Functional checks of loading basic configuration files. When done across
@@ -17,19 +19,20 @@ import junit.framework.TestSuite;
  * @author Bob Jacobsen Copyright 2009
  * @since 3.9.2 (from earlier form)
  */
-public class LoadAndCheckTest extends LoadAndStoreTestBase {
+public class LoadAndCheckTest {
 
     /**
      * Test a file with current schema.
      *
-     * @throws Exception
+     * @throws Exception rethrows any exception
      */
+    @Test
     public void testLoadFileTest() throws Exception {
         // load file
         InstanceManager.getDefault(ConfigureManager.class)
-                .load(new java.io.File("java/test/jmri/configurexml/load/LoadFileTest.xml"));
+                .load(new File("java/test/jmri/configurexml/load/LoadFileTest.xml"));
 
-        // check existance of a few objects
+        // check existence of a few objects
         Assert.assertNotNull(InstanceManager.sensorManagerInstance().getSensor("IS1"));
         Assert.assertNull(InstanceManager.sensorManagerInstance().getSensor("no sensor"));
 
@@ -41,12 +44,13 @@ public class LoadAndCheckTest extends LoadAndStoreTestBase {
 
     }
 
+    @Test
     public void testLoadMultipleSystems() throws Exception {
         // load file
         InstanceManager.getDefault(ConfigureManager.class)
-                .load(new java.io.File("java/test/jmri/configurexml/load/LoadMultipleSystems.xml"));
+                .load(new File("java/test/jmri/configurexml/load/LoadMultipleSystems.xml"));
 
-        // check existance of a few objects
+        // check existence of a few objects
         Assert.assertNotNull(InstanceManager.sensorManagerInstance().getSensor("IS1"));
         Assert.assertNull(InstanceManager.sensorManagerInstance().getSensor("no sensor"));
 
@@ -58,12 +62,13 @@ public class LoadAndCheckTest extends LoadAndStoreTestBase {
 
     }
 
+    @Test
     public void testLoad295() throws Exception {
         // load file
         InstanceManager.getDefault(ConfigureManager.class)
                 .load(new java.io.File("java/test/jmri/configurexml/load/LoadFileTest295.xml"));
 
-        // check existance of a few objects
+        // check existence of a few objects
         Assert.assertNotNull(InstanceManager.sensorManagerInstance().getSensor("IS1"));
         Assert.assertNull(InstanceManager.sensorManagerInstance().getSensor("no sensor"));
 
@@ -75,28 +80,10 @@ public class LoadAndCheckTest extends LoadAndStoreTestBase {
 
     }
 
-    // from here down is testing infrastructure
-    public LoadAndCheckTest(String s) {
-        super(s);
-    }
-
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading", LoadAndCheckTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(LoadAndCheckTest.class);
-        return suite;
-    }
-
-    // The minimal setup for log4J
-    protected void setUp() throws Exception {
-        super.setUp();
-        apps.tests.Log4JFixture.setUp();
-        JUnitUtil.resetInstanceManager();
+    @Before
+    public void setUp() {
+        JUnitUtil.setUp();
+        JUnitUtil.resetProfileManager();
         JUnitUtil.initConfigureManager();
         JUnitUtil.initInternalTurnoutManager();
         JUnitUtil.initInternalLightManager();
@@ -104,9 +91,8 @@ public class LoadAndCheckTest extends LoadAndStoreTestBase {
         JUnitUtil.initMemoryManager();
     }
 
-    protected void tearDown() throws Exception {
-        JUnitUtil.resetInstanceManager();
-        super.tearDown();
-        apps.tests.Log4JFixture.tearDown();
+    @After
+    public void tearDown() {
+        JUnitUtil.tearDown();
     }
 }

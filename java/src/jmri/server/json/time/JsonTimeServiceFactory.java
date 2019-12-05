@@ -1,18 +1,24 @@
 package jmri.server.json.time;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import jmri.server.json.JSON;
 import jmri.server.json.JsonConnection;
-import jmri.server.json.JsonHttpService;
-import jmri.server.json.JsonSocketService;
 import jmri.spi.JsonServiceFactory;
+import org.openide.util.lookup.ServiceProvider;
 
 /**
  *
  * @author Randall Wood
  */
-public class JsonTimeServiceFactory implements JsonServiceFactory {
+@ServiceProvider(service = JsonServiceFactory.class)
+public class JsonTimeServiceFactory implements JsonServiceFactory<JsonTimeHttpService, JsonTimeSocketService> {
 
-    public final static String TIME = "time";
+    /**
+     * @deprecated since 4.15.6; use {@link JSON#TIME} instead
+     */
+    @Deprecated
+    public final static String TIME = JSON.TIME;
 
     @Override
     public String[] getTypes() {
@@ -20,12 +26,12 @@ public class JsonTimeServiceFactory implements JsonServiceFactory {
     }
 
     @Override
-    public JsonSocketService getSocketService(JsonConnection connection) {
+    public JsonTimeSocketService getSocketService(JsonConnection connection) {
         return new JsonTimeSocketService(connection);
     }
 
     @Override
-    public JsonHttpService getHttpService(ObjectMapper mapper) {
+    public JsonTimeHttpService getHttpService(ObjectMapper mapper) {
         return new JsonTimeHttpService(mapper);
     }
 

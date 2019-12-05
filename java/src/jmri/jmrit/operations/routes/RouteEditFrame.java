@@ -1,14 +1,13 @@
-// RoutesEditFrame.java
 package jmri.jmrit.operations.routes;
 
 import java.awt.Dimension;
 import java.awt.GridBagLayout;
 import java.text.MessageFormat;
+
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -19,6 +18,11 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.ScrollPaneConstants;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import jmri.InstanceManager;
 import jmri.jmrit.operations.OperationsFrame;
 import jmri.jmrit.operations.OperationsXml;
 import jmri.jmrit.operations.locations.Location;
@@ -26,14 +30,12 @@ import jmri.jmrit.operations.locations.LocationManager;
 import jmri.jmrit.operations.setup.Control;
 import jmri.jmrit.operations.setup.Setup;
 import jmri.jmrit.operations.trains.Train;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import jmri.swing.JTablePersistenceManager;
 
 /**
  * Frame for user edit of route
  *
- * @author Dan Boudreau Copyright (C) 2008, 2010, 2011, 2014
- * @version $Revision$
+ * @author Dan Boudreau Copyright (C) 2008, 2010, 2011, 2014, 2016
  */
 public class RouteEditFrame extends OperationsFrame implements java.beans.PropertyChangeListener {
 
@@ -42,11 +44,8 @@ public class RouteEditFrame extends OperationsFrame implements java.beans.Proper
     JScrollPane routePane;
 
     RouteManager routeManager;
-    RouteManagerXml managerXml;
-    LocationManager locationManager = LocationManager.instance();
 
     Route _route = null;
-    RouteLocation _routeLocation = null;
     Train _train = null;
 
     // major buttons
@@ -55,24 +54,22 @@ public class RouteEditFrame extends OperationsFrame implements java.beans.Proper
     JButton deleteRouteButton = new JButton(Bundle.getMessage("DeleteRoute"));
     JButton addRouteButton = new JButton(Bundle.getMessage("AddRoute"));
 
-    // check boxes
-    JCheckBox checkBox;
-
     // radio buttons
     JRadioButton addLocAtTop = new JRadioButton(Bundle.getMessage("Top"));
+    JRadioButton addLocAtMiddle = new JRadioButton(Bundle.getMessage("Middle"));
     JRadioButton addLocAtBottom = new JRadioButton(Bundle.getMessage("Bottom"));
-    ButtonGroup group = new ButtonGroup();
 
     JRadioButton showWait = new JRadioButton(Bundle.getMessage("Wait"));
     JRadioButton showDepartTime = new JRadioButton(Bundle.getMessage("DepartTime"));
-    ButtonGroup groupTime = new ButtonGroup();
 
     // text field
     JTextField routeNameTextField = new JTextField(Control.max_len_string_route_name);
     JTextField commentTextField = new JTextField(35);
 
     // combo boxes
-    JComboBox<Location> locationBox = LocationManager.instance().getComboBox();
+    JComboBox<Location> locationBox = InstanceManager.getDefault(LocationManager.class).getComboBox();
+    
+    JMenu toolMenu = new JMenu(Bundle.getMessage("MenuTools"));
 
     public static final String NAME = Bundle.getMessage("Name");
     public static final String DISPOSE = "dispose"; // NOI18N
@@ -82,29 +79,30 @@ public class RouteEditFrame extends OperationsFrame implements java.beans.Proper
     }
 
     public void initComponents(Route route, Train train) {
-        _train = train;
+        _train = train; // assign route to this train
         initComponents(route);
     }
 
     public void initComponents(Route route) {
 
         _route = route;
-        String routeName = null;
 
         // load managers
-        routeManager = RouteManager.instance();
+        routeManager = InstanceManager.getDefault(RouteManager.class);
 
         // Set up the jtable in a Scroll Pane..
         routePane = new JScrollPane(routeTable);
         routePane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         routePane.setBorder(BorderFactory.createTitledBorder(""));
+        
+        routeModel.initTable(this, routeTable, _route);
 
         if (_route != null) {
-            routeName = _route.getName();
-            routeNameTextField.setText(routeName);
+            _route.addPropertyChangeListener(this);
+            routeNameTextField.setText(_route.getName());
             commentTextField.setText(_route.getComment());
-            routeModel.initTable(this, routeTable, route);
-            enableButtons(true);
+            enableButtons(!route.getStatus().equals(Route.TRAIN_BUILT)); // do not allow user to modify a built train
+            addRouteButton.setEnabled(false); // override and disable
         } else {
             setTitle(Bundle.getMessage("TitleRouteAdd"));
             enableButtons(false);
@@ -151,10 +149,8 @@ public class RouteEditFrame extends OperationsFrame implements java.beans.Proper
         addItem(pLoc, locationBox, 0, 1);
         addItem(pLoc, addLocationButton, 1, 1);
         addItem(pLoc, addLocAtTop, 2, 1);
-        addItem(pLoc, addLocAtBottom, 3, 1);
-        group.add(addLocAtTop);
-        group.add(addLocAtBottom);
-        addLocAtBottom.setSelected(true);
+        addItem(pLoc, addLocAtMiddle, 3, 1);
+        addItem(pLoc, addLocAtBottom, 4, 1);
 
         // Wait or Depart Time panel
         JPanel pWait = new JPanel();
@@ -162,8 +158,6 @@ public class RouteEditFrame extends OperationsFrame implements java.beans.Proper
         pWait.setBorder(BorderFactory.createTitledBorder(Bundle.getMessage("Display")));
         addItem(pWait, showWait, 0, 1);
         addItem(pWait, showDepartTime, 1, 1);
-        groupTime.add(showWait);
-        groupTime.add(showDepartTime);
 
         p2.add(pLoc);
         p2.add(pWait);
@@ -192,27 +186,45 @@ public class RouteEditFrame extends OperationsFrame implements java.beans.Proper
         addButtonAction(addRouteButton);
         addButtonAction(saveRouteButton);
 
-        // setup radio buttons
+        // setup radio buttons       
+        ButtonGroup group = new ButtonGroup();
+        group.add(addLocAtTop);
+        group.add(addLocAtMiddle);
+        group.add(addLocAtBottom);
+        addLocAtBottom.setSelected(true);
+        
+        addRadioButtonAction(addLocAtTop); // to clear table row sorting
+        addRadioButtonAction(addLocAtMiddle);
+        addRadioButtonAction(addLocAtBottom); // to clear table row sorting
+        
+        ButtonGroup groupTime = new ButtonGroup();
+        groupTime.add(showWait);
+        groupTime.add(showDepartTime);
         addRadioButtonAction(showWait);
         addRadioButtonAction(showDepartTime);
         setTimeWaitRadioButtons();
 
         // build menu
         JMenuBar menuBar = new JMenuBar();
-        JMenu toolMenu = new JMenu(Bundle.getMessage("MenuTools"));
-        toolMenu.add(new RouteCopyAction(Bundle.getMessage("MenuItemCopy"), routeName));
-        toolMenu.add(new SetTrainIconRouteAction(Bundle.getMessage("MenuSetTrainIconRoute"), routeName));
-        toolMenu.add(new PrintRouteAction(Bundle.getMessage("MenuItemPrint"), false, _route));
-        toolMenu.add(new PrintRouteAction(Bundle.getMessage("MenuItemPreview"), true, _route));
         menuBar.add(toolMenu);
+        loadToolMenu();
         setJMenuBar(menuBar);
         addHelpMenu("package.jmri.jmrit.operations.Operations_EditRoute", true); // NOI18N
 
         // get notified if combo box gets modified
-        LocationManager.instance().addPropertyChangeListener(this);
+        InstanceManager.getDefault(LocationManager.class).addPropertyChangeListener(this);
 
         // set frame size and route for display
         initMinimumSize(new Dimension(Control.panelWidth700, Control.panelHeight400));
+    }
+    
+    private void loadToolMenu() {
+        toolMenu.removeAll();
+        toolMenu.add(new RouteCopyAction(Bundle.getMessage("MenuItemCopy"), _route));
+        toolMenu.add(new SetTrainIconRouteAction(Bundle.getMessage("MenuSetTrainIconRoute"), _route));
+        toolMenu.addSeparator();
+        toolMenu.add(new PrintRouteAction(Bundle.getMessage("MenuItemPrint"), false, _route));
+        toolMenu.add(new PrintRouteAction(Bundle.getMessage("MenuItemPreview"), true, _route));
     }
 
     // Save, Delete, Add
@@ -284,8 +296,20 @@ public class RouteEditFrame extends OperationsFrame implements java.beans.Proper
         Location l = (Location) locationBox.getSelectedItem();
         RouteLocation rl;
         if (addLocAtTop.isSelected()) {
-            rl = _route.addLocation(l, 0);
+            // add location to start
+            rl = _route.addLocation(l, Route.START);
+        } else if (addLocAtMiddle.isSelected()) {
+            // add location to middle
+            if (routeTable.getSelectedRow() >= 0) {
+                int row = routeTable.getSelectedRow();
+                rl = _route.addLocation(l, row + Route.START);
+                // we need to reselect the table since the content has changed
+                routeTable.getSelectionModel().setSelectionInterval(row + Route.START, row + Route.START);
+            } else {
+                rl = _route.addLocation(l, _route.size()/2 + Route.START);
+            }
         } else {
+            // add location to end
             rl = _route.addLocation(l);
         }
         rl.setTrainDirection(routeModel.getLastTrainDirection());
@@ -306,13 +330,16 @@ public class RouteEditFrame extends OperationsFrame implements java.beans.Proper
         Route route = routeManager.newRoute(routeNameTextField.getText());
         routeModel.initTable(this, routeTable, route);
         _route = route;
-        // enable checkboxes
         enableButtons(true);
         // assign route to a train?
         if (_train != null) {
             _train.setRoute(route);
         }
+        if (_route != null) {
+            _route.addPropertyChangeListener(this);
+        }
         saveRoute();
+        loadToolMenu();
     }
 
     private void saveRoute() {
@@ -326,8 +353,6 @@ public class RouteEditFrame extends OperationsFrame implements java.beans.Proper
             log.debug("route table edit true");
             routeTable.getCellEditor().stopCellEditing();
         }
-
-        saveTableDetails(routeTable);
 
         // save route file
         OperationsXml.save();
@@ -360,9 +385,11 @@ public class RouteEditFrame extends OperationsFrame implements java.beans.Proper
     }
 
     private void enableButtons(boolean enabled) {
+        toolMenu.setEnabled(enabled);
         locationBox.setEnabled(enabled);
         addLocationButton.setEnabled(enabled);
         addLocAtTop.setEnabled(enabled);
+        addLocAtMiddle.setEnabled(enabled);
         addLocAtBottom.setEnabled(enabled);
         saveRouteButton.setEnabled(enabled);
         deleteRouteButton.setEnabled(enabled);
@@ -375,12 +402,18 @@ public class RouteEditFrame extends OperationsFrame implements java.beans.Proper
 
     @Override
     public void dispose() {
+        InstanceManager.getOptionalDefault(JTablePersistenceManager.class).ifPresent(tpm -> {
+            tpm.stopPersisting(routeTable);
+        });
+        if (_route != null) {
+            _route.removePropertyChangeListener(this);
+        }
         routeModel.dispose();
         super.dispose();
     }
 
     private void updateComboBoxes() {
-        locationManager.updateComboBox(locationBox);
+        InstanceManager.getDefault(LocationManager.class).updateComboBox(locationBox);
     }
 
     // if the route has a departure time in the first location set the showDepartTime radio button
@@ -404,7 +437,11 @@ public class RouteEditFrame extends OperationsFrame implements java.beans.Proper
         if (e.getPropertyName().equals(LocationManager.LISTLENGTH_CHANGED_PROPERTY)) {
             updateComboBoxes();
         }
+        if (e.getPropertyName().equals(Route.ROUTE_STATUS_CHANGED_PROPERTY)) {
+            enableButtons(!_route.getStatus().equals(Route.TRAIN_BUILT)); // do not allow user to modify a built train
+            addRouteButton.setEnabled(false); // override and disable
+        }
     }
 
-    private final static Logger log = LoggerFactory.getLogger(RouteEditFrame.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(RouteEditFrame.class);
 }

@@ -1,14 +1,12 @@
 package jmri.jmrix.direct;
 
-
 /**
  * Provide utilities for coding/decoding NMRA {@literal S&RP} DCC packets into
  * sequences to send through a standard serial port.
- * <P>
+ * <p>
  * This is strongly based on the makepckt.c file from the PacketScript 1.1.
  * package of Kenneth Rice. The original header comment from that file follows
  * here.
- *
  *
  * <pre>
  *
@@ -72,17 +70,17 @@ package jmri.jmrix.direct;
  * shareware and private applications.
  *
  * Please report bugs, fixes, etc to me at:
- *	kenr@xis.xerox.com
+ * kenr@xis.xerox.com
  * or
- *	73577,1653 (compuserve)
+ * 73577,1653 (compuserve)
  *
- * Created	02/08/93
- * 			03/05/93	Works for all 3 byte packets. Still errors for 4 byte.
- *			07/01/93	Renamed to makepckt.c to be nice to dos users.
- *			10/23/93	Added backtracking and max length.
+ * Created 02/08/93
+ *   03/05/93 Works for all 3 byte packets. Still errors for 4 byte.
+ *   07/01/93 Renamed to makepckt.c to be nice to dos users.
+ *   10/23/93 Added backtracking and max length.
  * </pre>
  *
- * @author	Bob Jacobsen Copyright (C) 2001
+ * @author Bob Jacobsen Copyright (C) 2001
  *
  */
 public class MakePacket {
@@ -123,7 +121,7 @@ public class MakePacket {
     private static final int BITS_11111 = 0x55; /* 11111  _-_-_-_-_- (0x55) */
 
 
-    private static class node {
+    private static class Node {
 
         int bitPattern;
         int patternLength;
@@ -131,14 +129,14 @@ public class MakePacket {
     /* Node definition for first depth, prune largest tree. */
 
     /**
-     * function to set the Preamble Length - Default is 15 NRMA '1's Every NMRA
+     * Set the Preamble Length - Default is 15 NRMA '1's Every NMRA
      * packet decoded starts with a preamble Service mode requires longer
      * preambles Thus this public function allowing user to define the lenght of
      * desired preamble
      *
      * @param preambleLen int
-     * @return boolean - true if preamble is a multiple of 5 otherwise fails and
-     *         returns alse
+     * @return boolean true if preamble is a multiple of 5, otherwise fails and
+     *         returns false
      */
     public static boolean setPreambleLength(int preambleLen) {
         //Just make sure that no negatives values are passed.
@@ -154,12 +152,12 @@ public class MakePacket {
     }
 
     /**
-     * Function that takes in the packet as a array of Bytes and converts an
+     * Take in the packet as an array of Bytes and convert
      * them into NMRA'1','0' representation, in preparation to be sent over a
      * serial link.
      *
-     * @param packet byte[] - NRMA packet in a array of bytes
-     * @return int[] - first byte is length - 0 length indicates failed to do
+     * @param packet byte[] NRMA packet in a array of bytes
+     * @return int[]        first byte is length - 0 length indicates failed to do
      */
     public static int[] createStream(byte[] packet) {
         int i = 0;
@@ -188,27 +186,23 @@ public class MakePacket {
         /* do end packet indicator */
         bitStream[--bitStreamIndex] = 1;
 
-        /**
+        /*
          * So we now have a int array reflecting required packet byte structure
          * => bitStream
-         */
-        /**
          * Now do the hard part - convert this into a serial stream
          */
         return (bitStreamToSerialBytes(bitStream));
     }
 
-    /* BitStreamToSerialBytes
-     *
+    /**
      * Generate the serial bytes from the bit stream.
-     * <P>
+     * <p>
      * Basically this is a depth first, prune largest tree search, always going down the subtree
      * that uses the most bits for the next byte. If we get an error, backtrack up
-     * the tree until we reach a node that we have not completely traversed all the
+     * the tree until we reach a Node that we have not completely traversed all the
      * subtrees for and try going down the subtree that uses the second most bits.
      * Keep going until we finish converting the packet or run out of things to try.
-     * <P>
-     *
+     * <p>
      * This is not guaranteed to find the shortest serial stream for a given
      * packet, but it is guaranteed to find a stream if one exists. Also, it
      * usually does come up with the shortest packet.
@@ -217,11 +211,11 @@ public class MakePacket {
         int currentBufferIndex;
         int treeIndex = -1;
         int serialStream[] = new int[inputBitStream.length];
-        node tree[] = new node[150];
+        Node tree[] = new Node[150];
 
         for (currentBufferIndex = 0; currentBufferIndex < tree.length;
                 currentBufferIndex++) {
-            tree[currentBufferIndex] = new node();
+            tree[currentBufferIndex] = new Node();
             tree[currentBufferIndex].bitPattern = 0;
             tree[currentBufferIndex].patternLength = 0;
         }
@@ -234,7 +228,7 @@ public class MakePacket {
                     inputBitStream.length - currentBufferIndex,
                     tree[treeIndex])) {
                 /* Success, there is a Child at this level in the tree to read */
-                /* Move down the tree to next node */
+                /* Move down the tree to next Node */
                 serialStream[treeIndex] = tree[treeIndex].bitPattern;
                 currentBufferIndex += tree[treeIndex++].patternLength;
             } /* Allow outer loop control to take us down next level; */ else {
@@ -245,7 +239,7 @@ public class MakePacket {
                     currentBufferIndex = inputBitStream.length;
                 } else {
                     while (treeIndex > 0) {
-                        /* Inner loop to check all childs at this node */
+                        /* Inner loop to check all childs at this Node */
                         /* If no more childs then need to bracktrack */
                         treeIndex--;
                         currentBufferIndex -= tree[treeIndex].patternLength;
@@ -266,62 +260,50 @@ public class MakePacket {
         return (serialStream);
     }
 
-    /* ReadNextChild
+    /**
+     * Find the next largest (ie longest length) child at this Node.
      *
-     * This routine find the next largest (ie longest lenght) child
-     * at this node.
-     * ThisNode	- (INPUT/OUTPUT) determine if there is another child
-     *                if so update node with ie the Bit
-     *                pattern and its associated lenght.
+     * @param thisNode (INPUT/OUTPUT) determine if there is another child
+     *                 if so update Node with ie the Bit
+     *                 pattern and its associated lenght
      *
-     * Return false if one doesnt exist otherwise returns true.
+     * @return false if one doesn't exist otherwise returns true
      */
-    static boolean readNextChild(node thisNode) {
+    static boolean readNextChild(Node thisNode) {
 
         switch (thisNode.bitPattern) {
             /* Success - there is another child */
 
             case BITS_00:
-            case BITS_01: {
+            case BITS_01:
                 thisNode.bitPattern = BITS_0;
                 thisNode.patternLength = 1;
                 break;
-            }
-            case BITS_001: {
+            case BITS_001:
                 thisNode.bitPattern = BITS_00;
                 thisNode.patternLength = 2;
                 break;
-            }
-            case BITS_010: {
+            case BITS_010:
+            case BITS_011:
                 thisNode.bitPattern = BITS_01;
                 thisNode.patternLength = 2;
                 break;
-            }
-            case BITS_011: {
-                thisNode.bitPattern = BITS_01;
-                thisNode.patternLength = 2;
-                break;
-            }
-            case BITS_100: {
+            case BITS_100:
                 thisNode.bitPattern = BITS_10;
                 thisNode.patternLength = 2;
                 break;
-            }
-            case BITS_0111: {
+            case BITS_0111:
                 thisNode.bitPattern = BITS_011;
                 thisNode.patternLength = 3;
                 break;
-            }
-            case BITS_1011: {
+            case BITS_1011:
                 thisNode.bitPattern = BITS_101;
                 thisNode.patternLength = 3;
                 break;
-            }
-            case BITS_1101: {
+            case BITS_1101:
                 thisNode.bitPattern = BITS_110;
                 thisNode.patternLength = 3;
                 break;
-            }
             /* We have exhausted all children on this level */
             default:
                 return false;
@@ -329,22 +311,21 @@ public class MakePacket {
         return (true);
     }
 
-    /* ReadFirstChild
+    /**
+     * Find the first largest (ie longest length) child
+     * at this Node.
      *
-     * This routine find the first largest (ie longest length) child
-     * at this node          
+     * @param bs        (INPUT) Bit stream array
+     * @param offset    Offset in to buffer
+     * @param validBits (INPUT) number of valid bits in the bit stream
+     * @param thisNode  (OUTPUT) where to put largest child found ie the Bit
+     *                  pattern and its associated lenght
      *
-     * BS		- (INPUT) Bit stream array
-     * offset       - Offset in to buffer
-     * validBits	- (INPUT) number of valid bits in the bit stream.
-     * ThisNode	- (OUTPUT) where to put largest child found ie the Bit
-     *                pattern and its associated lenght.
-     *
-     * Return false if one doesnt exist otherwise returns true.
+     * @return false if one doesn't exist otherwise returns true
      */
     @SuppressWarnings("fallthrough")
     static boolean readFirstChild(int bs[], int offset, int validBits,
-            node thisNode) {
+            Node thisNode) {
         boolean b0 = false;
         boolean b1 = false;
         boolean b2 = false;
@@ -447,10 +428,7 @@ public class MakePacket {
                 }
         }
 
-        if (thisNode.patternLength == 0) {
-            return (false);
-        } else {
-            return (true);
-        }
+        return (thisNode.patternLength != 0);
     }
+
 }

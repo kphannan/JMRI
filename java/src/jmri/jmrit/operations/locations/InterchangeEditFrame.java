@@ -1,16 +1,20 @@
-// InterchangeEditFrame.java
 package jmri.jmrit.operations.locations;
 
 import javax.swing.BorderFactory;
+
+import jmri.jmrit.operations.locations.tools.ChangeTrackTypeAction;
+import jmri.jmrit.operations.locations.tools.IgnoreUsedTrackAction;
+import jmri.jmrit.operations.locations.tools.ShowCarsByLocationAction;
+import jmri.jmrit.operations.locations.tools.ShowTrainsServingLocationAction;
+import jmri.jmrit.operations.locations.tools.TrackDestinationEditAction;
 
 /**
  * Frame for user edit of a classification/interchange track. Adds two panels to
  * TrackEditFrame for train/route car drops and pulls.
  *
  * @author Dan Boudreau Copyright (C) 2008, 2011, 2012
- * @version $Revision$
  */
-public class InterchangeEditFrame extends TrackEditFrame implements java.beans.PropertyChangeListener {
+public class InterchangeEditFrame extends TrackEditFrame {
 
     public InterchangeEditFrame() {
         super();
@@ -26,7 +30,7 @@ public class InterchangeEditFrame extends TrackEditFrame implements java.beans.P
         _toolMenu.add(new TrackDestinationEditAction(this));
         _toolMenu.add(new ChangeTrackTypeAction(this));
         _toolMenu.add(new ShowTrainsServingLocationAction(Bundle.getMessage("MenuItemShowTrainsTrack"), _location, _track));
-        _toolMenu.add(new ShowCarsByLocationAction(false, location.getName(), _trackName));
+        _toolMenu.add(new ShowCarsByLocationAction(false, _location, _track));
         addHelpMenu("package.jmri.jmrit.operations.Operations_Interchange", true); // NOI18N
 
         // override text strings for tracks
@@ -41,5 +45,5 @@ public class InterchangeEditFrame extends TrackEditFrame implements java.beans.P
         setVisible(true);
     }
 
-//    private final static Logger log = LoggerFactory.getLogger(InterchangeEditFrame.class.getName());
+//    private final static Logger log = LoggerFactory.getLogger(InterchangeEditFrame.class);
 }

@@ -5,13 +5,16 @@ import java.awt.Component;
 import java.util.ArrayList;
 import javax.swing.JOptionPane;
 import jmri.InstanceManager;
+import jmri.Route;
 import jmri.RouteManager;
+import org.openide.util.lookup.ServiceProvider;
 
 /**
  * Factory to create {@link apps.startup.TriggerRouteModel} objects.
- * 
+ *
  * @author Randall Wood (C) 2016
  */
+@ServiceProvider(service = StartupModelFactory.class)
 public class TriggerRouteModelFactory implements StartupModelFactory {
 
     @Override
@@ -38,8 +41,8 @@ public class TriggerRouteModelFactory implements StartupModelFactory {
     public void editModel(StartupModel model, Component parent) {
         if (this.getModelClass().isInstance(model)) {
             ArrayList<String> userNames = new ArrayList<>();
-            InstanceManager.getDefault(RouteManager.class).getSystemNameList().stream().forEach((systemName) -> {
-                String userName = InstanceManager.getDefault(RouteManager.class).getBySystemName(systemName).getUserName();
+            InstanceManager.getDefault(RouteManager.class).getNamedBeanSet().stream().forEach((r) -> {
+                String userName = r.getUserName();
                 if (userName != null && !userName.isEmpty()) {
                     userNames.add(userName);
                 }
@@ -63,4 +66,7 @@ public class TriggerRouteModelFactory implements StartupModelFactory {
     public void initialize() {
         // nothing to do
     }
+
+    // private final static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(TriggerRouteModelFactory.class);
+
 }

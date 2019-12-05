@@ -5,7 +5,7 @@ import jmri.TurnoutOperator;
 /**
  * Concrete subclass of TurnoutOperator for a turnout that has no feedback.
  *
- * @author	John Harper	Copyright 2005
+ * @author John Harper Copyright 2005
  */
 public class NoFeedbackTurnoutOperator extends TurnoutOperator {
 
@@ -20,12 +20,13 @@ public class NoFeedbackTurnoutOperator extends TurnoutOperator {
     }
 
     /**
-     * Do the autmation for a turnout with no feedback. This means try maxTries
+     * Do the automation for a turnout with no feedback. This means try maxTries
      * times at an interval of interval. Note the call to operatorCheck each
      * time we're about to actually do something - if we're no longer the
      * current operator this throws TurnoutOperatorException which just
      * terminates the thread.
      */
+    @Override
     public void run() {
         try {
             operatorCheck();
@@ -43,4 +44,5 @@ public class NoFeedbackTurnoutOperator extends TurnoutOperator {
         } catch (TurnoutOperatorException e) {
         }
     }
+
 }

@@ -1,12 +1,19 @@
 package jmri.jmrix.sprog;
 
+import java.util.Comparator;
 import java.util.ResourceBundle;
+import jmri.GlobalProgrammerManager;
 import jmri.InstanceManager;
-import jmri.ProgrammerManager;
+import jmri.NamedBean;
 import jmri.ThrottleManager;
+import jmri.TurnoutManager;
 import jmri.jmrix.sprog.SprogConstants.SprogMode;
 import jmri.jmrix.sprog.update.SprogType;
 import jmri.jmrix.sprog.update.SprogVersion;
+import jmri.jmrix.sprog.update.SprogVersionQuery;
+import jmri.jmrix.swing.ComponentFactory;
+import jmri.util.NamedBeanComparator;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,67 +24,63 @@ import org.slf4j.LoggerFactory;
  * Objects of specific subtypes are registered in the instance manager to
  * activate their particular system.
  *
- * @author	Bob Jacobsen Copyright (C) 2010
+ * @author Bob Jacobsen Copyright (C) 2010
  */
 public class SprogSystemConnectionMemo extends jmri.jmrix.SystemConnectionMemo {
 
     public SprogSystemConnectionMemo(SprogTrafficController st, SprogMode sm) {
-        super("S", "Sprog");
+        super(st.getController().getSystemConnectionMemo().getSystemPrefix(), SprogConnectionTypeList.SPROG);
+        if (log.isDebugEnabled()) {
+            log.debug("SprogSystemConnectionMemo, prefix='{}'", st.getController().getSystemConnectionMemo().getSystemPrefix());
+        }
         this.st = st;
-        sprogMode = sm;  // static
-        sprogVersion = new SprogVersion(new SprogType(SprogType.UNKNOWN));
-        register();
-        InstanceManager.store(this, SprogSystemConnectionMemo.class); // also register as specific type
+        init(sm, new SprogType(SprogType.UNKNOWN));
     }
 
     public SprogSystemConnectionMemo(SprogMode sm) {
-        super("S", "Sprog");
-        sprogMode = sm;  // static
-        sprogVersion = new SprogVersion(new SprogType(SprogType.UNKNOWN));
-        register();
-        InstanceManager.store(this, SprogSystemConnectionMemo.class); // also register as specific type
+        this(sm, new SprogType(SprogType.UNKNOWN));
     }
 
     public SprogSystemConnectionMemo(SprogMode sm, SprogType type) {
-        super("S", "Sprog");
+        super("S", SprogConnectionTypeList.SPROG); // default to S
+        init(sm, type);
+    }
+    
+    private void init(SprogMode sm, SprogType type) {
         sprogMode = sm;  // static
         sprogVersion = new SprogVersion(type);
+        cf = new jmri.jmrix.sprog.swing.SprogComponentFactory(this);
         register();
         InstanceManager.store(this, SprogSystemConnectionMemo.class); // also register as specific type
+        InstanceManager.store(cf, ComponentFactory.class);
     }
 
     public SprogSystemConnectionMemo() {
-        super("S", "Sprog");
-        register(); // registers general type
-        sprogVersion = new SprogVersion(new SprogType(SprogType.UNKNOWN));
-        InstanceManager.store(this, SprogSystemConnectionMemo.class); // also register as specific type
-
-        //Needs to be implemented
-        /*InstanceManager.store(cf = new jmri.jmrix.ecos.swing.ComponentFactory(this), 
-         jmri.jmrix.swing.ComponentFactory.class);*/
+        this(SprogMode.OPS);
     }
 
     /**
-     * Set the SPROG mode for this connection
-     * 
+     * Set the SPROG mode for this connection.
+     *
+     * @param mode selected mode
      */
     public void setSprogMode(SprogMode mode) {
         sprogMode = mode;
     }
 
     /**
-     * Return the SPROG mode for this connection
-     * 
-     * @return SprogMode 
+     * Return the SPROG mode for this connection.
+     *
+     * @return SprogMode
      */
     public SprogMode getSprogMode() {
         return sprogMode;
     }
-    private SprogMode sprogMode;// = SprogMode.SERVICE;
+    private SprogMode sprogMode;
 
     /**
-     * Return the SPROG version object for this connection
-     * 
+     * Return the SPROG version object for this connection.
+     *
      * @return SprogVersion
      */
     public SprogVersion getSprogVersion() {
@@ -85,7 +88,9 @@ public class SprogSystemConnectionMemo extends jmri.jmrix.SystemConnectionMemo {
     }
 
     /**
-     * Set the SPROG version object for this connection
+     * Set the SPROG version object for this connection.
+     *
+     * @param version type and version class
      */
     public void setSprogVersion(SprogVersion version) {
         sprogVersion = version;
@@ -94,18 +99,20 @@ public class SprogSystemConnectionMemo extends jmri.jmrix.SystemConnectionMemo {
     private SprogVersion sprogVersion;
 
     /**
-     * Return the type of SPROG connected
-     * 
-     * @return SprogType
+     * Return the type of SPROG connected.
+     *
+     * @return SprogType set
      */
     public SprogType getSprogType() {
         return sprogVersion.sprogType;
     }
 
-    jmri.jmrix.swing.ComponentFactory cf = null;
+    ComponentFactory cf = null;
 
     /**
-     * Provides access to the TrafficController for this particular connection.
+     * Provide access to the TrafficController for this particular connection.
+     *
+     * @return current tc for this connection
      */
     public SprogTrafficController getSprogTrafficController() {
         return st;
@@ -114,25 +121,46 @@ public class SprogSystemConnectionMemo extends jmri.jmrix.SystemConnectionMemo {
     public void setSprogTrafficController(SprogTrafficController st) {
         this.st = st;
     }
+
     private SprogTrafficController st;
+    private SprogCommandStation commandStation;
 
     private Thread slotThread;
 
+    public Thread getSlotThread() {
+        return slotThread;
+    }
+    
     /**
-     * Configure the programming manager and "command station" objects
+     * Configure the programming manager and "command station" objects.
      */
     public void configureCommandStation() {
+        log.debug("start command station queuing thread");
+        commandStation = new jmri.jmrix.sprog.SprogCommandStation(st);
+        commandStation.setSystemConnectionMemo(this);
+        jmri.InstanceManager.store(commandStation, jmri.CommandStation.class);
         switch (sprogMode) {
             case OPS:
-                log.debug("start command station queuing thread");
-                slotThread = new Thread(jmri.jmrix.sprog.SprogCommandStation.instance());
-                SprogCommandStation.instance().setSystemConnectionMemo(this);
+                slotThread = new Thread(commandStation);
+                slotThread.setName("SPROG slot thread");
+                slotThread.setPriority(Thread.MAX_PRIORITY-2);
                 slotThread.start();
-                jmri.InstanceManager.setCommandStation(SprogCommandStation.instance());
                 break;
             case SERVICE:
                 break;
+            default:
+                log.error("Unhandled sprogMode: {}", sprogMode);
+                break;
         }
+    }
+
+    /**
+     * Get the command station object associated with this connection.
+     * 
+     * @return the command station
+     */
+    public SprogCommandStation getCommandStation() {
+        return commandStation;
     }
 
     @Override
@@ -140,20 +168,20 @@ public class SprogSystemConnectionMemo extends jmri.jmrix.SystemConnectionMemo {
         if (getDisabled()) {
             return false;
         }
-        if (type.equals(jmri.ProgrammerManager.class)) {
-            return true;
-        }
         if (type.equals(jmri.GlobalProgrammerManager.class)) {
             return getProgrammerManager().isGlobalProgrammerAvailable();
         }
         if (type.equals(jmri.AddressedProgrammerManager.class)) {
             return getProgrammerManager().isAddressedModePossible();
         }
-
         if (type.equals(jmri.PowerManager.class)) {
             return true;
         }
         if (type.equals(jmri.ThrottleManager.class)) {
+            log.debug("SPROG provides throttle. sprogMode: {}", sprogMode);
+            return true;
+        }
+        if (type.equals(jmri.TurnoutManager.class)) {
             return true;
         }
         if ((type.equals(jmri.CommandStation.class))) {
@@ -165,54 +193,62 @@ public class SprogSystemConnectionMemo extends jmri.jmrix.SystemConnectionMemo {
                     return true;
                 case SERVICE:
                     return false;
+                default:
+                    log.error("Unhandled sprogMode: {}", sprogMode);
+                    break;
             }
         }
-        return false; // nothing, by default
+        return super.provides(type);
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> T get(Class<?> T) {
+    public <T> T get(Class<?> type) {
         if (getDisabled()) {
             return null;
         }
-        if (T.equals(jmri.ProgrammerManager.class)) {
+        if (type.equals(jmri.GlobalProgrammerManager.class)) {
             return (T) getProgrammerManager();
         }
-        if (T.equals(jmri.GlobalProgrammerManager.class)) {
+        if (type.equals(jmri.AddressedProgrammerManager.class)) {
             return (T) getProgrammerManager();
         }
-        if (T.equals(jmri.AddressedProgrammerManager.class)) {
-            return (T) getProgrammerManager();
-        }
-
-        if (T.equals(jmri.PowerManager.class)) {
+        if (type.equals(jmri.PowerManager.class)) {
             return (T) getPowerManager();
         }
-        if (T.equals(jmri.ThrottleManager.class)) {
+        if (type.equals(jmri.ThrottleManager.class)) {
             return (T) getThrottleManager();
         }
-        if (T.equals(jmri.CommandStation.class)) {
-            return (T) SprogCommandStation.instance();
+        if (type.equals(jmri.TurnoutManager.class)) {
+            return (T) getTurnoutManager();
         }
-        return null; // nothing, by default
+        if (type.equals(jmri.CommandStation.class)) {
+            return (T) getCommandStation();
+        }
+        return super.get(type);
     }
 
     /**
-     * Configure the common managers for Sprog connections. This puts the common
-     * manager config in one place. This method is static so that it can be
-     * referenced from classes that don't inherit, including
-     * hexfile.HexFileFrame and locormi.LnMessageClient
+     * Configure the common managers for Sprog connections.
+     * <p>
+     * This puts the common manager config in one place. This method is static
+     * so that it can be referenced from classes that don't inherit, including
+     * hexfile.HexFileFrame and locormi.LnMessageClient.
      */
     public void configureManagers() {
 
-        jmri.InstanceManager.setProgrammerManager(
-                getProgrammerManager());
+        if (getProgrammerManager().isAddressedModePossible()) {
+            jmri.InstanceManager.store(getProgrammerManager(), jmri.AddressedProgrammerManager.class);
+        }
+        if (getProgrammerManager().isGlobalProgrammerAvailable()) {
+            InstanceManager.store(getProgrammerManager(), GlobalProgrammerManager.class);
+        }
 
         powerManager = new jmri.jmrix.sprog.SprogPowerManager(this);
         jmri.InstanceManager.store(powerManager, jmri.PowerManager.class);
 
-        jmri.InstanceManager.setTurnoutManager(new jmri.jmrix.sprog.SprogTurnoutManager());
+        sprogTurnoutManager = new jmri.jmrix.sprog.SprogTurnoutManager(this);
+        jmri.InstanceManager.setTurnoutManager(sprogTurnoutManager);
 
         switch (sprogMode) {
             case OPS:
@@ -223,24 +259,26 @@ public class SprogSystemConnectionMemo extends jmri.jmrix.SystemConnectionMemo {
                 sprogThrottleManager = new jmri.jmrix.sprog.SprogThrottleManager(this);
                 jmri.InstanceManager.setThrottleManager(sprogThrottleManager);
                 break;
-
+            default:
+                log.warn("Unhandled programming mode: {}", sprogMode);
+                break;
         }
-
     }
 
-    private ProgrammerManager programmerManager;
+    private SprogProgrammerManager programmerManager;
     private SprogCSThrottleManager sprogCSThrottleManager;
     private SprogThrottleManager sprogThrottleManager;
+    private SprogTurnoutManager sprogTurnoutManager;
     private SprogPowerManager powerManager;
 
-    public ProgrammerManager getProgrammerManager() {
+    public SprogProgrammerManager getProgrammerManager() {
         if (programmerManager == null) {
-            programmerManager = new SprogProgrammerManager(new SprogProgrammer(), sprogMode, this);
+            programmerManager = new SprogProgrammerManager(new SprogProgrammer(this), sprogMode, this);
         }
         return programmerManager;
     }
 
-    public void setProgrammerManager(ProgrammerManager p) {
+    public void setProgrammerManager(SprogProgrammerManager p) {
         programmerManager = p;
     }
 
@@ -258,15 +296,29 @@ public class SprogSystemConnectionMemo extends jmri.jmrix.SystemConnectionMemo {
                 return sprogCSThrottleManager;
             case SERVICE:
                 return sprogThrottleManager;
+            default:
+                log.warn("Unhandled programming mode: {}", sprogMode);
+                break;
         }
         return null;
     }
 
+    public TurnoutManager getTurnoutManager() {
+        return sprogTurnoutManager;
+    }
+
+    @Override
     protected ResourceBundle getActionModelResourceBundle() {
         //No actions that can be loaded at startup
         return null;
     }
 
+    @Override
+    public <B extends NamedBean> Comparator<B> getNamedBeanComparator(Class<B> type) {
+        return new NamedBeanComparator<>();
+    }
+
+    @Override
     public void dispose() {
         st = null;
         InstanceManager.deregister(this, SprogSystemConnectionMemo.class);
@@ -276,5 +328,18 @@ public class SprogSystemConnectionMemo extends jmri.jmrix.SystemConnectionMemo {
         super.dispose();
     }
 
-    private final static Logger log = LoggerFactory.getLogger(SprogSystemConnectionMemo.class.getName());
+    private SprogVersionQuery svq = null;
+
+    /**
+     * @return a SprogVersionQuery object for this connection
+     */
+    public SprogVersionQuery getSprogVersionQuery() {
+        if (svq == null) {
+            svq = new SprogVersionQuery(this);
+        }
+        return svq;
+    }
+
+    private static final Logger log = LoggerFactory.getLogger(SprogSystemConnectionMemo.class);
+
 }

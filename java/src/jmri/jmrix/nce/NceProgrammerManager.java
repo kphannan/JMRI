@@ -1,75 +1,117 @@
 package jmri.jmrix.nce;
 
+import java.util.Objects;
+import javax.annotation.Nonnull;
 import jmri.AddressedProgrammer;
 import jmri.Programmer;
 import jmri.managers.DefaultProgrammerManager;
 
 /**
- * Extend DefaultProgrammerManager to provide ops mode programmers for NCE systems
+ * Extend DefaultProgrammerManager to provide ops mode programmers for NCE
+ * systems.
  *
- * @see jmri.ProgrammerManager
- * @author	Bob Jacobsen Copyright (C) 2002, 2016
- * @author	Ken Cameron Copyright (C) 2013
+ * @see jmri.GlobalProgrammerManager
+ * @author Bob Jacobsen Copyright (C) 2002, 2016
+ * @author Ken Cameron Copyright (C) 2013
  */
 public class NceProgrammerManager extends DefaultProgrammerManager {
 
     NceTrafficController tc;
+    NceSystemConnectionMemo memo;
 
-    public NceProgrammerManager(NceSystemConnectionMemo memo) {
+    public NceProgrammerManager(@Nonnull NceSystemConnectionMemo memo) {
         super(
-             checkGlobalProgrammerAvailable(memo.getNceTrafficController()) ?
-                new NceProgrammer(memo.getNceTrafficController()) : null, 
-             memo);
+                checkGlobalProgrammerAvailable(memo.getNceTrafficController())
+                ? new NceProgrammer(memo.getNceTrafficController())
+                : null,
+                memo);
         this.tc = memo.getNceTrafficController();
+        this.memo = memo;
+        log.trace("NceProgrammerManager({}) with {}", memo,
+                checkGlobalProgrammerAvailable(memo.getNceTrafficController()));
+        Objects.requireNonNull(memo, "require NceSystemConnectionMemo");
     }
 
     /**
-     * Works with command station to provide Ops Mode, so say it works
+     * {@inheritDoc}
      *
-     * @return true
+     * @return true if selected NCE hardware and connection type support Ops
+     *         Mode
      */
+    @Override
     public boolean isAddressedModePossible() {
-        return true;
+        Objects.requireNonNull(tc, "require NceTrafficController");
+        Objects.requireNonNull(memo, "require NceSystemConnectionMemo");
+
+        switch (memo.getNceUsbSystem()) {
+            case NceTrafficController.USB_SYSTEM_POWERPRO:
+                log.trace("isAddressedModePossible returns false");
+                return false;
+            default:
+                log.trace("isAddressedModePossible returns true");
+                return true;
+        }
     }
 
     /**
-     * Works with PH command station to provide Service Mode and USB connect to
-     * PowerCab.
+     * {@inheritDoc}
      *
-     * @return true if not USB connect to SB3,PowerPro,SB5
+     * @return true if selected NCE hardware and connection type support Service
+     *         Mode
      */
+    @Override
     public boolean isGlobalProgrammerAvailable() {
+        Objects.requireNonNull(tc, "require NceTrafficController");
         return checkGlobalProgrammerAvailable(tc);
     }
 
-    static private boolean checkGlobalProgrammerAvailable(NceTrafficController tc) {
-        if (tc != null && (tc.getUsbSystem() != NceTrafficController.USB_SYSTEM_NONE)) {
-            if ((tc.getCmdGroups() & NceTrafficController.CMDS_PROGTRACK) == 0) {
-                return false;
-            } else {
+    // this centralizes the isGlobalProgrammerAvailable logic.  It
+    // has to be static so it can be called during the construction of
+    // an object of this class
+    static private boolean checkGlobalProgrammerAvailable(@Nonnull NceTrafficController tc) {
+        switch (tc.getUsbSystem()) {
+            case NceTrafficController.USB_SYSTEM_NONE: // Serial or Simulator
+            case NceTrafficController.USB_SYSTEM_POWERCAB:
+            case NceTrafficController.USB_SYSTEM_TWIN:
+                log.trace("checkGlobalProgrammerAvailable returns true");
                 return true;
-            }
-        } else {
-            return true;
+            default:
+                log.trace("checkGlobalProgrammerAvailable returns false");
+                return false;
         }
     }
-    
+
     /**
-     * Provides a service mode programmer
-     *<p>
-     * Note: The NCE service mode programmer might exist, but not be able to function.
-     * Not a great situation, but there it is.  We therefore check before returning it.
+     * {@inheritDoc}
+     * <p>
+     * Note: The NCE service mode programmer might exist, but not be able to
+     * function. Not a great situation, but there it is. We therefore check
+     * before returning it.
      */
+    @Override
     public Programmer getGlobalProgrammer() {
-        if ( ! isGlobalProgrammerAvailable() ) return null;
+        if (!isGlobalProgrammerAvailable()) {
+            return null;
+        }
         return super.getGlobalProgrammer();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public AddressedProgrammer getAddressedProgrammer(boolean pLongAddress, int pAddress) {
         return new NceOpsModeProgrammer(tc, pAddress, pLongAddress);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public AddressedProgrammer reserveAddressedProgrammer(boolean pLongAddress, int pAddress) {
         return null;
     }
+
+    private final static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(NceProgrammerManager.class);
+
 }

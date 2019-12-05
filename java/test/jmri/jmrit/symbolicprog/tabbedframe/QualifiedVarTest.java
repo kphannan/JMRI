@@ -1,43 +1,54 @@
 package jmri.jmrit.symbolicprog.tabbedframe;
 
+import java.awt.GraphicsEnvironment;
+import java.awt.event.WindowEvent;
+import java.io.IOException;
 import javax.swing.JPanel;
 import jmri.jmrit.decoderdefn.DecoderFile;
 import jmri.jmrit.roster.RosterEntry;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import jmri.util.JUnitUtil;
 import org.jdom2.DocType;
 import org.jdom2.Document;
 import org.jdom2.Element;
+import org.jdom2.JDOMException;
+import org.junit.After;
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Test PaneProg with qualified variables
+ * Test PaneProg with qualified variables.
  *
  * @author	Bob Jacobsen Copyright 2010
- * @version	$Revision$
  */
-public class QualifiedVarTest extends TestCase {
+public class QualifiedVarTest {
 
     // show me a specially-created frame
+    @Test
     public void testFrame() throws Exception {
-        if (System.getProperty("jmri.headlesstest", "false").equals("true")) {
-            return;
-        }
+        Assume.assumeFalse(GraphicsEnvironment.isHeadless());
 
         // run all following on Swing thread
         javax.swing.SwingUtilities.invokeAndWait(new Runnable() {
+            @Override
             public void run() {
                 setupDoc();
                 PaneProgFrame p = new PaneProgFrame(null, new RosterEntry(),
                         "test qualified var", "programmers/Basic.xml",
                         new jmri.progdebugger.ProgDebugger(), false) {
-                            // dummy implementations
-                            protected JPanel getModePane() {
-                                return null;
-                            }
-                        };
+                    // dummy implementations
+                    @Override
+                    protected JPanel getModePane() {
+                        return null;
+                    }
+                    // prevent this test from prompting to save file
+                    @Override
+                    protected boolean checkDirtyFile() {
+                        return false;
+                    }
+                };
 
                 // get the sample info
                 try {
@@ -47,7 +58,7 @@ public class QualifiedVarTest extends TestCase {
 
                     DecoderFile df = new DecoderFile();  // used as a temporary
                     df.loadVariableModel(el.getChild("decoder"), p.variableModel);
-                } catch (Exception e) {
+                } catch (IOException | JDOMException e) {
                     log.error("Exception during setup", e);
                 }
                 p.readConfig(root, new RosterEntry());
@@ -55,8 +66,8 @@ public class QualifiedVarTest extends TestCase {
                 p.setVisible(true);
 
                 // close the window for cleanliness
-                p.dispose();
-            }
+                p.dispatchEvent(new WindowEvent(p, WindowEvent.WINDOW_CLOSING));
+        }
         });
     }
 
@@ -144,12 +155,6 @@ public class QualifiedVarTest extends TestCase {
                         )
                 )
                 .addContent(new Element("pane")
-                        .setAttribute("name", "iCV")
-                        .addContent(new Element("column")
-                                .addContent(new Element("indxcvtable"))
-                        )
-                )
-                .addContent(new Element("pane")
                         .setAttribute("name", "CV3>50")
                         .addContent(new Element("qualifier")
                                 .addContent(new Element("variableref")
@@ -175,36 +180,20 @@ public class QualifiedVarTest extends TestCase {
                         )
                 )
         ); // end of adding contents
-
-        return;
     }
 
-    // from here down is testing infrastructure
-    public QualifiedVarTest(String s) {
-        super(s);
+    private final static Logger log = LoggerFactory.getLogger(QualifiedVarTest.class);
+
+    @Before
+    public void setUp() {
+        JUnitUtil.setUp();
+        JUnitUtil.resetProfileManager();
+        JUnitUtil.initRosterConfigManager();
     }
 
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading", QualifiedVarTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(QualifiedVarTest.class);
-        return suite;
-    }
-
-    private final static Logger log = LoggerFactory.getLogger(QualifiedVarTest.class.getName());
-
-    // The minimal setup for log4J
-    protected void setUp() {
-        apps.tests.Log4JFixture.setUp();
-    }
-
-    protected void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
+    @After
+    public void tearDown() {
+        JUnitUtil.tearDown();
     }
 
 }

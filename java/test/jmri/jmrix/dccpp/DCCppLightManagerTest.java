@@ -1,12 +1,11 @@
 package jmri.jmrix.dccpp;
 
 import jmri.Light;
-import jmri.LightManager;
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestSuite;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import jmri.util.JUnitUtil;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * Tests for the jmri.jmrix.dccpp.DCCppLightManager class.
@@ -14,74 +13,53 @@ import org.slf4j.LoggerFactory;
  * @author Paul Bender Copyright (C) 2010
  * @author Mark Underwood Copyright (C) 2015
  */
-public class DCCppLightManagerTest extends jmri.managers.AbstractLightMgrTest {
+public class DCCppLightManagerTest extends jmri.managers.AbstractLightMgrTestBase {
 
     DCCppInterfaceScaffold xnis = null;
 
+    @Override
     public String getSystemName(int i) {
-        return "DCCPPL" + i;
+        return "DL" + i;
     }
 
+    @Test
     public void testAsAbstractFactory() {
-        // create and register the manager object
-        DCCppLightManager xlm = new DCCppLightManager(xnis, "DCCPP");
-        jmri.InstanceManager.setLightManager(xlm);
 
         // ask for a Light, and check type
-        LightManager lm = jmri.InstanceManager.lightManagerInstance();
+        Light tl = l.newLight("DL21", "my name");
 
-        Light tl = lm.newLight("DCCPPL21", "my name");
-
-        if (log.isDebugEnabled()) {
-            log.debug("received light value " + tl);
-        }
-        Assert.assertTrue(null != (DCCppLight) tl);
+        Assert.assertNotNull(tl);
 
         // make sure loaded into tables
-        if (log.isDebugEnabled()) {
-            log.debug("by system name: " + lm.getBySystemName("DCCPPL21"));
-        }
-        if (log.isDebugEnabled()) {
-            log.debug("by user name:   " + lm.getByUserName("my name"));
-        }
-
-        Assert.assertTrue(null != lm.getBySystemName("DCCPPL21"));
-        Assert.assertTrue(null != lm.getByUserName("my name"));
+        Assert.assertNotNull(l.getBySystemName("DL21"));
+        Assert.assertNotNull(l.getByUserName("my name"));
     }
 
     // from here down is testing infrastructure
-    public DCCppLightManagerTest(String s) {
-        super(s);
-    }
-
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading", DCCppLightManagerTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(DCCppLightManagerTest.class);
-        return suite;
-    }
-
     // The minimal setup for log4J
-    protected void setUp() {
-        apps.tests.Log4JFixture.setUp();
+    @Before
+    @Override
+    public void setUp() {
+        JUnitUtil.setUp();
         // prepare an interface, register
         xnis = new DCCppInterfaceScaffold(new DCCppCommandStation());
+        DCCppSystemConnectionMemo memo = new DCCppSystemConnectionMemo(xnis);
+        xnis.setSystemConnectionMemo(memo);
         // create and register the manager object
-        l = new DCCppLightManager(xnis, "DCCPP");
+        l = new DCCppLightManager(xnis.getSystemConnectionMemo());
         jmri.InstanceManager.setLightManager(l);
 
     }
 
-    @Override
-    protected void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
+    @After
+    public void tearDown() {
+        l.dispose();
+        l = null;
+        xnis = null;
+        jmri.util.JUnitUtil.clearShutDownManager();
+        jmri.util.JUnitUtil.resetInstanceManager();
+        JUnitUtil.tearDown();
     }
 
-    private final static Logger log = LoggerFactory.getLogger(DCCppLightManagerTest.class.getName());
-
+//    private final static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(DCCppLightManagerTest.class);
 }

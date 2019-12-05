@@ -2,18 +2,19 @@ package jmri.jmrix.tams;
 
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nonnull;
+
 import jmri.AddressedProgrammer;
 import jmri.ProgListener;
 import jmri.ProgrammerException;
 import jmri.ProgrammingMode;
-import jmri.managers.DefaultProgrammerManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Provide an Ops Mode Programmer via a wrapper what works with the TAMS command
  * station object.
- * <P>
+ * <p>
  * Functionally, this just creates packets to send via the command station.
  *
  * @see jmri.Programmer Based on work by Bob Jacobsen
@@ -31,10 +32,14 @@ public class TamsOpsModeProgrammer extends TamsProgrammer implements AddressedPr
         mLongAddr = pLongAddr;
     }
 
-    /**
+    /** 
+     * {@inheritDoc}
+     *
      * Forward a write request to an ops-mode write operation
      */
-    public synchronized void writeCV(int CV, int val, ProgListener p) throws ProgrammerException {
+    @Override
+    public synchronized void writeCV(String CVname, int val, ProgListener p) throws ProgrammerException {
+        final int CV = Integer.parseInt(CVname);
         if (log.isDebugEnabled()) {
             log.debug("write CV=" + CV + " val=" + val);
         }
@@ -52,7 +57,12 @@ public class TamsOpsModeProgrammer extends TamsProgrammer implements AddressedPr
 
     }
 
-    public synchronized void readCV(int CV, ProgListener p) throws ProgrammerException {
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
+    public synchronized void readCV(String CVname, ProgListener p) throws ProgrammerException {
+        final int CV = Integer.parseInt(CVname);
         if (log.isDebugEnabled()) {
             log.debug("read CV=" + CV);
         }
@@ -60,6 +70,10 @@ public class TamsOpsModeProgrammer extends TamsProgrammer implements AddressedPr
         throw new ProgrammerException();
     }
 
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
     public synchronized void confirmCV(String CV, int val, ProgListener p) throws ProgrammerException {
         if (log.isDebugEnabled()) {
             log.debug("confirm CV=" + CV);
@@ -68,7 +82,11 @@ public class TamsOpsModeProgrammer extends TamsProgrammer implements AddressedPr
         throw new ProgrammerException();
     }
 
+    /** 
+     * {@inheritDoc}
+     */
     // add 200mSec between commands, so NCE command station queue doesn't get overrun
+    @Override
     protected void notifyProgListenerEnd(int value, int status) {
         if (log.isDebugEnabled()) {
             log.debug("TamsOpsModeProgrammer adds 200mSec delay to response");
@@ -81,17 +99,20 @@ public class TamsOpsModeProgrammer extends TamsProgrammer implements AddressedPr
         super.notifyProgListenerEnd(value, status);
     }
 
-    /**
-     * Types implemented here.
+    /** 
+     * {@inheritDoc}
      */
     @Override
+    @Nonnull
     public List<ProgrammingMode> getSupportedModes() {
         List<ProgrammingMode> ret = new ArrayList<ProgrammingMode>();
-        ret.add(DefaultProgrammerManager.OPSBYTEMODE);
+        ret.add(ProgrammingMode.OPSBYTEMODE);
         return ret;
     }
 
-    /**
+    /** 
+     * {@inheritDoc}
+     *
      * Can this ops-mode programmer read back values? For now, no, but maybe
      * later.
      *
@@ -102,28 +123,43 @@ public class TamsOpsModeProgrammer extends TamsProgrammer implements AddressedPr
         return false;
     }
 
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
     public boolean getLongAddress() {
         return mLongAddr;
     }
 
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
     public int getAddressNumber() {
         return mAddress;
     }
 
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
     public String getAddress() {
         return "" + getAddressNumber() + " " + getLongAddress();
     }
 
-    /**
+    /** 
+     * {@inheritDoc}
+     *
      * Ops-mode programming doesn't put the command station in programming mode,
      * so we don't have to send an exit-programming command at end. Therefore,
      * this routine does nothing except to replace the parent routine that does
      * something.
      */
+    @Override
     void cleanup() {
     }
 
     // initialize logging
-    private final static Logger log = LoggerFactory.getLogger(TamsOpsModeProgrammer.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(TamsOpsModeProgrammer.class);
 
 }

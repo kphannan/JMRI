@@ -20,7 +20,7 @@ public class TurnoutIconXml extends PositionableLabelXml {
     static final HashMap<String, String> _nameMap = new HashMap<String, String>();
 
     public TurnoutIconXml() {
-        // map previous store names to actual localized names
+        // map previous store names to property key names
         _nameMap.put("closed", "TurnoutStateClosed");
         _nameMap.put("thrown", "TurnoutStateThrown");
         _nameMap.put("unknown", "BeanStateUnknown");
@@ -33,6 +33,7 @@ public class TurnoutIconXml extends PositionableLabelXml {
      * @param o Object to store, of type TurnoutIcon
      * @return Element containing the complete info
      */
+    @Override
     public Element store(Object o) {
 
         TurnoutIcon p = (TurnoutIcon) o;
@@ -71,7 +72,7 @@ public class TurnoutIconXml extends PositionableLabelXml {
      * @param element Top level Element to unpack.
      * @param o       Editor as an Object
      */
-    @SuppressWarnings("null")
+    @Override
     public void load(Element element, Object o) {
         // create the objects
         Editor p = (Editor) o;
@@ -197,5 +198,5 @@ public class TurnoutIconXml extends PositionableLabelXml {
         return icon;
     }
 
-    private final static Logger log = LoggerFactory.getLogger(TurnoutIconXml.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(TurnoutIconXml.class);
 }

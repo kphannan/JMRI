@@ -1,23 +1,25 @@
 package jmri.jmrix.powerline;
 
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import jmri.util.JUnitUtil;
+import org.junit.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Assert;
 
 /**
- * JUnit tests for the X10Sequence class
+ * JUnit tests for the X10Sequence class.
  *
  * @author	Bob Jacobsen Copyright 2003, 2007, 2008
  * @author	Dave Duchamp multi-node extensions 2003
- * @version	$Revision$
  */
-public class X10SequenceTest extends TestCase {
+public class X10SequenceTest {
 
+    @Test
     public void testCtors() {
         new X10Sequence();
     }
 
+    @Test
     public void testSequence() {
         X10Sequence s = new X10Sequence();
         s.addAddress(1, 2);
@@ -38,30 +40,14 @@ public class X10SequenceTest extends TestCase {
 
     }
 
-    // from here down is testing infrastructure
-    public X10SequenceTest(String s) {
-        super(s);
+    @Before
+    public void setUp() {
+        JUnitUtil.setUp();
     }
 
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {X10SequenceTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(X10SequenceTest.class);
-        return suite;
-    }
-
-    // The minimal setup for log4J
-    protected void setUp() {
-        apps.tests.Log4JFixture.setUp();
-    }
-
-    protected void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
+    @After
+    public void tearDown() {
+        JUnitUtil.tearDown();
     }
 
 }

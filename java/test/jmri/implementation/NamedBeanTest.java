@@ -1,13 +1,10 @@
 package jmri.implementation;
 
-import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeEvent;
-
+import java.beans.PropertyChangeListener;
 import jmri.NamedBean;
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import org.junit.Assert;
+import org.junit.Test;
 
 /**
  * Tests for the NamedBean interface implementation.
@@ -15,35 +12,42 @@ import junit.framework.TestSuite;
  * Inherit from this and override "createInstance" if you want to include these
  * tests in a test class for your own NamedBean class
  *
- * @author	Bob Jacobsen Copyright (C) 2009, 2015
+ * @author Bob Jacobsen Copyright (C) 2009, 2015
  */
-public class NamedBeanTest extends TestCase {
+public class NamedBeanTest {
 
     /**
      * This is a separate protected method, instead of part of setUp(), to make
      * subclassing easier.
+     * 
+     * @return a new NamedBean with system name "sys" and user name "usr"
      */
     protected NamedBean createInstance() {
         return new AbstractNamedBean("sys", "usr") {
+            @Override
             public int getState() {
                 return 0;
             }
 
+            @Override
             public void setState(int i) {
             }
 
+            @Override
             public String getBeanType() {
                 return "";
             }
         };
     }
 
+    @Test
     public void testSetBeanParameter() {
         NamedBean n = createInstance();
 
         n.setProperty("foo", "bar");
     }
 
+    @Test
     public void testGetBeanParameter() {
         NamedBean n = createInstance();
 
@@ -51,6 +55,7 @@ public class NamedBeanTest extends TestCase {
         Assert.assertEquals("bar", n.getProperty("foo"));
     }
 
+    @Test
     public void testGetSetNullBeanParameter() {
         NamedBean n = createInstance();
 
@@ -60,6 +65,7 @@ public class NamedBeanTest extends TestCase {
         Assert.assertEquals(null, n.getProperty("foo"));
     }
 
+    @Test
     public void testGetBeanPropertyKeys() {
         NamedBean n = createInstance();
 
@@ -73,35 +79,23 @@ public class NamedBeanTest extends TestCase {
 
     }
 
+    @Test
     public void testDispose() {
         NamedBean n = createInstance();
-        n.addPropertyChangeListener(new PropertyChangeListener(){
-            public void propertyChange(PropertyChangeEvent p) {}
+        n.addPropertyChangeListener(new PropertyChangeListener() {
+            @Override
+            public void propertyChange(PropertyChangeEvent p) {
+            }
         });
-        n.addPropertyChangeListener(new PropertyChangeListener(){
-            public void propertyChange(PropertyChangeEvent p) {}
+        n.addPropertyChangeListener(new PropertyChangeListener() {
+            @Override
+            public void propertyChange(PropertyChangeEvent p) {
+            }
         });
         Assert.assertEquals("start length", 2, n.getNumPropertyChangeListeners());
-        
+
         n.dispose();
-        Assert.assertEquals("end length", 0, n.getNumPropertyChangeListeners());   
-    }
-    
-    // from here down is testing infrastructure
-    public NamedBeanTest(String s) {
-        super(s);
-    }
-
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {NamedBeanTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(NamedBeanTest.class);
-        return suite;
+        Assert.assertEquals("end length", 0, n.getNumPropertyChangeListeners());
     }
 
 }

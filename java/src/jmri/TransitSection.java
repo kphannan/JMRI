@@ -8,33 +8,42 @@ import org.slf4j.LoggerFactory;
  * This class holds information and options for a Section when assigned to a
  * Transit. Corresponds to an allocatable "Section" of track assigned to a
  * Transit.
- * <P>
+ * <p>
  * A TransitSection holds the following information: Section ID Section
  * Direction Sequence number of Section within the Transit Special actions list
  * for train in this Section, if requested (see TransitSectionAction.java)
  * Whether this Section is a primary section or an alternate section
- * <P>
+ * <p>
  * A TransitSection is referenced via a list in its parent Transit, and is
  * stored on disk when its parent Transit is stored.
- * <P>
+ * <p>
  * Provides for delayed initializatio of Section when loading panel files, so
  * that this is not dependent on order of items in the panel file.
  *
- * @author	Dave Duchamp Copyright (C) 2008
+ * @author Dave Duchamp Copyright (C) 2008
  */
 public class TransitSection {
 
     /**
-     * Main constructor method
+     * Create a TransitSection. This calls the alternate constructor with false
+     * for the alt value.
+     *
+     * @param s         the section to add to the transit
+     * @param seq       the sequence number of the section in the transit
+     * @param direction the direction of travel within the transit
      */
     public TransitSection(jmri.Section s, int seq, int direction) {
-        mSection = s;
-        mSequence = seq;
-        mDirection = direction;
+        this(s, seq, direction, false);
     }
 
     /**
-     * Convenience constructor
+     * Create an alternate or primary TransitSection.
+     *
+     * @param s         the section to add to the transit
+     * @param seq       the sequence number of the section in the transit
+     * @param direction the direction of travel within the transit
+     * @param alt       true if the section is an alternate; false if section is
+     *                  primary or has no alternates
      */
     public TransitSection(jmri.Section s, int seq, int direction, boolean alt) {
         mSection = s;
@@ -44,7 +53,36 @@ public class TransitSection {
     }
 
     /**
-     * Special constructor to delay Section initialization
+     * Create an alternate or primary TransitSection, and defined as safe or not
+     *
+     * @param s         the section to add to the transit
+     * @param seq       the sequence number of the section in the transit
+     * @param direction the direction of travel within the transit
+     * @param alt       true if the section is an alternate; false if section is
+     *                  primary or has no alternates
+     * @param safe      true if this is a safe section. When dispatcher by safe sections
+     *                  a train is dispatched safe section to safe section with all intervening sections available.
+     * @param stopAllocatingSensorName If this sensor is present, valid, and Active allocation will stop until
+     *                  it is no longer Active.
+     */
+    public TransitSection(jmri.Section s, int seq, int direction, boolean alt, boolean safe, String stopAllocatingSensorName) {
+        mSection = s;
+        mSequence = seq;
+        mDirection = direction;
+        mAlternate = alt;
+        mSafe = safe;
+        mStopAllocatingSensorName = stopAllocatingSensorName;
+    }
+
+    /**
+     * Create an alternate or primary TransitSection with a delayed
+     * initialization.
+     *
+     * @param secName   the name of the section to add to the transit
+     * @param seq       the sequence number of the section in the transit
+     * @param direction the direction of travel within the transit
+     * @param alt       true if the section is an alternate; false if section is
+     *                  primary or has no alternates
      */
     public TransitSection(String secName, int seq, int direction, boolean alt) {
         tSectionName = secName;
@@ -54,12 +92,38 @@ public class TransitSection {
         needsInitialization = true;
     }
 
+    /**
+     * Create an alternate or primary TransitSection with a delayed
+     * initialization.
+     *
+     * @param secName   the name of the section to add to the transit
+     * @param seq       the sequence number of the section in the transit
+     * @param direction the direction of travel within the transit
+     * @param alt       true if the section is an alternate; false if section is
+     *                  primary or has no alternates
+     * @param safe      true if this is a safe section. When dispatcher by safe sections
+     *                  a train is dispatched safe section to safe section with all intervening sections available.
+     * @param stopAllocatingSensorName If this sensor is present, valid, and Active allocation will stop until
+     *                  it is no longer Active.
+     */
+    public TransitSection(String secName, int seq, int direction, boolean alt, boolean safe, String stopAllocatingSensorName) {
+        tSectionName = secName;
+        mSequence = seq;
+        mDirection = direction;
+        mAlternate = alt;
+        mSafe = safe;
+        mStopAllocatingSensorName = stopAllocatingSensorName;
+        needsInitialization = true;
+    }
+
     // instance variables
     private Section mSection = null;
     private int mSequence = 0;
     private int mDirection = 0;
-    private ArrayList<TransitSectionAction> mTransitSectionActionList = new ArrayList<TransitSectionAction>();
+    private final ArrayList<TransitSectionAction> mTransitSectionActionList = new ArrayList<>();
     private boolean mAlternate = false;
+    private boolean mSafe = false;
+    private String mStopAllocatingSensorName = "";
 
     // temporary variables and method for delayed initialization of Section
     private String tSectionName = "";
@@ -88,7 +152,10 @@ public class TransitSection {
     }
 
     /**
-     * Access methods
+     * Get the associated section.
+     *
+     * @return the section or null if no section is associated with this
+     *         TransitSection
      */
     public Section getSection() {
         if (needsInitialization) {
@@ -130,16 +197,31 @@ public class TransitSection {
         mAlternate = alt;
     }
 
-    /**
-     * Get a copy of this TransitSection's TransitSectionAction list
-     */
-    public ArrayList<TransitSectionAction> getTransitSectionActionList() {
-        ArrayList<TransitSectionAction> list = new ArrayList<TransitSectionAction>();
-        for (int i = 0; i < mTransitSectionActionList.size(); i++) {
-            list.add(mTransitSectionActionList.get(i));
-        }
-        return list;
+    public boolean isSafe() {
+        return mSafe;
     }
 
-    private final static Logger log = LoggerFactory.getLogger(TransitSection.class.getName());
+    public void setSafe(boolean safe) {
+        mSafe = safe;
+    }
+
+    public String getStopAllocatingSensor() {
+        return mStopAllocatingSensorName;
+    }
+
+    public void setStopAllocatingSensor(String stopAllocatingSensor ) {
+        mStopAllocatingSensorName = stopAllocatingSensor;
+    }
+
+
+    /**
+     * Get a list of the actions for this TransitSection
+     *
+     * @return a list of actions or an empty list if there are no actions
+     */
+    public ArrayList<TransitSectionAction> getTransitSectionActionList() {
+        return new ArrayList<>(mTransitSectionActionList);
+    }
+
+    private final static Logger log = LoggerFactory.getLogger(TransitSection.class);
 }

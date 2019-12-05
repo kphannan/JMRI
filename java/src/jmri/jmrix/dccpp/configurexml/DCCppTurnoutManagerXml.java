@@ -6,13 +6,12 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Provides load and store functionality for configuring DCCppTurnoutManagers.
- * <P>
+ * <p>
  * Uses the store method from the abstract base class, but provides a load
  * method here.
  *
- * @author Bob Jacobsen Copyright: Copyright (c) 2002
- * @author Mark Underwood Copyright: Copyright (c) 2015
- * @version $Revision$
+ * @author Bob Jacobsen Copyright (c) 2002
+ * @author Mark Underwood Copyright (c) 2015
  */
 public class DCCppTurnoutManagerXml extends jmri.managers.configurexml.AbstractTurnoutManagerConfigXML {
 
@@ -20,20 +19,23 @@ public class DCCppTurnoutManagerXml extends jmri.managers.configurexml.AbstractT
         super();
     }
 
+    @Override
     public void setStoreElementClass(Element turnouts) {
         turnouts.setAttribute("class", "jmri.jmrix.dccpp.configurexml.DCCppTurnoutManagerXml");
     }
 
+    @Override
     public void load(Element element, Object o) {
         log.error("Invalid method called");
     }
 
+    @Override
     public boolean load(Element turnouts) {
         // load individual turnouts
         return loadTurnouts(turnouts, null);
     }
 
-    private final static Logger log = LoggerFactory.getLogger(DCCppTurnoutManagerXml.class.getName());
+    private static final Logger log = LoggerFactory.getLogger(DCCppTurnoutManagerXml.class);
 
     @Override
     public boolean load(Element shared, Element perNode) {

@@ -11,15 +11,13 @@ import jmri.jmrix.powerline.SerialTrafficController;
 import jmri.util.StringUtil;
 
 /**
- * Frame for user input of Powerline messages
+ * Frame for user input of Powerline messages.
  *
- * @author	Ken Cameron	Copyright (C) 2010 derived from:
- * @author	Bob Jacobsen Copyright (C) 2001
+ * @author Ken Cameron Copyright (C) 2010 derived from:
+ * @author Bob Jacobsen Copyright (C) 2001
  * @author Dan Boudreau Copyright (C) 2007
  */
 public class SerialPacketGenPane extends jmri.jmrix.powerline.swing.PowerlinePanel implements SerialListener {
-
-    ResourceBundle rb = ResourceBundle.getBundle("jmri.jmrix.powerline.swing.packetgen.SerialPacketGenBundle");
 
     // member declarations
     javax.swing.JLabel jLabel1 = new javax.swing.JLabel();
@@ -27,7 +25,7 @@ public class SerialPacketGenPane extends jmri.jmrix.powerline.swing.PowerlinePan
     javax.swing.JTextField packetTextField = new javax.swing.JTextField(20);
     javax.swing.JCheckBox checkBoxBinCmd = new javax.swing.JCheckBox();
     javax.swing.JTextField replyLenTextField = new javax.swing.JTextField(2);
-    javax.swing.JCheckBox interlockButton = new javax.swing.JCheckBox("Interlock");
+    javax.swing.JCheckBox interlockButton = new javax.swing.JCheckBox(Bundle.getMessage("InterlockBoxLabel"));
 
     private SerialTrafficController tc = null;
     private SerialSystemConnectionMemo memo = null;
@@ -39,48 +37,60 @@ public class SerialPacketGenPane extends jmri.jmrix.powerline.swing.PowerlinePan
     public void init() {
     }
 
-    public void initContext(Object context) throws Exception {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void initContext(Object context) {
         if (context instanceof SerialSystemConnectionMemo) {
-            try {
-                this.memo = (SerialSystemConnectionMemo) context;
-                initComponents();
-            } catch (Exception e) {
-                //log.error("BoosterProg initContext failed");
-            }
+            this.memo = (SerialSystemConnectionMemo) context;
+            initComponents();
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public String getHelpTarget() {
-        return "package.jmri.jmrix.powerline.swing.packetgen.PowerlinePacketGenPane";
+        return "package.jmri.jmrix.powerline.packetgen.PowerlinePacketGenPane";
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public String getTitle() {
         StringBuilder x = new StringBuilder();
         if (memo != null) {
             x.append(memo.getUserName());
         } else {
-            x.append(rb.getString("DefaultTag"));
+            x.append(Bundle.getMessage("DefaultTag"));
         }
         x.append(": ");
-        x.append(rb.getString("Title"));
+        x.append(Bundle.getMessage("Title"));
         return x.toString();
     }
 
-    public void initComponents(SerialSystemConnectionMemo memo) throws Exception {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void initComponents(SerialSystemConnectionMemo memo) {
         this.memo = memo;
         tc = memo.getTrafficController();
         
         // the following code sets the frame's initial state
 
-        jLabel1.setText("Command:");
+        jLabel1.setText(Bundle.getMessage("CommandLabel")); // I18N using Bundle.getMessage("key") with keys already available in JmrixBundle
         jLabel1.setVisible(true);
 
-        sendButton.setText("Send");
+        sendButton.setText(Bundle.getMessage("ButtonSend"));
         sendButton.setVisible(true);
-        sendButton.setToolTipText("Send packet");
+        sendButton.setToolTipText(Bundle.getMessage("TooltipSendPacket"));
 
         packetTextField.setText("");
-        packetTextField.setToolTipText("Enter command as hexadecimal bytes separated by a space");
+        packetTextField.setToolTipText(Bundle.getMessage("EnterHexToolTip"));
         packetTextField.setMaximumSize(
                 new Dimension(packetTextField.getMaximumSize().width,
                         packetTextField.getPreferredSize().height
@@ -95,6 +105,7 @@ public class SerialPacketGenPane extends jmri.jmrix.powerline.swing.PowerlinePan
         add(sendButton);
 
         sendButton.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
                 sendButtonActionPerformed(e);
             }
@@ -117,9 +128,11 @@ public class SerialPacketGenPane extends jmri.jmrix.powerline.swing.PowerlinePan
         return m;
     }
 
+    @Override
     public void message(SerialMessage m) {
     }  // ignore replies
 
+    @Override
     public void reply(SerialReply r) {
     } // ignore replies
 

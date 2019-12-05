@@ -1,48 +1,42 @@
-// LnLightManager.java
 package jmri.jmrix.loconet;
 
+import java.util.Locale;
 import jmri.Light;
 import jmri.managers.AbstractLightManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * Implement light manager for loconet systems
- * <P>
- * System names are "LLnnnnn", where nnnnn is the bit number without padding.
- * <P>
+ * Implement LightManager for LocoNet systems.
+ * <p>
+ * System names are "LLnnnnn", where the first L is the user configurable
+ * system prefix, nnnnn is the bit number without padding.
+ * <p>
  * Based in part on SerialLightManager.java
  *
- * @author	Dave Duchamp Copyright (C) 2006
- * @version	$Revision$
+ * @author Dave Duchamp Copyright (C) 2006
  */
 public class LnLightManager extends AbstractLightManager {
 
+    public LnLightManager(LocoNetSystemConnectionMemo memo) {
+        super(memo);
+    }
+
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    public LocoNetSystemConnectionMemo getMemo() {
+        return (LocoNetSystemConnectionMemo) memo;
+    }
+
+    /**
+     * Create a new Light based on the system name.
+     * <p>
+     * Assumes calling method has checked that a Light with
+     * this system name does not already exist.
      *
+     * @return null if the system name is not in a valid format
      */
-    private static final long serialVersionUID = -2149079067924117653L;
-
-    public LnLightManager(LnTrafficController tc, String prefix) {
-        _trafficController = tc;
-        this.prefix = prefix;
-    }
-
-    LnTrafficController _trafficController;
-    String prefix;
-
-    /**
-     * Returns the system letter for Loconet
-     */
-    public String getSystemPrefix() {
-        return prefix;
-    }
-
-    /**
-     * Method to create a new Light based on the system name Returns null if the
-     * system name is not in a valid format Assumes calling method has checked
-     * that a Light with this system name does not already exist
-     */
+    @Override
     public Light createNewLight(String systemName, String userName) {
         Light lgt = null;
         // check if the output bit is available
@@ -53,70 +47,71 @@ public class LnLightManager extends AbstractLightManager {
         // Normalize the systemName
         String sName = getSystemPrefix() + "L" + bitNum;   // removes any leading zeros
         // make the new Light object
-        lgt = new LnLight(sName, userName, _trafficController, this);
+        lgt = new LnLight(sName, userName, getMemo().getLnTrafficController(), this);
         return lgt;
     }
 
     /**
-     * Get the bit address from the system name
+     * {@inheritDoc}
+     */
+    @Override
+    public NameValidity validSystemNameFormat(String systemName) {
+        return (getBitFromSystemName(systemName) != 0) ? NameValidity.VALID : NameValidity.INVALID;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String validateSystemNameFormat(String systemName, Locale locale) {
+        return validateIntegerSystemNameFormat(systemName, 1, 4096, locale);
+    }
+
+    /**
+     * Get the bit address from the system name.
+     * @param systemName a valid LocoNet-based Light System Name
+     * @return the turnout number extracted from the system name
      */
     public int getBitFromSystemName(String systemName) {
-        // validate the system Name leader characters
-        if ((!systemName.startsWith(getSystemPrefix())) || (!systemName.startsWith(getSystemPrefix() + "L"))) {
-            // here if an illegal loconet light system name 
-            log.error("illegal character in header field of loconet light system name: " + systemName);
-            return (0);
-        }
-        // name must be in the LLnnnnn format
-        int num = 0;
         try {
-            num = Integer.valueOf(systemName.substring(
-                    getSystemPrefix().length() + 1, systemName.length())
-            ).intValue();
-        } catch (Exception e) {
-            log.error("illegal character in number field of system name: " + systemName);
-            return (0);
+            validateSystemNameFormat(systemName, Locale.getDefault());
+        } catch (IllegalArgumentException ex) {
+            return 0;
         }
-        if (num <= 0) {
-            log.error("invalid loconet light system name: " + systemName);
-            return (0);
-        } else if (num > 4096) {
-            log.error("bit number out of range in loconet light system name: " + systemName);
-            return (0);
-        }
-        return (num);
+        return Integer.parseInt(systemName.substring(getSystemNamePrefix().length()));
     }
 
     /**
-     * Public method to validate system name format returns 'true' if system
-     * name has a valid format, else returns 'false'
+     * Validate system name for configuration.
+     * Needed for the Abstract Light class.
+     *
+     * @param systemName the systemName to be validated
+     * @return 'true' if system name has a valid meaning in current configuration,
+     * else returns 'false'. For now this method always returns 'true';
      */
-    public boolean validSystemNameFormat(String systemName) {
-        return (getBitFromSystemName(systemName) != 0);
-    }
-
-    /**
-     * Public method to validate system name for configuration returns 'true' if
-     * system name has a valid meaning in current configuration, else returns
-     * 'false' for now, this method always returns 'true'; it is needed for the
-     * Abstract Light class
-     */
+    @Override
     public boolean validSystemNameConfig(String systemName) {
         return (true);
     }
 
     /**
-     * A method that determines if it is possible to add a range of lights in
-     * numerical order eg 11 thru 18, primarily used to show/not show the add
-     * range box in the add Light window
-     *
+     * Determine if it is possible to add a range of Lights in
+     * numerical order eg. 11 thru 18, primarily used to show/not show the add
+     * range box in the Add Light pane.
+     * @param systemName  an ignored parameter
+     * @return true, always
      */
+    @Override
     public boolean allowMultipleAdditions(String systemName) {
         return true;
     }
 
-    private final static Logger log = LoggerFactory.getLogger(LnLightManager.class.getName());
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String getEntryToolTip() {
+        return Bundle.getMessage("AddOutputEntryToolTip");
+    }
 
 }
-
-/* @(#)LnLightManager.java */

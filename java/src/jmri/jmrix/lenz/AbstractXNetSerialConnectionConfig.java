@@ -1,13 +1,9 @@
-// AbstractXNetSerialConnectionConfig.java
 package jmri.jmrix.lenz;
 
 /**
- * Abstract Configuration for an XPressNet Serial Connection
- * <P>
+ * Abstract Configuration for an XpressNet Serial Connection
  *
  * @author Paul Bender Copyright (C) 2010
- * @version	$Revision$
- *
  */
 abstract public class AbstractXNetSerialConnectionConfig extends jmri.jmrix.AbstractSerialConnectionConfig {
 
@@ -20,7 +16,8 @@ abstract public class AbstractXNetSerialConnectionConfig extends jmri.jmrix.Abst
     }
 
     /**
-     * Ctor for a functional Swing object with no prexisting adapter
+     * Ctor for a connection configuration with no preexisting adapter.
+     * {@link #setInstance()} will fill the adapter member.
      */
     public AbstractXNetSerialConnectionConfig() {
         super();

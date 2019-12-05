@@ -5,34 +5,36 @@ import java.beans.PropertyChangeSupport;
 import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.List;
+import javax.annotation.Nonnull;
 import jmri.AddressedProgrammer;
 import jmri.ProgListener;
+import jmri.Programmer;
 import jmri.ProgrammerException;
 import jmri.ProgrammingMode;
-import jmri.managers.DefaultProgrammerManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Debugging implementation of Programmer interface.
- * <P>
+ * <p>
  * Remembers writes, and returns the last written value when a read to the same
  * CV is made.
  * <p>
- * Only supports the DCC single-number address space.
+ * Only supports the DCC single-number address space, should be updated to handle
+ * any string address.
  *
  * @author	Bob Jacobsen Copyright (C) 2001, 2007, 2013
  */
 public class ProgDebugger implements AddressedProgrammer {
 
     public ProgDebugger() {
-        mode = DefaultProgrammerManager.PAGEMODE;
+        mode = ProgrammingMode.PAGEMODE;
     }
 
     public ProgDebugger(boolean pLongAddress, int pAddress) {
         longAddr = pLongAddress;
         address = pAddress;
-        mode = DefaultProgrammerManager.OPSBITMODE;
+        mode = ProgrammingMode.OPSBITMODE;
     }
 
     // write CV is recorded for later use
@@ -53,55 +55,71 @@ public class ProgDebugger implements AddressedProgrammer {
      * Reset the CV to a value so one can detect if it's been written.
      * <p>
      * Does not change the "lastWrite" and "lastWriteCv" results.
+     *
+     * @param cv  the CV to reset
+     * @param val the value
      */
     public void resetCv(int cv, int val) {
-        mValues.put(Integer.valueOf(cv), Integer.valueOf(val));
+        mValues.put(cv, val);
     }
 
     /**
      * Get the CV value directly, without going through the usual indirect
-     * protocol. Used for e.g. testing.
+     * protocol. Used, for example, while testing.
      * <p>
      * Does not change the "lastRead" and "lastReadCv" results.
+     *
+     * @param cv the CV to get
+     * @return the value or -1
      */
     public int getCvVal(int cv) {
         // try to get something from hash table
-        Integer saw = (mValues.get(Integer.valueOf(cv)));
+        Integer saw = (mValues.get(cv));
         if (saw != null) {
-            return saw.intValue();
+            return saw;
         }
         log.warn("CV " + cv + " has no defined value");
         return -1;
     }
 
     /**
-     * See if a CV has been written
+     * See if a CV has been written.
+     *
+     * @param cv the CV to check
+     * @return true if written, false otherwise
      */
     public boolean hasBeenWritten(int cv) {
-        Integer saw = (mValues.get(Integer.valueOf(cv)));
+        Integer saw = (mValues.get(cv));
         return (saw != null);
     }
 
     /**
-     * Clear written status
+     * Clear written status.
+     *
+     * @param cv the CV to clear
      */
     public void clearHasBeenWritten(int cv) {
-        mValues.remove(Integer.valueOf(cv));
+        mValues.remove(cv);
     }
 
     // write CV values are remembered for later reads
-    Hashtable<Integer, Integer> mValues = new Hashtable<Integer, Integer>();
+    Hashtable<Integer, Integer> mValues = new Hashtable<>();
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public String decodeErrorCode(int i) {
         log.debug("decoderErrorCode " + i);
         return "error " + i;
     }
 
-    public void writeCV(String CV, int val, ProgListener p) throws ProgrammerException {
-        writeCV(Integer.parseInt(CV), val, p);
-    }
-
-    public void writeCV(int CV, int val, ProgListener p) throws ProgrammerException {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void writeCV(String CVname, int val, ProgListener p) throws ProgrammerException {
+        final int CV = Integer.parseInt(CVname);
         nOperations++;
         final ProgListener m = p;
         // log out the request
@@ -109,16 +127,17 @@ public class ProgDebugger implements AddressedProgrammer {
         _lastWriteVal = val;
         _lastWriteCv = CV;
         // save for later retrieval
-        mValues.put(Integer.valueOf(CV), Integer.valueOf(val));
+        mValues.put(CV, val);
 
         // return a notification via the queue to ensure end
         Runnable r = new Runnable() {
             ProgListener l = m;
 
+            @Override
             public void run() {
                 log.debug("write CV reply");
                 if (l != null) {
-                    l.programmingOpReply(-1, 0);
+                    notifyProgListenerEnd(l, val, 0);
                 }
             }  // 0 is OK status
         };
@@ -141,23 +160,20 @@ public class ProgDebugger implements AddressedProgrammer {
 
     boolean confirmOK;  // cached result of last compare
 
-    @Override
-    @SuppressWarnings("deprecation") // parent Programmer method deprecated, will remove at same time
-    public final void confirmCV(int CV, int val, ProgListener p) throws ProgrammerException {
-        confirmCV("" + CV, val, p);
-    }
-
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void confirmCV(String CVname, int val, ProgListener p) throws ProgrammerException {
-        int CV = Integer.parseInt(CVname);
+        final int CV = Integer.parseInt(CVname);
         final ProgListener m = p;
 
         nOperations++;
         // guess by comparing current value in val to has table
-        Integer saw = mValues.get(Integer.valueOf(CV));
-        int result = -1; // what was read
+        Integer saw = mValues.get(CV);
+        int result; // what was read
         if (saw != null) {
-            result = saw.intValue();
+            result = saw;
             confirmOK = (result == val);
             log.info("confirm CV: " + CV + " mode: " + getMode() + " will return " + result + " pass: " + confirmOK);
         } else {
@@ -172,12 +188,13 @@ public class ProgDebugger implements AddressedProgrammer {
             ProgListener l = m;
             int result = returnResult;
 
+            @Override
             public void run() {
                 log.debug("read CV reply");
                 if (confirmOK) {
-                    l.programmingOpReply(result, ProgListener.OK);
+                    notifyProgListenerEnd(l, val, ProgListener.OK);
                 } else {
-                    l.programmingOpReply(result, ProgListener.ConfirmFailed);
+                    notifyProgListenerEnd(l, result, ProgListener.ConfirmFailed);
                 }
             }
         };
@@ -185,20 +202,21 @@ public class ProgDebugger implements AddressedProgrammer {
 
     }
 
-    public void readCV(String CV, ProgListener p) throws ProgrammerException {
-        readCV(Integer.parseInt(CV), p);
-    }
-
-    public void readCV(int CV, ProgListener p) throws ProgrammerException {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void readCV(String CVname, ProgListener p) throws ProgrammerException {
+        final int CV = Integer.parseInt(CVname);
         final ProgListener m = p;
         _lastReadCv = CV;
         nOperations++;
 
         int readValue = _nextRead;
         // try to get something from hash table
-        Integer saw = mValues.get(Integer.valueOf(CV));
+        Integer saw = mValues.get(CV);
         if (saw != null) {
-            readValue = saw.intValue();
+            readValue = saw;
         }
 
         log.info("read CV: " + CV + " mode: " + getMode() + " will read " + readValue);
@@ -209,11 +227,10 @@ public class ProgDebugger implements AddressedProgrammer {
             int retval = returnValue;
             ProgListener l = m;
 
+            @Override
             public void run() {
-                // log.debug("read CV reply - start sleep");
-                // try { Thread.sleep(100); } catch (Exception e) {}
                 log.debug("read CV reply");
-                l.programmingOpReply(retval, 0);
+                notifyProgListenerEnd(l, retval, 0);
             }  // 0 is OK status
         };
         sendReturn(r);
@@ -223,6 +240,9 @@ public class ProgDebugger implements AddressedProgrammer {
     // handle mode
     protected ProgrammingMode mode;
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public final void setMode(ProgrammingMode m) {
         log.debug("Setting mode from {} to {}", mode, m);
@@ -235,27 +255,36 @@ public class ProgDebugger implements AddressedProgrammer {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public final ProgrammingMode getMode() {
         return mode;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Nonnull
     public List<ProgrammingMode> getSupportedModes() {
         if (address >= 0) {
             // addressed programmer
             return Arrays.asList(
                     new ProgrammingMode[]{
-                        DefaultProgrammerManager.OPSBITMODE,
-                        DefaultProgrammerManager.OPSBYTEMODE
+                        ProgrammingMode.OPSBITMODE,
+                        ProgrammingMode.OPSBYTEMODE
                     }
             );
         } else {
             // global programmer
             return Arrays.asList(
                     new ProgrammingMode[]{
-                        DefaultProgrammerManager.PAGEMODE,
-                        DefaultProgrammerManager.DIRECTBITMODE,
-                        DefaultProgrammerManager.DIRECTBYTEMODE,
-                        DefaultProgrammerManager.DIRECTMODE
+                        ProgrammingMode.PAGEMODE,
+                        ProgrammingMode.DIRECTBITMODE,
+                        ProgrammingMode.DIRECTBYTEMODE,
+                        ProgrammingMode.DIRECTMODE
                     }
             );
         }
@@ -275,25 +304,39 @@ public class ProgDebugger implements AddressedProgrammer {
         writeLimit = lim;
     }
 
+    @Override
     public boolean getCanRead() {
         log.debug("getCanRead() returns true");
         return true;
     }
 
+    @Override
     public boolean getCanRead(String addr) {
         log.debug("getCanRead(" + addr + ") returns " + (Integer.parseInt(addr) <= readLimit));
         return Integer.parseInt(addr) <= readLimit;
     }
 
+    @Override
     public boolean getCanWrite() {
         log.debug("getCanWrite() returns true");
         return true;
     }
 
+    @Override
     public boolean getCanWrite(String addr) {
         log.debug("getCanWrite(" + addr + ") returns " + (Integer.parseInt(addr) <= writeLimit));
         return Integer.parseInt(addr) <= writeLimit;
     }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * By default, say that no verification is done.
+     * @return Always WriteConfirmMode.NotVerified
+     */
+    @Nonnull
+    @Override
+    public Programmer.WriteConfirmMode getWriteConfirmMode(String addr) { return WriteConfirmMode.NotVerified; }
 
     /**
      * Provide a {@link java.beans.PropertyChangeSupport} helper.
@@ -305,10 +348,12 @@ public class ProgDebugger implements AddressedProgrammer {
      *
      * @param listener The PropertyChangeListener to be added
      */
+    @Override
     public void addPropertyChangeListener(PropertyChangeListener listener) {
         propertyChangeSupport.addPropertyChangeListener(listener);
     }
 
+    @Override
     public void removePropertyChangeListener(PropertyChangeListener listener) {
         propertyChangeSupport.removePropertyChangeListener(listener);
     }
@@ -319,16 +364,19 @@ public class ProgDebugger implements AddressedProgrammer {
 
     boolean longAddr = true;
 
+    @Override
     public boolean getLongAddress() {
         return true;
     }
 
     int address = -1;
 
+    @Override
     public int getAddressNumber() {
         return address;
     }
 
+    @Override
     public String getAddress() {
         return "" + getAddressNumber() + " " + getLongAddress();
     }
@@ -338,6 +386,8 @@ public class ProgDebugger implements AddressedProgrammer {
 
     /**
      * Arrange for the return to be invoked on the Swing thread.
+     *
+     * @param run the Runnable
      */
     void sendReturn(Runnable run) {
         if (IMMEDIATERETURN) {
@@ -354,6 +404,7 @@ public class ProgDebugger implements AddressedProgrammer {
                     return this;
                 }
 
+                @Override
                 public void actionPerformed(java.awt.event.ActionEvent e) {
                     this.timer.stop();
                     javax.swing.SwingUtilities.invokeLater(run);
@@ -364,5 +415,5 @@ public class ProgDebugger implements AddressedProgrammer {
         }
     }
 
-    private final static Logger log = LoggerFactory.getLogger(ProgDebugger.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(ProgDebugger.class);
 }

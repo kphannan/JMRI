@@ -1,9 +1,9 @@
 package jmri.jmrix.dccpp;
 
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import org.junit.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Assert;
 
 /**
  * DCCppInitializationManagerTest.java
@@ -13,54 +13,40 @@ import junit.framework.TestSuite;
  * @author	Paul Bender
  * @author	Mark Underwood
  */
-public class DCCppInitializationManagerTest extends TestCase {
+public class DCCppInitializationManagerTest {
 
+    @Test
     public void testCtor() {
 
-// infrastructure objects
+        // infrastructure objects
         DCCppInterfaceScaffold t = new DCCppInterfaceScaffold(new DCCppCommandStation());
         DCCppListenerScaffold l = new DCCppListenerScaffold();
-
+        
         DCCppSystemConnectionMemo memo = new DCCppSystemConnectionMemo(t);
 
         DCCppInitializationManager m = new DCCppInitializationManager(memo) {
-            protected int getInitTimeout() {
-                return 50;   // shorten, because this will fail & delay test
-            }
-        };
+                @Override
+                protected int getInitTimeout() {
+                    return 50;   // shorten, because this will fail & delay test
+                }
+            };
         Assert.assertNotNull("exists", t);
         Assert.assertNotNull("exists", l);
         Assert.assertNotNull("exists", m);
         Assert.assertNotNull("exists", memo);
         //jmri.util.JUnitAppender.assertWarnMessage("Command Station disconnected, or powered down");
     }
-
-    // from here down is testing infrastructure
-    public DCCppInitializationManagerTest(String s) {
-        super(s);
+    
+    @Before
+    public void setUp() throws Exception {
+        jmri.util.JUnitUtil.setUp();
     }
 
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading", DCCppInitializationManagerTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
+    @After
+    public void tearDown() throws Exception {
+        jmri.util.JUnitUtil.clearShutDownManager(); // put in place because AbstractMRTrafficController implementing subclass was not terminated properly
+        jmri.util.JUnitUtil.tearDown();
 
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(DCCppInitializationManagerTest.class);
-        return suite;
-    }
-
-    // The minimal setup for log4J
-    protected void setUp() throws Exception {
-        apps.tests.Log4JFixture.setUp();
-        super.setUp();
-    }
-
-    protected void tearDown() throws Exception {
-        super.tearDown();
-        apps.tests.Log4JFixture.tearDown();
     }
 
 }

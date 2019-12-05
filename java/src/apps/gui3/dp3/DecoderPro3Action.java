@@ -31,6 +31,10 @@ public class DecoderPro3Action extends JmriAbstractAction {
 
     /**
      * Method for opening a new window via the classic JMRI interface
+     *
+     * @param pName     the action name
+     * @param allowQuit true if closing the {@link DecoderPro3Window} should
+     *                  quit the application; false otherwise
      */
     public DecoderPro3Action(String pName, boolean allowQuit) {
         super(pName);
@@ -41,7 +45,7 @@ public class DecoderPro3Action extends JmriAbstractAction {
     public void actionPerformed(ActionEvent event) {
         mainFrame = new DecoderPro3Window(DecoderPro3.getMenuFile(), DecoderPro3.getToolbarFile());
         UserPreferencesManager p = InstanceManager.getDefault(jmri.UserPreferencesManager.class);
-        if (!p.isWindowPositionSaved(mainFrame.getWindowFrameRef())) {
+        if (!p.hasProperties(mainFrame.getWindowFrameRef())) {
             mainFrame.setSize(new Dimension(1024, 600));
             mainFrame.setPreferredSize(new Dimension(1024, 600));
         }

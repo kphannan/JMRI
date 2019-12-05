@@ -1,4 +1,3 @@
-// BeanTableModel.java
 package jmri.jmrit.sensorgroup;
 
 import javax.swing.table.AbstractTableModel;
@@ -10,16 +9,10 @@ import org.slf4j.LoggerFactory;
  * Abstract base for simple bean tables for insertion in other GUI elements
  *
  * @author Bob Jacobsen Copyright (C) 2007
- *
- * @version $Revision$
  */
 public abstract class BeanTableModel extends AbstractTableModel {
 
-    /**
-     *
-     */
-    private static final long serialVersionUID = 8121523528465367528L;
-
+    @Override
     public Class<?> getColumnClass(int c) {
         if (c == INCLUDE_COLUMN) {
             return Boolean.class;
@@ -30,14 +23,17 @@ public abstract class BeanTableModel extends AbstractTableModel {
 
     public abstract Manager getManager();
 
+    @Override
     public int getColumnCount() {
         return INCLUDE_COLUMN + 1;
     }
 
+    @Override
     public int getRowCount() {
-        return getManager().getSystemNameList().size();
+        return getManager().getNamedBeanSet().size();
     }
 
+    @Override
     public boolean isCellEditable(int r, int c) {
         return (c == INCLUDE_COLUMN);
     }
@@ -46,14 +42,15 @@ public abstract class BeanTableModel extends AbstractTableModel {
     public static final int UNAME_COLUMN = 1;
     public static final int INCLUDE_COLUMN = 2;
 
+    @Override
     public String getColumnName(int c) {
         switch (c) {
             case SNAME_COLUMN:
-                return "System Name";
+                return Bundle.getMessage("ColumnSystemName");
             case UNAME_COLUMN:
-                return "User Name";
+                return Bundle.getMessage("ColumnUserName");
             case INCLUDE_COLUMN:
-                return "Included";
+                return Bundle.getMessage("ColumnIncluded");
             default:
                 return "";
         }
@@ -62,6 +59,8 @@ public abstract class BeanTableModel extends AbstractTableModel {
     /**
      * User name column must be handled by subclass
      */
+    @Override
+    @SuppressWarnings("deprecation") // needs careful unwinding for Set operations & generics
     public Object getValueAt(int r, int c) {
         switch (c) {
             case SNAME_COLUMN:  // slot number
@@ -71,8 +70,5 @@ public abstract class BeanTableModel extends AbstractTableModel {
                 return null;
         }
     }
-    private final static Logger log = LoggerFactory.getLogger(BeanTableModel.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(BeanTableModel.class);
 }
-
-
-/* @(#)BeanTableModel.java */

@@ -1,4 +1,3 @@
-// LocationEditFrame.java
 package jmri.jmrit.operations.locations;
 
 import java.awt.Dimension;
@@ -7,38 +6,29 @@ import java.awt.GridBagLayout;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
-import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
-import javax.swing.ButtonGroup;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JRadioButton;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
-import javax.swing.ScrollPaneConstants;
+
+import javax.swing.*;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import jmri.InstanceManager;
 import jmri.Reporter;
+import jmri.ReporterManager;
 import jmri.jmrit.operations.OperationsFrame;
 import jmri.jmrit.operations.OperationsXml;
+import jmri.jmrit.operations.locations.tools.*;
 import jmri.jmrit.operations.rollingstock.cars.CarTypes;
 import jmri.jmrit.operations.rollingstock.engines.EngineTypes;
 import jmri.jmrit.operations.setup.Control;
 import jmri.jmrit.operations.setup.Setup;
 import jmri.jmrit.operations.trains.TrainCommon;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import jmri.swing.NamedBeanComboBox;
 
 /**
  * Frame for user edit of location
  *
  * @author Dan Boudreau Copyright (C) 2008, 2010, 2011, 2012, 2013
- * @version $Revision$
  */
 public class LocationEditFrame extends OperationsFrame implements java.beans.PropertyChangeListener {
 
@@ -55,17 +45,17 @@ public class LocationEditFrame extends OperationsFrame implements java.beans.Pro
     JTable stagingTable = new JTable(stagingModel);
     JScrollPane stagingPane;
 
-    LocationManager locationManager = LocationManager.instance();
+    LocationManager locationManager = InstanceManager.getDefault(LocationManager.class);
 
-    Location _location = null;
-    ArrayList<JCheckBox> checkBoxes = new ArrayList<JCheckBox>();
+    public Location _location = null;
+    ArrayList<JCheckBox> checkBoxes = new ArrayList<>();
     JPanel panelCheckBoxes = new JPanel();
     JScrollPane typePane;
     JPanel directionPanel = new JPanel();
 
     // major buttons
-    JButton clearButton = new JButton(Bundle.getMessage("Clear"));
-    JButton setButton = new JButton(Bundle.getMessage("Select"));
+    JButton clearButton = new JButton(Bundle.getMessage("ClearAll"));
+    JButton setButton = new JButton(Bundle.getMessage("SelectAll"));
     JButton autoSelectButton = new JButton(Bundle.getMessage("AutoSelect"));
     JButton saveLocationButton = new JButton(Bundle.getMessage("SaveLocation"));
     JButton deleteLocationButton = new JButton(Bundle.getMessage("DeleteLocation"));
@@ -96,7 +86,9 @@ public class LocationEditFrame extends OperationsFrame implements java.beans.Pro
             JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 
     // Reader selection dropdown.
-    JComboBox<String> readerSelector = new JComboBox<String>();
+    NamedBeanComboBox<Reporter> readerSelector;
+    
+    JMenu toolMenu = new JMenu(Bundle.getMessage("MenuTools"));
 
     public static final String NAME = Bundle.getMessage("Name");
     public static final int MAX_NAME_LENGTH = Control.max_len_string_location_name;
@@ -135,9 +127,6 @@ public class LocationEditFrame extends OperationsFrame implements java.beans.Pro
         opsGroup.add(interchangeRadioButton);
         opsGroup.add(stageRadioButton);
 
-        // Location name for tools menu
-        String locationName = null;
-
         if (_location != null) {
             enableButtons(true);
             locationNameTextField.setText(_location.getName());
@@ -147,7 +136,6 @@ public class LocationEditFrame extends OperationsFrame implements java.beans.Pro
             interchangeModel.initTable(interchangeTable, location);
             stagingModel.initTable(stagingTable, location);
             _location.addPropertyChangeListener(this);
-            locationName = _location.getName();
             if (_location.getLocationOps() == Location.NORMAL) {
                 if (spurModel.getRowCount() > 0) {
                     spurRadioButton.setSelected(true);
@@ -165,18 +153,7 @@ public class LocationEditFrame extends OperationsFrame implements java.beans.Pro
             }
             setTrainDirectionBoxes();
             if (Setup.isRfidEnabled()) {
-                // setup the Reader dropdown.
-                readerSelector.addItem(""); // add an empty entry.
-                for (jmri.NamedBean r : jmri.InstanceManager.getDefault(jmri.ReporterManager.class).getNamedBeanList()) {
-                    readerSelector.addItem(((Reporter) r).getDisplayName());
-                }
-
-                try {
-                    readerSelector.setSelectedItem(_location.getReporter().getDisplayName());
-                } catch (java.lang.NullPointerException e) {
-                    // if there is no reader set, getReporter 
-                    // will return null, so set a blank.
-                }
+                readerSelector.setSelectedItem(_location.getReporter());
             }
         } else {
             enableButtons(false);
@@ -236,13 +213,18 @@ public class LocationEditFrame extends OperationsFrame implements java.beans.Pro
         // adjust text area width based on window size
         adjustTextAreaColumnWidth(commentScroller, commentTextArea);
 
-        // reader row
         JPanel readerPanel = new JPanel();
-        readerPanel.setLayout(new GridBagLayout());
-        readerPanel.setBorder(BorderFactory.createTitledBorder(Bundle.getMessage("idReader")));
-        addItem(readerPanel, readerSelector, 0, 0);
-
-        readerPanel.setVisible(Setup.isRfidEnabled());
+        readerPanel.setVisible(false);
+        // reader row
+        if (Setup.isRfidEnabled()) {
+            ReporterManager reporterManager = InstanceManager.getDefault(ReporterManager.class);
+            readerSelector=new NamedBeanComboBox<Reporter>(reporterManager);
+            readerSelector.setAllowNull(true);
+            readerPanel.setLayout(new GridBagLayout());
+            readerPanel.setBorder(BorderFactory.createTitledBorder(Bundle.getMessage("idReader")));
+            addItem(readerPanel, readerSelector, 0, 0);
+            readerPanel.setVisible(true);
+        }
 
         // row 12
         JPanel pB = new JPanel();
@@ -292,12 +274,25 @@ public class LocationEditFrame extends OperationsFrame implements java.beans.Pro
         addCheckBoxTrainAction(westCheckBox);
 
         // add property listeners
-        CarTypes.instance().addPropertyChangeListener(this);
-        EngineTypes.instance().addPropertyChangeListener(this);
+        InstanceManager.getDefault(CarTypes.class).addPropertyChangeListener(this);
+        InstanceManager.getDefault(EngineTypes.class).addPropertyChangeListener(this);
 
         // build menu
         JMenuBar menuBar = new JMenuBar();
-        JMenu toolMenu = new JMenu(Bundle.getMessage("MenuTools"));
+        
+        loadToolMenu();
+        menuBar.add(toolMenu);
+        setJMenuBar(menuBar);
+        addHelpMenu("package.jmri.jmrit.operations.Operations_AddLocation", true); // NOI18N
+
+        pack();
+        setMinimumSize(new Dimension(Control.panelWidth500, Control.panelHeight500));
+        setVisible(true);
+
+    }
+    
+    private void loadToolMenu() {
+        toolMenu.removeAll();
         toolMenu.add(new TrackCopyAction(this));
         toolMenu.add(new ChangeTracksTypeAction(this));
         toolMenu.add(new ShowTrackMovesAction());
@@ -309,20 +304,13 @@ public class LocationEditFrame extends OperationsFrame implements java.beans.Pro
         toolMenu.add(new ShowTrainsServingLocationAction(Bundle.getMessage("MenuItemShowTrainsLocation"), _location,
                 null));
         toolMenu.add(new EditCarTypeAction());
-        toolMenu.add(new ShowCarsByLocationAction(false, locationName, null));
-        toolMenu.add(new PrintLocationsAction(Bundle.getMessage("MenuItemPrint"), false, location));
-        toolMenu.add(new PrintLocationsAction(Bundle.getMessage("MenuItemPreview"), true, location));
+        toolMenu.add(new ShowCarsByLocationAction(false, _location, null));
+        toolMenu.addSeparator();
+        toolMenu.add(new PrintLocationsAction(Bundle.getMessage("MenuItemPrint"), false, _location));
+        toolMenu.add(new PrintLocationsAction(Bundle.getMessage("MenuItemPreview"), true, _location));
         if (Setup.isVsdPhysicalLocationEnabled()) {
             toolMenu.add(new SetPhysicalLocationAction(Bundle.getMessage("MenuSetPhysicalLocation"), _location));
         }
-        menuBar.add(toolMenu);
-        setJMenuBar(menuBar);
-        addHelpMenu("package.jmri.jmrit.operations.Operations_AddLocation", true); // NOI18N
-
-        pack();
-        setMinimumSize(new Dimension(Control.panelWidth500, Control.panelHeight500));
-        setVisible(true);
-
     }
 
     YardEditFrame yef = null;
@@ -451,12 +439,13 @@ public class LocationEditFrame extends OperationsFrame implements java.beans.Pro
         interchangeModel.initTable(interchangeTable, location);
         stagingModel.initTable(stagingTable, location);
         _location = location;
-        // enable check boxes
+        _location.addPropertyChangeListener(this);
+
         updateCheckboxes();
-        // enableCheckboxes(true);
         enableButtons(true);
         setTrainDirectionBoxes();
         saveLocation();
+        loadToolMenu();
     }
 
     private void saveLocation() {
@@ -478,16 +467,8 @@ public class LocationEditFrame extends OperationsFrame implements java.beans.Pro
         }
         _location.setName(locationNameTextField.getText());
         _location.setComment(commentTextArea.getText());
-        if (Setup.isRfidEnabled() &&
-                readerSelector.getSelectedItem() != null &&
-                !((String) readerSelector.getSelectedItem()).equals("")) {
-            _location.setReporter(
-                    jmri.InstanceManager.getDefault(jmri.ReporterManager.class)
-                            .getReporter((String) readerSelector.getSelectedItem()));
-        } else if (Setup.isRfidEnabled() &&
-                readerSelector.getSelectedItem() != null &&
-                ((String) readerSelector.getSelectedItem()).equals("")) {
-            _location.setReporter(null);
+        if (Setup.isRfidEnabled()) {
+            _location.setReporter(readerSelector.getSelectedItem());
         }
         setLocationOps();
         // save location file
@@ -508,13 +489,14 @@ public class LocationEditFrame extends OperationsFrame implements java.beans.Pro
             // log.error("Location name must be less than "+ Integer.toString(MAX_NAME_LENGTH+1) +" characters");
             JOptionPane.showMessageDialog(this, MessageFormat.format(Bundle.getMessage("LocationNameLengthMax"),
                     new Object[]{Integer.toString(MAX_NAME_LENGTH + 1)}), MessageFormat.format(Bundle
-                    .getMessage("CanNotLocation"), new Object[]{s}), JOptionPane.ERROR_MESSAGE);
+                            .getMessage("CanNotLocation"), new Object[]{s}),
+                    JOptionPane.ERROR_MESSAGE);
             return false;
         }
         if (!OperationsXml.checkFileName(locationNameTextField.getText())) { // NOI18N
-            log.error("location name must not contain reserved characters");
-            JOptionPane.showMessageDialog(this, Bundle.getMessage("LocationNameResChar") + NEW_LINE
-                    + Bundle.getMessage("ReservedChar"), Bundle.getMessage("CanNotLocation"), 
+            JOptionPane.showMessageDialog(this,
+                    Bundle.getMessage("NameResChar") + NEW_LINE + Bundle.getMessage("ReservedChar"),
+                    MessageFormat.format(Bundle.getMessage("CanNotLocation"), new Object[]{s}),
                     JOptionPane.ERROR_MESSAGE);
             return false;
         }
@@ -536,6 +518,7 @@ public class LocationEditFrame extends OperationsFrame implements java.beans.Pro
     }
 
     private void enableButtons(boolean enabled) {
+        toolMenu.setEnabled(enabled);
         northCheckBox.setEnabled(enabled);
         southCheckBox.setEnabled(enabled);
         eastCheckBox.setEnabled(enabled);
@@ -558,8 +541,10 @@ public class LocationEditFrame extends OperationsFrame implements java.beans.Pro
         stageRadioButton.setEnabled(enabled);
         //
         yardTable.setEnabled(enabled);
-        // enable readerSelect.
-        readerSelector.setEnabled(enabled && Setup.isRfidEnabled());
+        if(readerSelector!=null) {
+           // enable readerSelect.
+           readerSelector.setEnabled(enabled && Setup.isRfidEnabled());
+        }
     }
 
     @Override
@@ -623,8 +608,8 @@ public class LocationEditFrame extends OperationsFrame implements java.beans.Pro
         y = 0;
         checkBoxes.clear();
         panelCheckBoxes.removeAll();
-        loadTypes(CarTypes.instance().getNames());
-        loadTypes(EngineTypes.instance().getNames());
+        loadTypes(InstanceManager.getDefault(CarTypes.class).getNames());
+        loadTypes(InstanceManager.getDefault(EngineTypes.class).getNames());
         JPanel p = new JPanel();
         p.add(clearButton);
         p.add(setButton);
@@ -697,7 +682,7 @@ public class LocationEditFrame extends OperationsFrame implements java.beans.Pro
         if (b.isSelected()) {
             _location.addTypeName(b.getText());
             // show which tracks will service this car type
-            if (CarTypes.instance().containsName(b.getText())) {
+            if (InstanceManager.getDefault(CarTypes.class).containsName(b.getText())) {
                 if (lctf != null) {
                     lctf.dispose();
                 }
@@ -758,8 +743,8 @@ public class LocationEditFrame extends OperationsFrame implements java.beans.Pro
         if (_location != null) {
             _location.removePropertyChangeListener(this);
         }
-        CarTypes.instance().removePropertyChangeListener(this);
-        EngineTypes.instance().removePropertyChangeListener(this);
+        InstanceManager.getDefault(CarTypes.class).removePropertyChangeListener(this);
+        InstanceManager.getDefault(EngineTypes.class).removePropertyChangeListener(this);
         yardModel.dispose();
         spurModel.dispose();
         interchangeModel.dispose();
@@ -776,12 +761,12 @@ public class LocationEditFrame extends OperationsFrame implements java.beans.Pro
             log.debug("Property change: ({}) old: ({}) new: ({})", e.getPropertyName(), e.getOldValue(), e
                     .getNewValue());
         }
-        if (e.getPropertyName().equals(CarTypes.CARTYPES_CHANGED_PROPERTY)
-                || e.getPropertyName().equals(EngineTypes.ENGINETYPES_CHANGED_PROPERTY)
-                || e.getPropertyName().equals(Location.TYPES_CHANGED_PROPERTY)) {
+        if (e.getPropertyName().equals(CarTypes.CARTYPES_CHANGED_PROPERTY) ||
+                e.getPropertyName().equals(EngineTypes.ENGINETYPES_CHANGED_PROPERTY) ||
+                e.getPropertyName().equals(Location.TYPES_CHANGED_PROPERTY)) {
             updateCheckboxes();
         }
     }
 
-    private final static Logger log = LoggerFactory.getLogger(LocationEditFrame.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(LocationEditFrame.class);
 }

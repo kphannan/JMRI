@@ -1,4 +1,3 @@
-// DCCppLightManagerXml.java
 package jmri.jmrix.dccpp.configurexml;
 
 import org.jdom2.Element;
@@ -7,13 +6,12 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Provides load and store functionality for configuring DCCppLightManagers.
- * <P>
+ * <p>
  * Uses the store method from the abstract base class, but provides a load
  * method here.
- * <P>
+ *
  * @author Dave Duchamp Copyright (c) 2006
  * @author Mark Underwood Copyright (c) 2006
- * @version $Revision$
  *
  * Based on XNetLightManagerXml by Dave Duchamp
  */
@@ -23,14 +21,17 @@ public class DCCppLightManagerXml extends jmri.managers.configurexml.AbstractLig
         super();
     }
 
+    @Override
     public void setStoreElementClass(Element lights) {
         lights.setAttribute("class", "jmri.jmrix.dccpp.configurexml.DCCppLightManagerXml");
     }
 
+    @Override
     public void load(Element element, Object o) {
         log.error("Invalid method called");
     }
 
+    @Override
     public boolean load(Element lights) {
         // load individual lights
         return loadLights(lights);
@@ -41,5 +42,6 @@ public class DCCppLightManagerXml extends jmri.managers.configurexml.AbstractLig
         return loadLights(shared);
     }
     
-    private final static Logger log = LoggerFactory.getLogger(DCCppLightManagerXml.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(DCCppLightManagerXml.class);
+
 }

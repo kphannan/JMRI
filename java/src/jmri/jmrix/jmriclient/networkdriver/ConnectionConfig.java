@@ -1,4 +1,3 @@
-// ConnectionConfig.java
 package jmri.jmrix.jmriclient.networkdriver;
 
 import java.awt.event.ActionEvent;
@@ -14,7 +13,6 @@ import jmri.jmrix.jmriclient.JMRIClientSystemConnectionMemo;
  * instance via the JMRI Network Protocol.
  *
  * @author Paul Bender Copyright (C) 2010
- * @version	$Revision$
  */
 public class ConnectionConfig extends jmri.jmrix.AbstractNetworkConnectionConfig {
 
@@ -30,43 +28,53 @@ public class ConnectionConfig extends jmri.jmrix.AbstractNetworkConnectionConfig
     }
 
     /**
-     * Constructor for a functional Swing object with no prexisting adapter
+     * Ctor for a connection configuration with no preexisting adapter.
+     * {@link #setInstance()} will fill the adapter member.
      */
     public ConnectionConfig() {
         super();
     }
 
+    @Override
     public String name() {
         return "Simple Network Connection";
     }
 
+    @Override
     protected void setInstance() {
         if (adapter == null) {
             adapter = new NetworkDriverAdapter();
         }
     }
 
+    @Override
     public boolean isPortAdvanced() {
         return true;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected void checkInitDone() {
         super.checkInitDone();
         if (adapter.getSystemConnectionMemo() != null) {
             transmitPrefixField.setText(((JMRIClientSystemConnectionMemo) adapter.getSystemConnectionMemo()).getTransmitPrefix());
             transmitPrefixField.addActionListener(new ActionListener() {
+                @Override
                 public void actionPerformed(ActionEvent e) {
                     ((JMRIClientSystemConnectionMemo) adapter.getSystemConnectionMemo()).setTransmitPrefix(transmitPrefixField.getText());
                     transmitPrefixField.setText(((JMRIClientSystemConnectionMemo) adapter.getSystemConnectionMemo()).getTransmitPrefix());
                 }
             });
             transmitPrefixField.addFocusListener(new FocusListener() {
+                @Override
                 public void focusLost(FocusEvent e) {
                     ((JMRIClientSystemConnectionMemo) adapter.getSystemConnectionMemo()).setTransmitPrefix(transmitPrefixField.getText());
                     transmitPrefixField.setText(((JMRIClientSystemConnectionMemo) adapter.getSystemConnectionMemo()).getTransmitPrefix());
                 }
 
+                @Override
                 public void focusGained(FocusEvent e) {
                 }
             });
@@ -84,12 +92,10 @@ public class ConnectionConfig extends jmri.jmrix.AbstractNetworkConnectionConfig
             _details.add(transmitPrefixLabel);
             _details.add(transmitPrefixField);
         }
-        if (_details.getParent() != null && _details.getParent() instanceof javax.swing.JViewport) {
-            javax.swing.JViewport vp = (javax.swing.JViewport) _details.getParent();
-            vp.revalidate();
-            vp.repaint();
+        if (_details.getParent() != null) {
+            _details.getParent().revalidate();
+            _details.getParent().repaint();
         }
-
     }
 
     @Override

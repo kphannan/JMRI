@@ -1,19 +1,22 @@
 package jmri.util.swing;
 
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import jmri.util.JUnitUtil;
+import org.junit.Test;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
 
 /**
  *
  * @author	Bob Jacobsen Copyright 2010
  */
-public class JmriAbstractActionTest extends TestCase {
+public class JmriAbstractActionTest {
 
+    @Test
     public void testAccess() {
         JmriAbstractAction a = new JmriAbstractAction("foo", new jmri.util.swing.sdi.JmriJFrameInterface()) {
 
+            @Override
             public jmri.util.swing.JmriPanel makePanel() {
                 return null;
             }
@@ -23,6 +26,7 @@ public class JmriAbstractActionTest extends TestCase {
 
         javax.swing.Icon i = new javax.swing.ImageIcon("resources/icons/throttles/PowerRed24.png");
         a = new JmriAbstractAction("foo", i, null) {
+            @Override
             public jmri.util.swing.JmriPanel makePanel() {
                 return null;
             }
@@ -32,31 +36,14 @@ public class JmriAbstractActionTest extends TestCase {
         Assert.assertEquals(i, a.getValue(javax.swing.Action.SMALL_ICON));
     }
 
-    // from here down is testing infrastructure
-    public JmriAbstractActionTest(String s) {
-        super(s);
+    @Before
+    public void setUp() {
+        JUnitUtil.setUp();
     }
 
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading", JmriAbstractActionTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(JmriAbstractActionTest.class);
-
-        return suite;
-    }
-
-    // The minimal setup for log4J
-    protected void setUp() {
-        apps.tests.Log4JFixture.setUp();
-    }
-
-    protected void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
+    @After
+    public void tearDown() {
+        JUnitUtil.tearDown();
     }
 
 }

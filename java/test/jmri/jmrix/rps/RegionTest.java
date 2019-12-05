@@ -1,19 +1,20 @@
 package jmri.jmrix.rps;
 
 import javax.vecmath.Point3d;
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import jmri.util.JUnitUtil;
+import org.junit.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Assert;
 
 /**
  * JUnit tests for the rps.Region class.
  *
  * @author	Bob Jacobsen Copyright 2007
- * @version	$Revision$
  */
-public class RegionTest extends TestCase {
+public class RegionTest {
 
+    @Test
     public void testCtors() {
         // square
         new Region(new Point3d[]{
@@ -32,6 +33,7 @@ public class RegionTest extends TestCase {
 
     }
 
+    @Test
     public void testInside1() {
         // square
         Region r = new Region(new Point3d[]{
@@ -50,6 +52,7 @@ public class RegionTest extends TestCase {
 
     }
 
+    @Test
     public void testInside2() {
         // C chape
         Region r = new Region(new Point3d[]{
@@ -73,6 +76,7 @@ public class RegionTest extends TestCase {
 
     }
 
+    @Test
     public void testEquals() {
         // square
         Region r1 = new Region(new Point3d[]{
@@ -109,6 +113,7 @@ public class RegionTest extends TestCase {
 
     }
 
+    @Test
     public void testStringCtor() {
         Region r1 = new Region(new Point3d[]{
             new Point3d(0., 0., 0.),
@@ -122,30 +127,14 @@ public class RegionTest extends TestCase {
 
     }
 
-    // from here down is testing infrastructure
-    public RegionTest(String s) {
-        super(s);
+    @Before
+    public void setUp() {
+        JUnitUtil.setUp();
     }
 
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading", RegionTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(RegionTest.class);
-        return suite;
-    }
-
-    // The minimal setup for log4J
-    protected void setUp() {
-        apps.tests.Log4JFixture.setUp();
-    }
-
-    protected void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
+    @After
+    public void tearDown() {
+        JUnitUtil.tearDown();
     }
 
 }

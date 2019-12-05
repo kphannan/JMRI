@@ -13,7 +13,7 @@ public class ControllerFilterAction extends AbstractAction {
 
     public ControllerFilterAction(String name) {
         super(name);
-        if ((jmri.InstanceManager.getOptionalDefault(jmri.TurnoutManager.class) == null) && (jmri.InstanceManager.getOptionalDefault(jmri.RouteManager.class) == null)) {
+        if ((jmri.InstanceManager.getNullableDefault(jmri.TurnoutManager.class) == null) && (jmri.InstanceManager.getNullableDefault(jmri.RouteManager.class) == null)) {
             setEnabled(false);
         }
     }
@@ -26,6 +26,7 @@ public class ControllerFilterAction extends AbstractAction {
         return "jmri.jmrit.withrottle.ControllerFilterFrame";
     }
 
+    @Override
     public void actionPerformed(ActionEvent ae) {
         JmriJFrame frame = new ControllerFilterFrame();
         try {
@@ -37,6 +38,6 @@ public class ControllerFilterAction extends AbstractAction {
 
     }
 
-    private final static Logger log = LoggerFactory.getLogger(ControllerFilterAction.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(ControllerFilterAction.class);
 
 }

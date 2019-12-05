@@ -3,20 +3,18 @@ package jmri.jmrit.vsdecoder;
 /*
  * <hr>
  * This file is part of JMRI.
- * <P>
+ * <p>
  * JMRI is free software; you can redistribute it and/or modify it under 
  * the terms of version 2 of the GNU General Public License as published 
  * by the Free Software Foundation. See the "COPYING" file for a copy
  * of this license.
- * <P>
+ * <p>
  * JMRI is distributed in the hope that it will be useful, but WITHOUT 
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License 
  * for more details.
- * <P>
  *
- * @author			Mark Underwood Copyright (C) 2011
- * @version			$Revision$
+ * @author   Mark Underwood Copyright (C) 2011
  */
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -162,6 +160,7 @@ public class SoundEvent implements PropertyChangeListener {
         return parent;
     }
 
+    @Override
     public void propertyChange(PropertyChangeEvent event) {
         for (Trigger t : trigger_list.values()) {
             t.propertyChange(event);
@@ -208,7 +207,6 @@ public class SoundEvent implements PropertyChangeListener {
         this.setXml(el, null);
     }
 
-    @SuppressWarnings("cast")
     protected void addXmlTrigger(Element te, VSDFile vf) {
         String tts;
         Trigger.TriggerType tt;
@@ -267,13 +265,16 @@ public class SoundEvent implements PropertyChangeListener {
             case FADEIN:
                 //log.debug("PLAY");
                 t.setCallback(new TriggerListener() {
+                    @Override
                     public void takeAction() {
                         t.getTarget().play();
                     }
 
+                    @Override
                     public void takeAction(int i) {
                     }
 
+                    @Override
                     public void takeAction(float f) {
                     } // do nothing
                 });
@@ -281,13 +282,16 @@ public class SoundEvent implements PropertyChangeListener {
             case LOOP:
                 //log.debug("LOOP");
                 t.setCallback(new TriggerListener() {
+                    @Override
                     public void takeAction() {
                         t.getTarget().loop();
                     }
 
+                    @Override
                     public void takeAction(int i) {
                     }
 
+                    @Override
                     public void takeAction(float f) {
                     } // do nothing
                 });
@@ -296,13 +300,16 @@ public class SoundEvent implements PropertyChangeListener {
             case FADEOUT:
                 //log.debug("STOP");
                 t.setCallback(new TriggerListener() {
+                    @Override
                     public void takeAction() {
                         t.getTarget().stop();
                     }
 
+                    @Override
                     public void takeAction(int i) {
                     }
 
+                    @Override
                     public void takeAction(float f) {
                     } // do nothing
                 });
@@ -311,14 +318,17 @@ public class SoundEvent implements PropertyChangeListener {
                 //log.debug("NOTCH");
                 log.debug("making callback t " + t + " target " + t.getTarget());
                 t.setCallback(new TriggerListener() {
+                    @Override
                     public void takeAction(int i) {
                         //log.debug("Notch Trigger Listener. t = " + t + " Target = " + t.getTarget() + " notch = " + i);
                         t.getTarget().changeNotch(i);
                     }
 
+                    @Override
                     public void takeAction() {
                     }
 
+                    @Override
                     public void takeAction(float f) {
                     } // do nothing
                 });
@@ -327,12 +337,15 @@ public class SoundEvent implements PropertyChangeListener {
                 //log.debug("CHANGE");
                 log.debug("making callback t " + t + " target " + t.getTarget());
                 t.setCallback(new TriggerListener() {
+                    @Override
                     public void takeAction() {
                     } // do nothing
 
+                    @Override
                     public void takeAction(int i) {
                     } // do nothing
 
+                    @Override
                     public void takeAction(float f) {
                         //log.debug("Throttle Trigger Listener. t = " + t + " Target = " + t.getTarget() + " value = " + f);
                         t.getTarget().changeThrottle(f);
@@ -343,12 +356,15 @@ public class SoundEvent implements PropertyChangeListener {
                 // Used for when the target sound is missing.
                 //log.debug("NOTHING");
                 t.setCallback(new TriggerListener() {
+                    @Override
                     public void takeAction() {
                     } // do nothing
 
+                    @Override
                     public void takeAction(int i) {
                     } // do nothing
 
+                    @Override
                     public void takeAction(float f) {
                     } // do nothing
                 });
@@ -380,6 +396,6 @@ public class SoundEvent implements PropertyChangeListener {
 
     }  // end setXml()
 
-    private static final Logger log = LoggerFactory.getLogger(SoundEvent.class.getName());
+    private static final Logger log = LoggerFactory.getLogger(SoundEvent.class);
 
 }

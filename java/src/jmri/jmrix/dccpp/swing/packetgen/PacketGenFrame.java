@@ -1,4 +1,3 @@
-// PacketGenFrame.java
 package jmri.jmrix.dccpp.swing.packetgen;
 
 import jmri.jmrix.dccpp.DCCppMessage;
@@ -9,25 +8,30 @@ import org.slf4j.LoggerFactory;
 /**
  * Frame for user input of XpressNet messages
  *
- * @author	Bob Jacobsen Copyright (C) 2001,2002
+ * @author Bob Jacobsen Copyright (C) 2001,2002
  * @author      Mark Underwood Copyright (C) 2015
- * @version	$Revision$
  */
 public class PacketGenFrame extends jmri.jmrix.swing.AbstractPacketGenFrame {
 
-    final java.util.ResourceBundle rb = java.util.ResourceBundle.getBundle("jmri.jmrix.dccpp.swing.DCCppSwingBundle");
-
-    public void initComponents() throws Exception {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void initComponents() {
         super.initComponents();
 
         // all we need to do is set the title 
-        setTitle(rb.getString("PacketGenFrameTitle"));
+        setTitle(Bundle.getMessage("PacketGenFrameTitle"));
         packetTextField.setToolTipText("Enter packet as a text string without the < > brackets");
 
         // pack to cause display
         pack();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void sendButtonActionPerformed(java.awt.event.ActionEvent e) {
         tc.sendDCCppMessage(createPacket(packetTextField.getSelectedItem().toString()), null);
     }
@@ -45,7 +49,7 @@ public class PacketGenFrame extends jmri.jmrix.swing.AbstractPacketGenFrame {
             s = s.substring(0, s.lastIndexOf('>'));
         }
         DCCppMessage m = DCCppMessage.parseDCCppMessage(s);
-        log.debug("Sending: {}", m.toString());
+        log.debug("Sending: {}", m);
         return(m);
     }
 
@@ -57,6 +61,6 @@ public class PacketGenFrame extends jmri.jmrix.swing.AbstractPacketGenFrame {
     // private data
     private DCCppTrafficController tc = null;
     
-    private final static Logger log = LoggerFactory.getLogger(PacketGenFrame.class.getName());
+    private static final Logger log = LoggerFactory.getLogger(PacketGenFrame.class);
 
 }

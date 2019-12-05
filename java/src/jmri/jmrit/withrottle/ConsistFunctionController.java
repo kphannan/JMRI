@@ -1,7 +1,9 @@
 package jmri.jmrit.withrottle;
 
+import jmri.LocoAddress;
 import jmri.DccLocoAddress;
 import jmri.DccThrottle;
+import jmri.InstanceManager;
 import jmri.ThrottleListener;
 import jmri.jmrit.roster.RosterEntry;
 import org.slf4j.Logger;
@@ -10,7 +12,6 @@ import org.slf4j.LoggerFactory;
 /**
  *
  * @author Brett Hoffman Copyright (C) 2010, 2011
- * @version $Revision$
  */
 public class ConsistFunctionController implements ThrottleListener {
 
@@ -27,6 +28,7 @@ public class ConsistFunctionController implements ThrottleListener {
         rosterLoco = re;
     }
 
+    @Override
     public void notifyThrottleFound(DccThrottle t) {
         if (log.isDebugEnabled()) {
             log.debug("Lead Loco throttle found: " + t
@@ -44,8 +46,26 @@ public class ConsistFunctionController implements ThrottleListener {
         throttleController.sendAllFunctionStates(throttle);
     }
 
-    public void notifyFailedThrottleRequest(DccLocoAddress address, String reason) {
+    @Override
+    public void notifyFailedThrottleRequest(LocoAddress address, String reason) {
         log.error("Throttle request failed for " + address + " because " + reason);
+    }
+
+    /**
+     * {@inheritDoc}
+     * @deprecated since 4.15.7; use #notifyDecisionRequired
+     */
+    @Override
+    @Deprecated
+    public void notifyStealThrottleRequired(jmri.LocoAddress address) {
+        InstanceManager.throttleManagerInstance().responseThrottleDecision(address, this, DecisionType.STEAL );
+    }
+
+    /**
+     * No steal or share decisions made locally
+     */
+    @Override
+    public void notifyDecisionRequired(jmri.LocoAddress address, DecisionType question) {
     }
 
     public void dispose() {
@@ -57,9 +77,9 @@ public class ConsistFunctionController implements ThrottleListener {
     }
 
     boolean requestThrottle(DccLocoAddress loco) {
-        return jmri.InstanceManager.throttleManagerInstance().requestThrottle(loco.getNumber(), loco.isLongAddress(), this);
+        return jmri.InstanceManager.throttleManagerInstance().requestThrottle(loco, this, true);
     }
 
-    private final static Logger log = LoggerFactory.getLogger(ConsistFunctionController.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(ConsistFunctionController.class);
 
 }

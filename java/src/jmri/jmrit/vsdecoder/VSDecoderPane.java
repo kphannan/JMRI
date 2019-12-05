@@ -9,20 +9,18 @@ package jmri.jmrit.vsdecoder;
 /*
  * <hr>
  * This file is part of JMRI.
- * <P>
+ * <p>
  * JMRI is free software; you can redistribute it and/or modify it under 
  * the terms of version 2 of the GNU General Public License as published 
  * by the Free Software Foundation. See the "COPYING" file for a copy
  * of this license.
- * <P>
+ * <p>
  * JMRI is distributed in the hope that it will be useful, but WITHOUT 
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License 
  * for more details.
- * <P>
  *
- * @author			Mark Underwood Copyright (C) 2011
- * @version			$Revision$
+ * @author   Mark Underwood Copyright (C) 2011
  */
 import java.awt.BorderLayout;
 import java.awt.Dimension;
@@ -59,13 +57,10 @@ import org.slf4j.LoggerFactory;
  * Virtual Sound Decoder for playing sounds off of LocoNet messages. Based on
  * the LocoMon tool by Bob Jacobsen
  *
- * @author	Mark Underwood Copyright (C) 2011
- * @version $Revision$
+ * @author Mark Underwood Copyright (C) 2011
  */
-@SuppressWarnings("serial")
 public class VSDecoderPane extends JmriPanel {
 
-    //private static final ResourceBundle vsdBundle = VSDecoderBundle.bundle();
     public static enum PropertyChangeID {
 
         ADDRESS_CHANGE, PROFILE_SELECT, MUTE, VOLUME_CHANGE
@@ -123,8 +118,9 @@ public class VSDecoderPane extends JmriPanel {
      *
      * Return a reference to the help file
      */
+    @Override
     public String getHelpTarget() {
-        return "package.jmri.jmrix.vsdecoder.VSDecoderPane";
+        return "package.jmri.jmrit.vsdecoder.VSDecoderPane";
     }
 
     /**
@@ -132,8 +128,9 @@ public class VSDecoderPane extends JmriPanel {
      *
      * Return a suggested title for the enclosing frame.
      */
+    @Override
     public String getTitle() {
-        return VSDecoderBundle.bundle().getString("WindowTitle");
+        return Bundle.getMessage("WindowTitle");
     }
 
     /**
@@ -158,6 +155,7 @@ public class VSDecoderPane extends JmriPanel {
     /**
      * initContext() : does nothing. Here to satisfy the parent class
      */
+    @Override
     public void initContext(Object context) {
         // Does nothing.  Here for completeness.
     }
@@ -167,6 +165,7 @@ public class VSDecoderPane extends JmriPanel {
      *
      * initialzies the GUI components.
      */
+    @Override
     public void initComponents() {
         log.debug("initComponents()");
         //buildMenu();
@@ -220,6 +219,7 @@ public class VSDecoderPane extends JmriPanel {
         volume.setValue(80);
         volume.setPreferredSize(new Dimension(200, 20));
         volume.addChangeListener(new ChangeListener() {
+            @Override
             public void stateChanged(ChangeEvent e) {
                 volumeChange(e);
             }
@@ -229,6 +229,7 @@ public class VSDecoderPane extends JmriPanel {
         JToggleButton mute_button = new JToggleButton("Mute");
 
         mute_button.addActionListener(new ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 muteButtonPressed(e);
             }
@@ -291,6 +292,7 @@ public class VSDecoderPane extends JmriPanel {
     /**
      * Add a listener for this Pane's property change events
      */
+    @Override
     public void addPropertyChangeListener(PropertyChangeListener listener) {
         List<PropertyChangeListener> l = Arrays.asList(listenerList.getListeners(PropertyChangeListener.class));
         if (!l.contains(listener)) {
@@ -301,6 +303,7 @@ public class VSDecoderPane extends JmriPanel {
     /**
      * Remove a listener
      */
+    @Override
     public void removePropertyChangeListener(PropertyChangeListener listener) {
         listenerList.remove(PropertyChangeListener.class, listener);
     }
@@ -341,9 +344,10 @@ public class VSDecoderPane extends JmriPanel {
     }
 
     /**
-     * getDecoder(String)
-     *
      * Looks up a decoder profile by name and returns that decoder.
+     * 
+     * @param profile name of the profile to get
+     * @return the decoder for the profile
      */
     public VSDecoder getDecoder(String profile) {
         @SuppressWarnings("deprecation")
@@ -360,35 +364,43 @@ public class VSDecoderPane extends JmriPanel {
     public void setDecoder(VSDecoder dec) {
         if (dec != null) {
             // Store the new decoder
-            decoder_id = dec.getID();
+            decoder_id = dec.getId();
             log.debug("Decoder ID = " + decoder_id + " Decoder = " + dec);
             // Register the decoder as a listener on our frame... so it can react
             // to the window closing
             parent.addWindowListener(new WindowListener() {
+                @Override
                 public void windowActivated(WindowEvent e) {
                 }
 
+                @Override
                 public void windowClosed(WindowEvent e) {
                 }
 
+                @Override
                 public void windowClosing(WindowEvent e) {
                     VSDecoderManager.instance().getVSDecoderByID(decoder_id).windowChange(e);
                 }
 
+                @Override
                 public void windowDeactivated(WindowEvent e) {
                 }
 
+                @Override
                 public void windowDeiconified(WindowEvent e) {
                 }
 
+                @Override
                 public void windowIconified(WindowEvent e) {
                 }
 
+                @Override
                 public void windowOpened(WindowEvent e) {
                 }
             });
             // Register ourselves as an event listener to the decoder
             dec.addEventListener(new VSDecoderListener() {
+                @Override
                 public void eventAction(VSDecoderEvent e) {
                     decoderEventAction(e);
                 }
@@ -470,5 +482,5 @@ public class VSDecoderPane extends JmriPanel {
         log.debug("VSDecoderPane windowClosing() called...");
     }
 
-    private static final Logger log = LoggerFactory.getLogger(VSDecoderPane.class.getName());
+    private static final Logger log = LoggerFactory.getLogger(VSDecoderPane.class);
 }

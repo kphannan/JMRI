@@ -1,46 +1,39 @@
 package jmri.jmrix.loconet.sdfeditor;
 
+import java.awt.GraphicsEnvironment;
 import jmri.jmrix.loconet.sdf.SdfBuffer;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import jmri.util.JUnitUtil;
+import org.junit.*;
 
 /**
- * Tests for the jmri.jmrix.loconet.sdfeditor.EditorPane class.
  *
- * @author	Bob Jacobsen Copyright 2007
+ * @author Paul Bender Copyright (C) 2017
  */
-public class EditorFrameTest extends TestCase {
-
-    public void testShowPane() throws java.io.IOException {
-        SdfBuffer buff = new SdfBuffer("java/test/jmri/jmrix/loconet/sdf/test2.sdf");
-        new EditorFrame(buff).setVisible(true);
-    }
-
-    // from here down is testing infrastructure
-    public EditorFrameTest(String s) {
-        super(s);
-    }
-
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {EditorPaneTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(EditorFrameTest.class);
-        return suite;
-    }
+public class EditorFrameTest extends jmri.util.JmriJFrameTestBase {
+           
+    private SdfBuffer b;
 
     // The minimal setup for log4J
-    protected void setUp() {
-        apps.tests.Log4JFixture.setUp();
+    @Before
+    @Override
+    public void setUp() {
+        JUnitUtil.setUp();
+        jmri.util.JUnitUtil.resetProfileManager();
+        try {
+           b = new SdfBuffer("java/test/jmri/jmrix/loconet/sdf/test2.sdf");
+        } catch(java.io.IOException ioe){
+           Assert.fail("Failed to initialize SdfBuffer");
+        }
+        if(!GraphicsEnvironment.isHeadless()){
+           frame = new EditorFrame(b);
+        }
     }
 
-    protected void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
+    @After
+    @Override
+    public void tearDown() {
+        b = null;
+        super.tearDown();
     }
 
 }

@@ -5,7 +5,6 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -21,13 +20,13 @@ import javax.swing.JSlider;
 import javax.swing.JTextField;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import jmri.jmrit.symbolicprog.tabbedframe.PaneProgPane;
+import jmri.util.CvUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Represent an entire speed table as a single Variable.
- * <P>
+ * <p>
  * This presents as a set of vertically oriented sliders, with numeric values
  * above them. That it turn is done using VarSlider and DecVariableValue objects
  * respectively. VarSlider is an interior class to color a JSlider by state. The
@@ -35,26 +34,27 @@ import org.slf4j.LoggerFactory;
  * underlying CV objects. Changes to CV Values are listened to by this class,
  * which updates the model objects for the VarSliders; the DecVariableValues
  * listen directly.
- * <P>
+ * <p>
  * Color (hence state) of individual sliders (hence CVs) are directly coupled to
  * the state of those CVs.
- * <P>
+ * <p>
  * The state of the entire variable has to be a composite of all the sliders,
  * hence CVs. The mapping is (in order):
- * <UL>
- * <LI>If any CVs are UNKNOWN, its UNKNOWN..
- * <LI>If not, and any are EDITED, its EDITED.
- * <LI>If not, and any are FROMFILE, its FROMFILE.
- * <LI>If not, and any are READ, its READ.
- * <LI>If not, and any are STORED, its STORED.
- * <LI>And if we get to here, something awful has happened.
- * </UL><P>
+ * <ul>
+ * <li>If any CVs are UNKNOWN, its UNKNOWN..
+ * <li>If not, and any are EDITED, its EDITED.
+ * <li>If not, and any are FROMFILE, its FROMFILE.
+ * <li>If not, and any are READ, its READ.
+ * <li>If not, and any are STORED, its STORED.
+ * <li>And if we get to here, something awful has happened.
+ * </ul>
+ * <p>
  * A similar pattern is used for a read or write request. Write writes them all;
  * Read reads any that aren't READ or WRITTEN.
- * <P>
+ * <p>
  * Speed tables can have different numbers of entries; 28 is the default, and
  * also the maximum.
- * <P>
+ * <p>
  * The NMRA specification says that speed table entries cannot be non-monotonic
  * (e.g. cannot decrease when moving from lower to higher CV numbers). In
  * earlier versions of the code, this was enforced any time a value was changed
@@ -63,17 +63,17 @@ import org.slf4j.LoggerFactory;
  * a change in their value which changed their state, so they were read again.
  * To avoid this, the class now only enforces non-monotonicity when the slider
  * is adjusted.
- * <P>
+ * <p>
  * _value is a holdover from the LongAddrVariableValue, which this was copied
  * from; it should be removed.
- * <P>
- * @author	Bob Jacobsen, Alex Shepherd Copyright (C) 2001, 2004, 2013
+ *
+ * @author Bob Jacobsen, Alex Shepherd Copyright (C) 2001, 2004, 2013
  * @author Dave Heap Copyright (C) 2012 Added support for Marklin mfx style speed table
  * @author Dave Heap Copyright (C) 2013 Changes to fix mfx speed table issue (Vstart {@literal &} Vhigh not written)
  * @author Dave Heap - generate cvList array to incorporate Vstart {@literal &} Vhigh
  *
  */
-public class SpeedTableVarValue extends VariableValue implements PropertyChangeListener, ChangeListener {
+public class SpeedTableVarValue extends VariableValue implements ChangeListener {
 
     int nValues;
     int numCvs;
@@ -135,11 +135,13 @@ public class SpeedTableVarValue extends VariableValue implements PropertyChangeL
     public SpeedTableVarValue() {
     }
 
+    @Override
     public Object rangeVal() {
         log.warn("rangeVal doesn't make sense for a speed table");
         return "Speed table";
     }
 
+    @Override
     public CvValue[] usesCVs() {
         CvValue[] retval = new CvValue[numCvs];
         int i;
@@ -151,10 +153,11 @@ public class SpeedTableVarValue extends VariableValue implements PropertyChangeL
 
     /**
      * Called for new values of a slider.
-     * <P>
+     * <p>
      * Sets the CV(s) as needed.
      *
      */
+    @Override
     public void stateChanged(ChangeEvent e) {
         // e.getSource() points to the JSlider object - find it in the list
         JSlider j = (JSlider) e.getSource();
@@ -294,6 +297,7 @@ public class SpeedTableVarValue extends VariableValue implements PropertyChangeL
         return;
     }
 
+    @Override
     public int getState() {
         int i;
         for (i = 0; i < numCvs; i++) {
@@ -327,6 +331,7 @@ public class SpeedTableVarValue extends VariableValue implements PropertyChangeL
 
     // to complete this class, fill in the routines to handle "Value" parameter
     // and to read/write/hear parameter changes.
+    @Override
     public String getValueString() {
         StringBuffer buf = new StringBuffer();
         for (int i = 0; i < models.length; i++) {
@@ -348,19 +353,23 @@ public class SpeedTableVarValue extends VariableValue implements PropertyChangeL
         log.debug("skipping setValue in SpeedTableVarValue");
     }
 
+    @Override
     public void setIntValue(int i) {
         log.warn("setIntValue doesn't make sense for a speed table: " + i);
     }
 
+    @Override
     public int getIntValue() {
         log.warn("getValue doesn't make sense for a speed table");
         return 0;
     }
 
+    @Override
     public Object getValueObject() {
         return null;
     }
 
+    @Override
     public Component getCommonRep() {
         log.warn("getValue not implemented yet");
         return new JLabel("speed table");
@@ -373,10 +382,12 @@ public class SpeedTableVarValue extends VariableValue implements PropertyChangeL
     Color _defaultColor;
 
     // implement an abstract member to set colors
+    @Override
     void setColor(Color c) {
         // prop.firePropertyChange("Value", null, null);
     }
 
+    @Override
     public Component getNewRep(String format) {
         final int GRID_Y_BUTTONS = 3;
         // put together a new panel in scroll pane
@@ -409,7 +420,7 @@ public class SpeedTableVarValue extends VariableValue implements PropertyChangeL
             Component v = decVal.getCommonRep();
             String start = ResourceBundle.getBundle("jmri.jmrit.symbolicprog.SymbolicProgBundle").getString("TextStep")
                     + " " + (i + 1);
-            ((JTextField) v).setToolTipText(PaneProgPane.addCvDescription(start, "CV " + cvList[i], null));
+            ((JTextField) v).setToolTipText(CvUtil.addCvDescription(start, "CV " + cvList[i], null));
             ((JComponent) v).setBorder(null);  // pack tighter
 
             if (mfx && (i == 0 || i == (nValues - 1))) {
@@ -423,7 +434,7 @@ public class SpeedTableVarValue extends VariableValue implements PropertyChangeL
                 log.debug("Font size " + v.getFont().getSize());
             }
             float newSize = v.getFont().getSize() * 0.8f;
-            v.setFont(jmri.util.FontUtil.deriveFont(v.getFont(), newSize));
+            v.setFont(v.getFont().deriveFont(newSize));
             j.add(v);
 
             cs.gridy++;
@@ -445,6 +456,7 @@ public class SpeedTableVarValue extends VariableValue implements PropertyChangeL
         k.add(b = new JButton(ResourceBundle.getBundle("jmri.jmrit.symbolicprog.SymbolicProgBundle").getString("ButtonForceStraight")));
         b.setToolTipText(ResourceBundle.getBundle("jmri.jmrit.symbolicprog.SymbolicProgBundle").getString("TooltipForceStraight"));
         b.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
                 doForceStraight(e);
             }
@@ -452,6 +464,7 @@ public class SpeedTableVarValue extends VariableValue implements PropertyChangeL
         k.add(b = new JButton(ResourceBundle.getBundle("jmri.jmrit.symbolicprog.SymbolicProgBundle").getString("ButtonMatchEnds")));
         b.setToolTipText(ResourceBundle.getBundle("jmri.jmrit.symbolicprog.SymbolicProgBundle").getString("TooltipMatchEnds"));
         b.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
                 doMatchEnds(e);
             }
@@ -459,6 +472,7 @@ public class SpeedTableVarValue extends VariableValue implements PropertyChangeL
         k.add(b = new JButton(ResourceBundle.getBundle("jmri.jmrit.symbolicprog.SymbolicProgBundle").getString("ButtonConstantRatio")));
         b.setToolTipText(ResourceBundle.getBundle("jmri.jmrit.symbolicprog.SymbolicProgBundle").getString("TooltipConstantRatio"));
         b.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
                 doRatioCurve(e);
             }
@@ -466,6 +480,7 @@ public class SpeedTableVarValue extends VariableValue implements PropertyChangeL
         k.add(b = new JButton(ResourceBundle.getBundle("jmri.jmrit.symbolicprog.SymbolicProgBundle").getString("ButtonLogCurve")));
         b.setToolTipText(ResourceBundle.getBundle("jmri.jmrit.symbolicprog.SymbolicProgBundle").getString("TooltipLogCurve"));
         b.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
                 doLogCurve(e);
             }
@@ -473,6 +488,7 @@ public class SpeedTableVarValue extends VariableValue implements PropertyChangeL
         k.add(b = new JButton(ResourceBundle.getBundle("jmri.jmrit.symbolicprog.SymbolicProgBundle").getString("ButtonShiftLeft")));
         b.setToolTipText(ResourceBundle.getBundle("jmri.jmrit.symbolicprog.SymbolicProgBundle").getString("TooltipShiftLeft"));
         b.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
                 doShiftLeft(e);
             }
@@ -480,6 +496,7 @@ public class SpeedTableVarValue extends VariableValue implements PropertyChangeL
         k.add(b = new JButton(ResourceBundle.getBundle("jmri.jmrit.symbolicprog.SymbolicProgBundle").getString("ButtonShiftRight")));
         b.setToolTipText(ResourceBundle.getBundle("jmri.jmrit.symbolicprog.SymbolicProgBundle").getString("TooltipShiftRight"));
         b.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
                 doShiftRight(e);
             }
@@ -641,10 +658,12 @@ public class SpeedTableVarValue extends VariableValue implements PropertyChangeL
      * Notify the connected CVs of a state change from above
      *
      */
+    @Override
     public void setCvState(int state) {
         _cvMap.get(cvList[0]).setState(state);
     }
 
+    @Override
     public boolean isChanged() {
         for (int i = 0; i < numCvs; i++) {
             if (considerChanged(_cvMap.get(cvList[i]))) {
@@ -655,6 +674,7 @@ public class SpeedTableVarValue extends VariableValue implements PropertyChangeL
         return false;
     }
 
+    @Override
     public void readChanges() {
         if (log.isDebugEnabled()) {
             log.debug("readChanges() invoked");
@@ -677,6 +697,7 @@ public class SpeedTableVarValue extends VariableValue implements PropertyChangeL
         readNext();
     }
 
+    @Override
     public void writeChanges() {
         if (log.isDebugEnabled()) {
             log.debug("writeChanges() invoked");
@@ -703,6 +724,7 @@ public class SpeedTableVarValue extends VariableValue implements PropertyChangeL
         writeNext();
     }
 
+    @Override
     public void readAll() {
         if (log.isDebugEnabled()) {
             log.debug("readAll() invoked");
@@ -723,6 +745,7 @@ public class SpeedTableVarValue extends VariableValue implements PropertyChangeL
         readNext();
     }
 
+    @Override
     public void writeAll() {
         if (log.isDebugEnabled()) {
             log.debug("writeAll() invoked");
@@ -814,6 +837,7 @@ public class SpeedTableVarValue extends VariableValue implements PropertyChangeL
     }
 
     // handle incoming parameter notification
+    @Override
     public void propertyChange(java.beans.PropertyChangeEvent e) {
         if (log.isDebugEnabled()) {
             log.debug("property changed event - name: "
@@ -855,13 +879,13 @@ public class SpeedTableVarValue extends VariableValue implements PropertyChangeL
 
     /* Internal class extends a JSlider so that its color is consistent with
      * an underlying CV; we return one of these in getNewRep.
-     *<P>
+     * <p>
      * Unlike similar cases elsewhere, this doesn't have to listen to
      * value changes.  Those are handled automagically since we're sharing the same
      * model between this object and others.  And this is listening to
      * a CV state, not a variable.
      *
-     * @author			Bob Jacobsen   Copyright (C) 2001
+     * @author   Bob Jacobsen   Copyright (C) 2001
      */
     public class VarSlider extends JSlider {
 
@@ -878,9 +902,10 @@ public class SpeedTableVarValue extends VariableValue implements PropertyChangeL
             // tooltip label
             String start = ResourceBundle.getBundle("jmri.jmrit.symbolicprog.SymbolicProgBundle").getString("TextStep")
                     + " " + step;
-            setToolTipText(PaneProgPane.addCvDescription(start, "CV " + var.number(), null));
+            setToolTipText(CvUtil.addCvDescription(start, "CV " + var.number(), null));
             // listen for changes to original state
             _var.addPropertyChangeListener(new java.beans.PropertyChangeListener() {
+                @Override
                 public void propertyChange(java.beans.PropertyChangeEvent e) {
                     originalPropertyChanged(e);
                 }
@@ -907,6 +932,7 @@ public class SpeedTableVarValue extends VariableValue implements PropertyChangeL
     }  // end class definition
 
     // clean up connections when done
+    @Override
     public void dispose() {
         if (log.isDebugEnabled()) {
             log.debug("dispose");
@@ -920,6 +946,6 @@ public class SpeedTableVarValue extends VariableValue implements PropertyChangeL
     }
 
     // initialize logging
-    private final static Logger log = LoggerFactory.getLogger(SpeedTableVarValue.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(SpeedTableVarValue.class);
 
 }

@@ -15,14 +15,14 @@ import org.slf4j.LoggerFactory;
 
 /**
  * This Action runs a script using an available script engine.
- * <P>
+ * <p>
  * The script engine to use is determined by the script's extension.
- * <P>
+ * <p>
  * There are two constructors. One, without a script file name, will open a
  * FileDialog to prompt for the file to use. The other, with a File object, will
  * directly invoke that file.
  *
- * @author	Bob Jacobsen Copyright (C) 2004, 2007
+ * @author Bob Jacobsen Copyright (C) 2004, 2007
  */
 public class RunJythonScript extends JmriAbstractAction {
 
@@ -47,9 +47,10 @@ public class RunJythonScript extends JmriAbstractAction {
 
     /**
      * Constructor that, when action is invoked, directly invokes the provided
-     * File
+     * File.
      *
      * @param name Action name
+     * @param file the script file to invoke
      */
     public RunJythonScript(String name, File file) {
         super(name);
@@ -99,7 +100,7 @@ public class RunJythonScript extends JmriAbstractAction {
         // handle selection or cancel
         if (retVal == JFileChooser.APPROVE_OPTION) {
             File file = fci.getSelectedFile();
-            // Run the script from it's filename
+            // Run the script from its filename
             return file;
         }
         return null;
@@ -120,6 +121,6 @@ public class RunJythonScript extends JmriAbstractAction {
     }
 
     // initialize logging
-    private final static Logger log = LoggerFactory.getLogger(RunJythonScript.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(RunJythonScript.class);
 
 }

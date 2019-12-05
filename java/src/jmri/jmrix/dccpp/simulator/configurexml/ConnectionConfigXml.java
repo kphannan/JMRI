@@ -11,7 +11,7 @@ import org.jdom2.Element;
  * DCCppSimulatorAdapter (and connections). Note this is named as the XML version
  * of a ConnectionConfig object, but it's actually persisting the
  * DCCppSimulatorAdapter.
- * <P>
+ * <p>
  * This class is invoked from jmrix.JmrixConfigPaneXml on write, as that class
  * is the one actually registered. Reads are brought here directly via the class
  * attribute in the XML.
@@ -19,7 +19,6 @@ import org.jdom2.Element;
  * @author Bob Jacobsen Copyright: Copyright (c) 2003
  * @author Paul Bender Copyright: Copyright (c) 2009
  * @author Mark Underwood Copyright: Copyright (c) 2015
- * @version $Revision$
  */
 public class ConnectionConfigXml extends AbstractConnectionConfigXml {
 
@@ -35,6 +34,7 @@ public class ConnectionConfigXml extends AbstractConnectionConfigXml {
      *
      * @return Formatted element containing no attributes except the class name
      */
+    @Override
     public Element store(Object o) {
         getInstance(o);
 
@@ -67,6 +67,7 @@ public class ConnectionConfigXml extends AbstractConnectionConfigXml {
         return result;
     }
 
+    @Override
     protected void getInstance() {
         if (adapter == null) {
             adapter = new DCCppSimulatorAdapter();

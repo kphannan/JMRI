@@ -1,52 +1,58 @@
-//OperationsBackup2Test.java
 package jmri.jmrit.operations.setup;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Calendar;
-import java.util.Locale;
+import jmri.InstanceManager;
 import jmri.jmrit.XmlFile;
 import jmri.jmrit.operations.OperationsXml;
-import jmri.jmrit.operations.routes.RouteManagerXml;
-import jmri.jmrit.operations.rollingstock.engines.EngineManagerXml;
-import jmri.jmrit.operations.rollingstock.cars.CarManagerXml;
 import jmri.jmrit.operations.locations.LocationManagerXml;
+import jmri.jmrit.operations.rollingstock.cars.CarManagerXml;
+import jmri.jmrit.operations.rollingstock.engines.EngineManagerXml;
+import jmri.jmrit.operations.routes.RouteManagerXml;
 import jmri.jmrit.operations.trains.TrainManagerXml;
 import jmri.util.FileUtil;
+
+import org.junit.After;
 import org.junit.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * Tests for the new Operations Setup Backup classes used for copying and
  * restoring file backup sets. These test the AutoBackup and DefaultBackup
  * classes that are derived from BackupBase.
- *
+ * <p>
  * These tests use dummy XML files for the copying to make testing the outcomes
  * easier. It is assumed that there are other tests to verify that the correct
  * format XML files get created. This only tests the copying parts of the Backup
  * and Restore operations.
- *
+ * <p>
  * Tests include: - copying to / from regular backup location - copying to /
  * from automatic backup location
- *
+ * <p>
  * Source files are in Operations / JUnitTests.
- *
+ * <p>
  * Backup dirs are in: Operations / JUnitTests / backups and
- *
+ * <p>
  * Operations / JUnitTests / autoBackups
- *
- *
+ * <p>
+ * <p>
  * Still to do: - Need file comparison method to verify exactly that the files
  * are the same.
  *
  *
  * @author Gregory Madsen Copyright (C) 2012
- * @version $Revision: 00001 $
+ *
  */
-public class OperationsBackupTest extends TestCase {
+public class OperationsBackupTest {
 
     private File operationsRoot;
 
@@ -68,16 +74,23 @@ public class OperationsBackupTest extends TestCase {
 
     private String[] regularBackupSetFileNames;
 
-	// public String[] getRegularBackupSetFileNames() {
-    // return regularBackupSetFileNames;
-    // }
-    // private String[] testBackupSetFileNames;
-    //
-    // public String[] getTestBackupSetFileNames() {
-    // return testBackupSetFileNames;
-    // }
-    public OperationsBackupTest(String s) {
-        super(s);
+    public String[] getRegularBackupSetFileNames() {
+        return regularBackupSetFileNames;
+    }
+
+    private String[] testBackupSetFileNames;
+
+    public String[] getTestBackupSetFileNames() {
+        return testBackupSetFileNames;
+    }
+
+    /**
+     * Test-by test initialization.
+     * @throws IOException if thrown by {@link #createTestFiles()}
+     */
+    @Before
+    public void setUp() throws IOException {
+        jmri.util.JUnitUtil.setUp();
 
         // set the file location to temp (in the root of the build directory).
         OperationsSetupXml.setFileLocation("temp" + File.separator);
@@ -111,29 +124,7 @@ public class OperationsBackupTest extends TestCase {
         // testBackupSetFileNames[i] = "NEW_TEST_"
         // + regularBackupSetFileNames[i];
         // }
-    }
-
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading",
-            OperationsBackupTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(OperationsBackupTest.class);
-        return suite;
-    }
-
-    /**
-     * Test-by test initialization.
-     */
-    @Override
-    protected void setUp() throws IOException {
-        apps.tests.Log4JFixture.setUp();
-
-                // set the file location to temp (in the root of the build directory).
+        // set the file location to temp (in the root of the build directory).
         OperationsSetupXml.setFileLocation("temp" + File.separator);
 
         // Repoint OperationsSetupXml to JUnitTest subdirectory
@@ -142,17 +133,14 @@ public class OperationsBackupTest extends TestCase {
             OperationsSetupXml.setOperationsDirectoryName("operations" + File.separator + "JUnitTest");
         }
         // Change file names to ...Test.xml
-        OperationsSetupXml.instance().setOperationsFileName("OperationsJUnitTest.xml");
-        RouteManagerXml.instance().setOperationsFileName("OperationsJUnitTestRouteRoster.xml");
-        EngineManagerXml.instance().setOperationsFileName("OperationsJUnitTestEngineRoster.xml");
-        CarManagerXml.instance().setOperationsFileName("OperationsJUnitTestCarRoster.xml");
-        LocationManagerXml.instance().setOperationsFileName("OperationsJUnitTestLocationRoster.xml");
-        TrainManagerXml.instance().setOperationsFileName("OperationsJUnitTestTrainRoster.xml");
+        InstanceManager.getDefault(OperationsSetupXml.class).setOperationsFileName("OperationsJUnitTest.xml");
+        InstanceManager.getDefault(RouteManagerXml.class).setOperationsFileName("OperationsJUnitTestRouteRoster.xml");
+        InstanceManager.getDefault(EngineManagerXml.class).setOperationsFileName("OperationsJUnitTestEngineRoster.xml");
+        InstanceManager.getDefault(CarManagerXml.class).setOperationsFileName("OperationsJUnitTestCarRoster.xml");
+        InstanceManager.getDefault(LocationManagerXml.class).setOperationsFileName("OperationsJUnitTestLocationRoster.xml");
+        InstanceManager.getDefault(TrainManagerXml.class).setOperationsFileName("OperationsJUnitTestTrainRoster.xml");
 
         FileUtil.createDirectory("temp" + File.separator + OperationsSetupXml.getOperationsDirectoryName());
-
-        // set the locale to US English
-        Locale.setDefault(Locale.ENGLISH);
 
         // Delete any existing auto or default backup sets
         if (autoBackupRoot.exists()) {
@@ -179,12 +167,9 @@ public class OperationsBackupTest extends TestCase {
         createTestFiles();
     }
 
-    // The minimal setup for log4J
-    @Override
-    protected void tearDown() {
-        // restore locale
-        Locale.setDefault(Locale.getDefault());
-        apps.tests.Log4JFixture.tearDown();
+    @After
+    public void tearDown() {
+        jmri.util.JUnitUtil.tearDown();
         deleteTestFiles();
     }
 
@@ -264,7 +249,7 @@ public class OperationsBackupTest extends TestCase {
 
     public void verifyBackupSetAgainst(File srcDir, String srcSet, File dstDir,
             String dstSet, String[] fileNames) {
-		// Does a number of tests on the files in a backup set directory and
+        // Does a number of tests on the files in a backup set directory and
         // compares them to the source directory.
         // Both source and destination can have a setName as we have to test
         // both copies and restores.
@@ -315,11 +300,12 @@ public class OperationsBackupTest extends TestCase {
         // this is necessary if the file sizes and dates match.
     }
 
-	// And now the actual tests themselves.....
+    // And now the actual tests themselves.....
     // First some common tests of BackupBase
     // Need to instantiate DefaultBackup as BackupBase is abstract.
     // Make sure that we are working with the exact set of file names that we
     // expect.
+    @Test
     public void testGetBackupSetFileNames() {
         BackupBase backup = new DefaultBackup();
         String[] names = backup.getBackupSetFileNames();
@@ -334,20 +320,24 @@ public class OperationsBackupTest extends TestCase {
         Assert.assertEquals("OperationsTrainRoster.xml", names[5]);
     }
 
-    // public void testTestBackupSetFileNames() {
-    // String[] names = testBackupSetFileNames;
-    //
-    // Assert.assertEquals("Test Backup set file name count", 6, names.length);
-    //
-    // Assert.assertEquals("NEW_TEST_Operations.xml", names[0]);
-    // Assert.assertEquals("NEW_TEST_OperationsCarRoster.xml", names[1]);
-    // Assert.assertEquals("NEW_TEST_OperationsEngineRoster.xml", names[2]);
-    // Assert.assertEquals("NEW_TEST_OperationsLocationRoster.xml", names[3]);
-    // Assert.assertEquals("NEW_TEST_OperationsRouteRoster.xml", names[4]);
-    // Assert.assertEquals("NEW_TEST_OperationsTrainRoster.xml", names[5]);
-    // }
+    @Test
+    @Ignore("Disabled in JUnit 3")
+    public void testTestBackupSetFileNames() {
+        String[] names = testBackupSetFileNames;
+
+        Assert.assertEquals("Test Backup set file name count", 6, names.length);
+
+        Assert.assertEquals("NEW_TEST_Operations.xml", names[0]);
+        Assert.assertEquals("NEW_TEST_OperationsCarRoster.xml", names[1]);
+        Assert.assertEquals("NEW_TEST_OperationsEngineRoster.xml", names[2]);
+        Assert.assertEquals("NEW_TEST_OperationsLocationRoster.xml", names[3]);
+        Assert.assertEquals("NEW_TEST_OperationsRouteRoster.xml", names[4]);
+        Assert.assertEquals("NEW_TEST_OperationsTrainRoster.xml", names[5]);
+    }
+    
+    @Test
     public void testTestFilesCreated() {
-		// Make sure we can create our test files correctly
+        // Make sure we can create our test files correctly
 
         // Make sure the directories exist
         Assert.assertTrue("Test directory must exist", operationsRoot.exists());
@@ -366,6 +356,7 @@ public class OperationsBackupTest extends TestCase {
 
     }
 
+    @Test
     public void testBasicCopyBackupSet() throws IOException {
         // Test that we can actually copy the files of a backup set to a
         // different directory. This is the heart of the Backup class.
@@ -388,6 +379,7 @@ public class OperationsBackupTest extends TestCase {
                 backup.getBackupSetFileNames().length);
     }
 
+    @Test
     public void testBasicCopyBackupSetWithNoFiles() throws IOException {
         // Test copying with none of the files in the source, representing the
         // state after a Reset() operation.
@@ -408,8 +400,7 @@ public class OperationsBackupTest extends TestCase {
 
     }
 
-    // private void createDummyXmlFile(File dir, String name) throws IOException
-    // {
+    @Test
     public void testBasicCopyBackupSetWithMissingFiles() throws IOException {
         // Test copying with only some of the files in the source. This MAY be
         // a valid state, so no exception should be thrown.
@@ -422,13 +413,14 @@ public class OperationsBackupTest extends TestCase {
         createDummyXmlFile(operationsRoot, regularBackupSetFileNames[0]);
 
         backup.copyBackupSet(operationsRoot, setDir);
-        jmri.util.JUnitAppender.assertWarnMessage("Only 1 file(s) found in directory "+operationsRoot.getAbsolutePath());
+        jmri.util.JUnitAppender.assertWarnMessage("Only 1 file(s) found in directory " + operationsRoot.getAbsolutePath());
 
         // Should NOT throw an exception, and the destination dir should exist.
         Boolean exists = existsFile(defaultBackupRoot, setName);
         assertTrue(exists);
     }
 
+    @Test
     public void testBasicCopyBackupSetWithExtraFiles() throws IOException {
         // Test copying with all of the Operations files, plus some extra files.
         // SHould only copy the Operations files.
@@ -453,6 +445,7 @@ public class OperationsBackupTest extends TestCase {
                 backup.getBackupSetFileNames().length);
     }
 
+    @Test
     public void testBackupToSpecificDirectory() throws IOException {
         // Does a backup to a specific directory.
         // The backup set directory is given as a File object.
@@ -472,23 +465,27 @@ public class OperationsBackupTest extends TestCase {
     // filename on the CI build server....
     // Having "<<" in a file name fails under Windows, but maybe not under
     // Linux???
-    // public void testBackupToInvalidDirectory() {
-    // // Does a backup to a specific directory that has an invalid name.
-    // // The backup set directory is given as a File object.
-    // // This simulates using a FIleChooser to select the destination
-    // // directory.
-    // BackupBase backup = new DefaultBackup();
-    //
-    // File dir = new File(operationsRoot, "Invalid Name<<>>");
-    //
-    // try {
-    // backup.backupFilesToDirectory(dir);
-    //
-    // fail("Expected exception to be thrown.");
-    // } catch (Exception ex) {
-    // // Maybe we should check what type of exception was caught???
-    // }
-    // }
+    @Test
+    @Ignore("Disabled in JUnit 3")
+    public void testBackupToInvalidDirectory() {
+        // Does a backup to a specific directory that has an invalid name.
+        // The backup set directory is given as a File object.
+        // This simulates using a FIleChooser to select the destination
+        // directory.
+        BackupBase backup = new DefaultBackup();
+
+        File dir = new File(operationsRoot, "Invalid Name<<>>");
+
+        try {
+            backup.backupFilesToDirectory(dir);
+
+            fail("Expected exception to be thrown.");
+        } catch (Exception ex) {
+            // Maybe we should check what type of exception was caught???
+        }
+    }
+    
+    @Test
     public void testRestoreFilesFromSpecificDirectory() throws IOException {
         // Simulates using a FileChooser to select a directory to restore from.
         BackupBase backup = new DefaultBackup();
@@ -504,6 +501,7 @@ public class OperationsBackupTest extends TestCase {
         verifyBackupSetAgainst(dir, "", operationsRoot, "");
     }
 
+    @Test
     public void testResetFiles() {
 
         BackupBase backup = new DefaultBackup();
@@ -525,6 +523,7 @@ public class OperationsBackupTest extends TestCase {
         }
     }
 
+    @Test
     public void testLoadDemoFiles() throws IOException {
         BackupBase backup = new DefaultBackup();
 
@@ -545,6 +544,7 @@ public class OperationsBackupTest extends TestCase {
     }
 
     // Now tests of the DefaultBackup class.....
+    @Test
     public void testCreateDefaultBackupInstance() {
         // Basic test to make sure we can instantiate the DefaultBackup class
         BackupBase backup = new DefaultBackup();
@@ -565,6 +565,7 @@ public class OperationsBackupTest extends TestCase {
         Assert.assertEquals("Default root", expectedRoot, root);
     }
 
+    @Test
     public void testDefaultBackupWithName() throws IOException {
         // Does a backup to the backups directory
         // The name of the backup set is given.
@@ -577,6 +578,7 @@ public class OperationsBackupTest extends TestCase {
         verifyBackupSetAgainst(operationsRoot, "", defaultBackupRoot, setName);
     }
 
+    @Test
     public void testDefaultBackupWithName2() throws IOException {
         // Does a backup to the backups directory
         // The name of the backup set is given.
@@ -589,6 +591,7 @@ public class OperationsBackupTest extends TestCase {
         verifyBackupSetAgainst(operationsRoot, "", defaultBackupRoot, setName);
     }
 
+    @Test
     public void testDefaultBackupWithNullName() {
         // Tries a backup to the backups directory
         // The name of the backup set is null.
@@ -601,6 +604,7 @@ public class OperationsBackupTest extends TestCase {
         }
     }
 
+    @Test
     public void testDefaultBackupWithEmptyName() {
         // Tries a backup to the backups directory
         // The name of the backup set is empty ("")
@@ -614,6 +618,7 @@ public class OperationsBackupTest extends TestCase {
         }
     }
 
+    @Test
     public void testSuggestedDefaultBackupName() throws IOException {
         // Tests creating the suggested backup set names that account for
         // existing backup sets.
@@ -658,6 +663,7 @@ public class OperationsBackupTest extends TestCase {
 
     // Test restores by doing a backup, deleting the source files, doing a
     // restore and verifying the new source files.
+    @Test
     public void testRestoreFilesFromDefault() throws IOException {
         BackupBase backup = new DefaultBackup();
         String setName = backup.suggestBackupSetName();
@@ -670,6 +676,7 @@ public class OperationsBackupTest extends TestCase {
         verifyBackupSetAgainst(defaultBackupRoot, setName, operationsRoot, "");
     }
 
+    @Test
     public void testDefaultBackupSetList() throws IOException {
 
         // confirm that all directories have been deleted
@@ -702,6 +709,7 @@ public class OperationsBackupTest extends TestCase {
         }
     }
 
+    @Test
     public void testIfDefaultBackupSetExists() throws IOException {
         // Create a default backup set then see if it exists.
         BackupBase backup = new DefaultBackup();
@@ -719,6 +727,7 @@ public class OperationsBackupTest extends TestCase {
     }
 
     // And now the tests for the AutoBackup class...
+    @Test
     public void testCreateAutoBackupInstance() {
         // Basic test to make sure we can instantiate the DefaultBackup class
         BackupBase backup = new AutoBackup();
@@ -739,6 +748,7 @@ public class OperationsBackupTest extends TestCase {
         Assert.assertEquals("Automatic root", expectedRoot, root);
     }
 
+    @Test
     public void testAutoBackupWithName() throws IOException {
         // Does a backup to the autoBackups directory
         // The name of the backup set is given.
@@ -751,6 +761,7 @@ public class OperationsBackupTest extends TestCase {
         verifyBackupSetAgainst(operationsRoot, "", autoBackupRoot, setName);
     }
 
+    @Test
     public void testAutoBackupAfterResetWithNoFiles() throws IOException {
         // Should not cause a problem if there are no files to autobackup.
         AutoBackup backup = new AutoBackup();
@@ -761,6 +772,7 @@ public class OperationsBackupTest extends TestCase {
         backup.autoBackup();
     }
 
+    @Test
     public void testSuggestedAutoBackupName() throws IOException {
         // Tests creating the suggested backup set names that account for
         // existing backup sets.
@@ -805,6 +817,7 @@ public class OperationsBackupTest extends TestCase {
 
     // Test restores by doing a backup, deleting the source files, doing a
     // restore and verifying the new source files.
+    @Test
     public void testRestoreFilesFromAuto() throws IOException {
         BackupBase backup = new AutoBackup();
         String setName = backup.suggestBackupSetName();
@@ -817,6 +830,7 @@ public class OperationsBackupTest extends TestCase {
         verifyBackupSetAgainst(autoBackupRoot, setName, operationsRoot, "");
     }
 
+    @Test
     public void testAutoBackupSetList() throws IOException {
 
         // confirm that all directories have been deleted
@@ -851,6 +865,7 @@ public class OperationsBackupTest extends TestCase {
         }
     }
 
+    @Test
     public void testIfAutoBackupSetExists() throws IOException {
         // Create a auto backup set then see if it exists.
         BackupBase backup = new AutoBackup();
@@ -867,6 +882,7 @@ public class OperationsBackupTest extends TestCase {
                 backup.checkIfBackupSetExists(defName));
     }
 
+    @Test
     public void testAutoBackup() throws IOException {
         // Does a backup to the autoBackups directory.
         // The name of the backup set is generated internally.

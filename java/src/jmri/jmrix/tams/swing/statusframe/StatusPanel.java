@@ -12,7 +12,7 @@ import jmri.jmrix.tams.TamsSystemConnectionMemo;
 import jmri.jmrix.tams.TamsTrafficController;
 
 /**
- * Panel to show TAMS status
+ * Panel to show TAMS status.
  *
  * Based on work by Bob Jacobsen
  *
@@ -20,10 +20,10 @@ import jmri.jmrix.tams.TamsTrafficController;
  */
 public class StatusPanel extends jmri.jmrix.tams.swing.TamsPanel implements TamsListener {
 
-    String appString = "Application Version : ";
-    String serString = "Serial Number : ";
-    JLabel appVersion = new JLabel(appString + "<unknown>");
-    JLabel serVersion = new JLabel(serString + "<unknown>");
+    String appString = Bundle.getMessage("ApplicationVersionLabel");
+    String serString = Bundle.getMessage("SerialNumberLabel");
+    JLabel appVersion = new JLabel(appString + Bundle.getMessage("StateUnknown")); // "<unknown>"
+    JLabel serVersion = new JLabel(serString + Bundle.getMessage("StateUnknown"));
 
     JButton sendButton;
 
@@ -31,6 +31,7 @@ public class StatusPanel extends jmri.jmrix.tams.swing.TamsPanel implements Tams
         super();
     }
 
+    @Override
     public void initComponents(TamsSystemConnectionMemo memo) {
         super.initComponents(memo);
         //memo.getTrafficController().addTamsListener(this);
@@ -44,12 +45,13 @@ public class StatusPanel extends jmri.jmrix.tams.swing.TamsPanel implements Tams
         TamsMessage m = new TamsMessage("xV");
         tc.sendTamsMessage(m, this);
 
-        sendButton = new JButton("Update");
+        sendButton = new JButton(Bundle.getMessage("ButtonUpdate"));
         sendButton.setVisible(true);
-        sendButton.setToolTipText("Request status update from TAMS System");
+        sendButton.setToolTipText(Bundle.getMessage("ButtonUpdateToolTip"));
 
         add(sendButton);
         sendButton.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
                 sendButtonActionPerformed(e);
             }
@@ -57,10 +59,11 @@ public class StatusPanel extends jmri.jmrix.tams.swing.TamsPanel implements Tams
     }
 
     void reset() {
-        appVersion.setText(appString + "<unknown>");
+        appVersion.setText(appString + Bundle.getMessage("StateUnknown"));
     }
 
     // to free resources when no longer used
+    @Override
     public void dispose() {
         tc.removeTamsListener(this);
         tc = null;
@@ -70,19 +73,12 @@ public class StatusPanel extends jmri.jmrix.tams.swing.TamsPanel implements Tams
         reset();
         TamsMessage m = new TamsMessage("xV");
         tc.sendTamsMessage(m, this);
-
-    }
-
-    @SuppressWarnings("unused")
-    private void checkTC() throws JmriException {
-        if (tc == null) {
-            throw new JmriException("attempt to use TamsPowerManager after dispose");
-        }
     }
 
     TamsTrafficController tc;
 
     // to listen for status changes from Tams system
+    @Override
     public void reply(TamsReply m) {
         // power message?
         String msg = m.toString();
@@ -91,6 +87,7 @@ public class StatusPanel extends jmri.jmrix.tams.swing.TamsPanel implements Tams
         serVersion.setText(serString + version[1]);
     }
 
+    @Override
     public void message(TamsMessage m) {
         // messages are ignored
     }
@@ -100,13 +97,8 @@ public class StatusPanel extends jmri.jmrix.tams.swing.TamsPanel implements Tams
      */
     static public class Default extends jmri.jmrix.tams.swing.TamsNamedPaneAction {
 
-        /**
-         *
-         */
-        private static final long serialVersionUID = 2919382089865855790L;
-
         public Default() {
-            super(ResourceBundle.getBundle("jmri.jmrix.tams.TamsBundle").getString("MenuItemInfo"),
+            super(Bundle.getMessage("MenuItemInfo"),
                     new jmri.util.swing.sdi.JmriJFrameInterface(),
                     StatusPanel.class.getName(),
                     jmri.InstanceManager.getDefault(TamsSystemConnectionMemo.class));

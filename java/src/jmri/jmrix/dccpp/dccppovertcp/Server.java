@@ -10,25 +10,27 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.LinkedList;
 import java.util.Properties;
+import java.util.Set;
+import jmri.InstanceInitializer;
 import jmri.InstanceManager;
+import jmri.implementation.AbstractInstanceInitializer;
 import jmri.implementation.QuietShutDownTask;
 import jmri.jmrix.dccpp.DCCppConstants;
 import jmri.util.FileUtil;
-import jmri.util.SocketUtil;
 import jmri.util.zeroconf.ZeroConfService;
+import org.openide.util.lookup.ServiceProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Implementation of the LocoNetOverTcp LbServer Server Protocol
+ * Implementation of the DCCppOverTcp Server Protocol.
  *
  * @author Alex Shepherd Copyright (C) 2006
  * @author Mark Underwood Copyright (C) 2015
  */
 public class Server {
 
-    static Server self;
-    LinkedList<ClientRxHandler> clients;
+    private final LinkedList<ClientRxHandler> clients = new LinkedList<>();
     Thread socketListener;
     ServerSocket serverSocket;
     boolean settingsLoaded = false;
@@ -41,21 +43,10 @@ public class Server {
     static final String SETTINGS_FILE_NAME = "DCCppOverTcpSettings.ini";
 
     private Server() {
-        clients = new LinkedList<ClientRxHandler>();
     }
 
     public void setStateListner(ServerListner l) {
         stateListner = l;
-    }
-
-    public static synchronized Server getInstance() {
-        if (self == null) {
-            self = new Server();
-            if (self.getAutoStart()) {
-                self.enable();
-            }
-        }
-        return self;
     }
 
     private void loadSettings() {
@@ -66,7 +57,7 @@ public class Server {
             String settingsFileName = FileUtil.getUserFilesPath() + SETTINGS_FILE_NAME;
 
             try {
-                log.debug("Server: opening settings file " + settingsFileName);
+                log.debug("Server: opening settings file {}", settingsFileName);
                 java.io.InputStream settingsStream = new FileInputStream(settingsFileName);
                 try {
                     settings.load(settingsStream);
@@ -91,12 +82,12 @@ public class Server {
         // we can't use the store capabilities of java.util.Properties, as
         // they are not present in Java 1.1.8
         String settingsFileName = FileUtil.getUserFilesPath() + SETTINGS_FILE_NAME;
-        log.debug("Server: saving settings file " + settingsFileName);
+        log.debug("Server: saving settings file {}", settingsFileName);
 
         try {
             OutputStream outStream = new FileOutputStream(settingsFileName);
             PrintStream settingsStream = new PrintStream(outStream);
-            settingsStream.println("# LocoNetOverTcp Configuration Settings");
+            settingsStream.println("# DCCppOverTcp Configuration Settings");
             settingsStream.println(AUTO_START_KEY + " = " + (autoStart ? "1" : "0"));
             settingsStream.println(PORT_NUMBER_KEY + " = " + portNumber);
 
@@ -150,7 +141,7 @@ public class Server {
             socketListener = new Thread(new ClientListener());
             socketListener.setDaemon(true);
             socketListener.setName("DCCppOverTcpServer");
-            log.info("Starting new DCCppOverTcpServer listener on port " + portNumber);
+            log.info("Starting new DCCppOverTcpServer listener on port {}", portNumber);
             socketListener.start();
             updateServerStateListener();
             // advertise over Zeroconf/Bonjour
@@ -163,12 +154,12 @@ public class Server {
                 this.shutDownTask = new QuietShutDownTask("DCCppOverTcpServer") {
                     @Override
                     public boolean execute() {
-                        Server.getInstance().disable();
+                        InstanceManager.getDefault(Server.class).disable();
                         return true;
                     }
                 };
             }
-            if (this.shutDownTask != null && InstanceManager.getOptionalDefault(jmri.ShutDownManager.class) != null) {
+            if (this.shutDownTask != null) {
                 InstanceManager.getDefault(jmri.ShutDownManager.class).register(this.shutDownTask);
             }
         }
@@ -198,7 +189,7 @@ public class Server {
             }
         }
         this.service.stop();
-        if (this.shutDownTask != null && InstanceManager.getOptionalDefault(jmri.ShutDownManager.class) != null) {
+        if (this.shutDownTask != null) {
             InstanceManager.getDefault(jmri.ShutDownManager.class).deregister(this.shutDownTask);
         }
     }
@@ -217,16 +208,17 @@ public class Server {
 
     class ClientListener implements Runnable {
 
+        @Override
         public void run() {
             Socket newClientConnection;
             String remoteAddress;
             try {
                 serverSocket = new ServerSocket(getPortNumber());
-                SocketUtil.setReuseAddress(serverSocket, true);
+                serverSocket.setReuseAddress(true);
                 while (!socketListener.isInterrupted()) {
                     newClientConnection = serverSocket.accept();
-                    remoteAddress = SocketUtil.getRemoteSocketAddress(newClientConnection);
-                    log.info("Server: Connection from: " + remoteAddress);
+                    remoteAddress = newClientConnection.getRemoteSocketAddress().toString();
+                    log.info("Server: Connection from: {}", remoteAddress);
                     addClient(new ClientRxHandler(remoteAddress, newClientConnection));
                 }
                 serverSocket.close();
@@ -258,5 +250,30 @@ public class Server {
             return clients.size();
         }
     }
-    private final static Logger log = LoggerFactory.getLogger(Server.class.getName());
+
+    @ServiceProvider(service = InstanceInitializer.class)
+    public static class Initializer extends AbstractInstanceInitializer {
+
+        @Override
+        public <T> Object getDefault(Class<T> type) throws IllegalArgumentException {
+            if (type.equals(Server.class)) {
+                Server instance = new Server();
+                if (instance.getAutoStart()) {
+                    instance.enable();
+                }
+                return instance;
+            }
+            return super.getDefault(type);
+        }
+
+        @Override
+        public Set<Class<?>> getInitalizes() {
+            Set<Class<?>> set = super.getInitalizes();
+            set.add(Server.class);
+            return set;
+        }
+    }
+
+    private final static Logger log = LoggerFactory.getLogger(Server.class);
+
 }

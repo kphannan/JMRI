@@ -5,12 +5,11 @@ import org.jdom2.Element;
 
 /**
  * Handle XML persistance of ProxyTurnoutManager
- * <P>
+ * <p>
  * This class is named as being the persistant form of the ProxyTurnoutManager
  * class, but there's no object of that form created or used.
  *
  * @author Bob Jacobsen Copyright: Copyright (c) 2003
- * @version $Revision$
  */
 public class ProxyTurnoutManagerXml extends AbstractXmlAdapter {
 
@@ -24,6 +23,7 @@ public class ProxyTurnoutManagerXml extends AbstractXmlAdapter {
      * @param o Object to store, of type PositionableLabel
      * @return Element containing the complete info
      */
+    @Override
     public Element store(Object o) {
         return null;
     }
@@ -39,6 +39,7 @@ public class ProxyTurnoutManagerXml extends AbstractXmlAdapter {
      * @param element Top level Element to unpack.
      * @param o       PanelEditor as an Object
      */
+    @Override
     public void load(Element element, Object o) {
     }
 

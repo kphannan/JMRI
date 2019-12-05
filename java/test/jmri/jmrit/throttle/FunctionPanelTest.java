@@ -1,48 +1,51 @@
 package jmri.jmrit.throttle;
 
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import java.awt.GraphicsEnvironment;
+import jmri.util.JUnitUtil;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * Test simple functioning of FunctionPanel
  *
  * @author	Paul Bender Copyright (C) 2016
  */
-public class FunctionPanelTest extends TestCase {
+public class FunctionPanelTest {
+        
+    FunctionPanel frame; // not a panel despite class name
 
+    @Test
     public void testCtor() {
-        FunctionPanel panel = new FunctionPanel();
-        Assert.assertNotNull("exists", panel );
+        Assume.assumeFalse(GraphicsEnvironment.isHeadless());
+        Assert.assertNotNull("exists", frame);
     }
 
-    // from here down is testing infrastructure
-    public FunctionPanelTest(String s) {
-        super(s);
+    @Test
+    public void testGetFunctionButtons(){
+        Assume.assumeFalse(GraphicsEnvironment.isHeadless());
+        FunctionButton fba[] = frame.getFunctionButtons();
+	    Assert.assertNotNull("Function Button Array exists",fba);
+	    Assert.assertEquals("Function Button Array has right length",29,fba.length);
     }
 
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading", FunctionPanelTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
+    @Before
+    public void setUp() {
+        JUnitUtil.setUp();
+        JUnitUtil.resetProfileManager();
+        if(!GraphicsEnvironment.isHeadless()){
+           frame = new FunctionPanel();
+        }
     }
 
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(FunctionPanelTest.class);
-        return suite;
-    }
-
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-        apps.tests.Log4JFixture.setUp();
-    }
-    
-    @Override
-    public void tearDown() throws Exception {
-        super.tearDown();
-        apps.tests.Log4JFixture.tearDown();
+    @After
+    public void tearDown() {
+        if(frame!=null){
+          frame.dispose();
+        }
+        JUnitUtil.resetWindows(false,false);
+        JUnitUtil.tearDown();
     }
 }

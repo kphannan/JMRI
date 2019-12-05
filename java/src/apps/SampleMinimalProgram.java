@@ -14,16 +14,16 @@ import org.slf4j.LoggerFactory;
  *
  * <hr>
  * This file is part of JMRI.
- * <P>
+ * <p>
  * JMRI is free software; you can redistribute it and/or modify it under the
  * terms of version 2 of the GNU General Public License as published by the Free
  * Software Foundation. See the "COPYING" file for a copy of this license.
- * <P>
+ * <p>
  * JMRI is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
  * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- * <P>
- * @author	Bob Jacobsen Copyright 2003, 2005, 2007, 2010
+ *
+ * @author Bob Jacobsen Copyright 2003, 2005, 2007, 2010
  */
 public class SampleMinimalProgram {
 
@@ -45,8 +45,11 @@ public class SampleMinimalProgram {
     }
 
     /**
-     * Static method to return a standard program id. Used for logging startup,
-     * etc.
+     * Static method to return a first logging statement. Used for logging
+     * startup, etc.
+     *
+     * @param program the name of the program
+     * @return the logging statement including JMRI and Java versions
      */
     static public String startupInfo(String program) {
         return (program + " version " + jmri.Version.name()
@@ -54,8 +57,8 @@ public class SampleMinimalProgram {
     }
 
     /**
-     * Static method to get Log4J working before the rest of JMRI starts up.
-     * In a non-minimal program, invoke jmri.util.Log4JUtil.initLogging
+     * Static method to get Log4J working before the rest of JMRI starts up. In
+     * a non-minimal program, invoke jmri.util.Log4JUtil.initLogging
      */
     static protected void initLog4J() {
         // initialize log4j - from logging control file (lcf) only
@@ -77,6 +80,8 @@ public class SampleMinimalProgram {
 
     /**
      * Constructor starts the JMRI application running, and then returns.
+     *
+     * @param args command line arguments set at application launch
      */
     public SampleMinimalProgram(String[] args) {
 
@@ -90,6 +95,7 @@ public class SampleMinimalProgram {
         // and here we're up and running!
     }
 
+    @SuppressWarnings("deprecation") // _Simple_Miniman_Program doesn't need multi-connection support
     protected void codeConfig(String[] args) {
         jmri.jmrix.SerialPortAdapter adapter = jmri.jmrix.lenz.li100.LI100Adapter.instance();
         //jmri.jmrix.SerialPortAdapter adapter =  jmri.jmrix.nce.serialdriver.SerialDriverAdapter.instance();
@@ -110,16 +116,20 @@ public class SampleMinimalProgram {
         ConfigureManager cm = new JmriConfigurationManager();
 
         // not setting preference file location!
-        InstanceManager.setConfigureManager(cm);
+        InstanceManager.setDefault(ConfigureManager.class, cm);
         // needs an error handler that doesn't invoke swing; send to log4j?
 
         // start web server
         final int port = 12080;
-        WebServerPreferences.getDefault().setPort(port);
-        WebServer.getDefault().start();
+        InstanceManager.getDefault(WebServerPreferences.class).setPort(port);
+        try {
+            WebServer.getDefault().start();
+        } catch (Exception ex) {
+            log.error("Unable to start web server.", ex);
+        }
 
         log.info("Up!");
     }
 
-    private final static Logger log = LoggerFactory.getLogger(SampleMinimalProgram.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(SampleMinimalProgram.class);
 }

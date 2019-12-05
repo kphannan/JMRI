@@ -1,8 +1,9 @@
-//TrainByCarTypeAction.java
 package jmri.jmrit.operations.trains.tools;
 
 import java.awt.event.ActionEvent;
+
 import javax.swing.AbstractAction;
+
 import jmri.jmrit.operations.trains.Train;
 
 /**
@@ -10,7 +11,6 @@ import jmri.jmrit.operations.trains.Train;
  *
  * @author Bob Jacobsen Copyright (C) 2001
  * @author Daniel Boudreau Copyright (C) 2010
- * @version $Revision$
  */
 public class TrainByCarTypeAction extends AbstractAction {
 
@@ -24,9 +24,8 @@ public class TrainByCarTypeAction extends AbstractAction {
     @Override
     public void actionPerformed(ActionEvent e) {
         // create frame
-        TrainByCarTypeFrame f = new TrainByCarTypeFrame();
-        f.initComponents(_train);
+        new TrainByCarTypeFrame(_train);
     }
 }
 
-/* @(#)TrainByCarTypeAction.java */
+

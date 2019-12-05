@@ -1,4 +1,3 @@
-// PdiFile.java
 package jmri.jmrix.pricom.downloader;
 
 import java.io.BufferedInputStream;
@@ -11,12 +10,11 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Support for reading PRICOM ".pdi" files
- * <P>
+ * <p>
  * The PRICOM format documentation is Copyright 2003, 2005, PRICOM Corp. They
  * have kindly given permission for this use.
  *
  * @author	Bob Jacobsen Copyright (C) 2005
- * @version $Revision$
  */
 public class PdiFile {
 
@@ -107,6 +105,8 @@ public class PdiFile {
      * @return byte buffer, starting with address info and containing data, but
      *         not CRC
      */
+    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "PZLA_PREFER_ZERO_LENGTH_ARRAYS",
+        justification = "API defined by Pricom docs")
     public byte[] getNext(int n) {
         byte[] buffer = new byte[n + 3 + 2]; // 3 at front, 2 at back for CRC
         int rd;
@@ -140,5 +140,5 @@ public class PdiFile {
         return buffer;
     }
 
-    private final static Logger log = LoggerFactory.getLogger(PdiFile.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(PdiFile.class);
 }

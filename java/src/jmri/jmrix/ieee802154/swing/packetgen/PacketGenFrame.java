@@ -1,4 +1,3 @@
-// PacketGenFrame.java
 package jmri.jmrix.ieee802154.swing.packetgen;
 
 import jmri.jmrix.ieee802154.IEEE802154Message;
@@ -7,27 +6,28 @@ import jmri.jmrix.ieee802154.IEEE802154TrafficController;
 /**
  * Frame for user input of XpressNet messages
  *
- * @author	Bob Jacobsen Copyright (C) 2001,2002
- * @version	$Revision$
+ * @author Bob Jacobsen Copyright (C) 2001,2002
  */
 public class PacketGenFrame extends jmri.jmrix.swing.AbstractPacketGenFrame {
 
     /**
-     *
+     * {@inheritDoc}
      */
-    private static final long serialVersionUID = -6639533222251655795L;
-    final java.util.ResourceBundle rb = java.util.ResourceBundle.getBundle("jmri.jmrix.ieee802154.IEEE802154ActionListBundle");
-
-    public void initComponents() throws Exception {
+    @Override
+    public void initComponents() {
         super.initComponents();
 
         // all we need to do is set the title 
-        setTitle(rb.getString("jmri.jmrix.ieee802154.swing.packetgen.PacketGenActio"));
+        Bundle.getMessage("jmri.jmrix.ieee802154.swing.packetgen.PacketGenAction");
 
         // pack to cause display
         pack();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void sendButtonActionPerformed(java.awt.event.ActionEvent e) {
         tc.sendIEEE802154Message(createPacket(packetTextField.getSelectedItem().toString()), null);
     }

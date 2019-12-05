@@ -1,124 +1,119 @@
 package jmri.jmrix.lenz;
 
+import java.util.Locale;
 import jmri.Light;
 import jmri.managers.AbstractLightManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * Implement light manager for XPressNet systems
- * <P>
- * System names are "XLnnnnn", where nnnnn is the bit number without padding.
- * <P>
+ * Implement LightManager for XpressNet systems.
+ * <p>
+ * System names are "XLnnn", where X is the user configurable system prefix,
+ * nnn is the bit number without padding.
+ * <p>
  * Based in part on SerialLightManager.java
- * @author	Paul Bender Copyright (C) 2008
+ *
+ * @author Paul Bender Copyright (C) 2008
  * @navassoc 1 - * jmri.jmrix.lenz.XNetLight
  */
 public class XNetLightManager extends AbstractLightManager {
 
-    /**
-     *
-     */
-    private static final long serialVersionUID = -4478201509172741798L;
     private XNetTrafficController tc = null;
-    private String prefix = null;
 
-    public XNetLightManager(XNetTrafficController tc, String prefix) {
-        this.prefix = prefix;
-        this.tc = tc;
+    public XNetLightManager(XNetSystemConnectionMemo memo) {
+        super(memo);
+        this.tc = memo.getXNetTrafficController();
     }
 
     /**
-     * Returns the system letter for XPressNet
+     * {@inheritDoc}
      */
-    public String getSystemPrefix() {
-        return prefix;
+    @Override
+    public XNetSystemConnectionMemo getMemo() {
+        return (XNetSystemConnectionMemo) memo;
     }
 
+    // XNet-specific methods
+
     /**
-     * Method to create a new Light based on the system name Returns null if the
-     * system name is not in a valid format Assumes calling method has checked
-     * that a Light with this system name does not already exist
+     * Create a new Light based on the system name.
+     * Assumes calling method has checked that a Light with this
+     * system name does not already exist.
+     *
+     * @return null if the system name is not in a valid format
      */
+    @Override
     public Light createNewLight(String systemName, String userName) {
-        Light lgt = null;
         // check if the output bit is available
-        int bitNum = getBitFromSystemName(systemName);
-        if (bitNum == 0) {
+        int bitNum = XNetAddress.getBitFromSystemName(systemName, getSystemPrefix());
+        if (bitNum == -1) {
             return (null);
         }
-        // Normalize the systemName
-        String sName = prefix + typeLetter() + bitNum;   // removes any leading zeros
-        // make the new Light object
+        Light lgt = null;
+        // Normalize the System Name
+        String sName = getSystemNamePrefix() + bitNum; // removes any leading zeros
+        // create the new Light object
         lgt = new XNetLight(tc, this, sName, userName);
         return lgt;
     }
 
     /**
-     * Get the bit address from the system name
+     * Get the bit address from the system name.
+     *
+     * @param systemName system name for turnout
+     * @return index value for light, -1 if an error occurred
      */
     public int getBitFromSystemName(String systemName) {
-        // validate the system Name leader characters
-        if ((!systemName.startsWith(getSystemPrefix() + typeLetter()))) {
-            // here if an illegal XPressNet light system name 
-            log.error("illegal character in header field of XPressNet light system name: " + systemName);
-            return (0);
-        }
-        // name must be in the XLnnnnn format
-        int num = 0;
-        try {
-            num = Integer.valueOf(systemName.substring(
-                    getSystemPrefix().length() + 1, systemName.length())).intValue();
-        } catch (Exception e) {
-            log.error("illegal character in number field of system name: " + systemName);
-            return (0);
-        }
-        if (num <= 0) {
-            log.error("invalid XPressNet light system name: " + systemName);
-            return (0);
-        } else if (num > 1024) {
-            log.error("bit number out of range in XPressNet light system name: " + systemName);
-            return (0);
-        }
-        return (num);
+        return XNetAddress.getBitFromSystemName(systemName, getSystemPrefix());
     }
 
     /**
-     * Public method to validate system name format returns 'true' if system
-     * name has a valid format, else returns 'false'
+     * {@inheritDoc}
      */
-    public boolean validSystemNameFormat(String systemName) {
-        return (getBitFromSystemName(systemName) != 0);
+    @Override
+    public String validateSystemNameFormat(String name, Locale locale) {
+        return validateIntegerSystemNameFormat(name,
+                XNetAddress.MINSENSORADDRESS,
+                XNetAddress.MAXSENSORADDRESS,
+                locale);
+    }
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public NameValidity validSystemNameFormat(String systemName) {
+        return (getBitFromSystemName(systemName) != 0) ? NameValidity.VALID : NameValidity.INVALID;
     }
 
     /**
-     * Public method to validate system name for configuration returns 'true' if
-     * system name has a valid meaning in current configuration, else returns
-     * 'false' for now, this method always returns 'true'; it is needed for the
-     * Abstract Light class
+     * Validate system name for configuration.
+     *
+     * @return 'true' if system name has a valid meaning in current configuration, else returns
+     * 'false'. For now, this method always returns 'true'; it is needed for the
+     * Abstract Light class.
      */
+    @Override
     public boolean validSystemNameConfig(String systemName) {
         return (true);
     }
 
     /**
-     * A method that determines if it is possible to add a range of lights in
-     * numerical order eg 11 thru 18, primarily used to enable/disable the add
-     * range box in the add Light window
-     *
+     * Determine if it is possible to add a range of lights in
+     * numerical order eg 11 thru 18, primarily used to enable/disable the Add
+     * range checkbox in the Add Light pane.
      */
+    @Override
     public boolean allowMultipleAdditions(String systemName) {
         return true;
     }
 
     /**
-     * Allow access to XNetLightManager
+     * {@inheritDoc}
      */
-    @Deprecated
-    static public XNetLightManager instance() {
-        return null;
+    @Override
+    public String getEntryToolTip() {
+        return Bundle.getMessage("AddOutputEntryToolTip");
     }
 
-    private final static Logger log = LoggerFactory.getLogger(XNetLightManager.class.getName());
+    // private final static Logger log = LoggerFactory.getLogger(XNetLightManager.class);
 
 }

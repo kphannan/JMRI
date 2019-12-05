@@ -8,6 +8,8 @@ import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
+import jmri.GlobalProgrammerManager;
+import jmri.InstanceManager;
 import jmri.Programmer;
 import jmri.jmrit.decoderdefn.DecoderFile;
 import jmri.jmrit.decoderdefn.DecoderIndexFile;
@@ -22,9 +24,9 @@ import org.slf4j.LoggerFactory;
 /**
  * Provide GUI controls to select a decoder for a new loco and/or copy an
  * existing config.
- * <P>
+ * <p>
  * The user can select either a loco to copy, or a new decoder type or both.
- * <P>
+ * <p>
  * When the "open programmer" button is pushed, i.e. the user is ready to
  * continue, the startProgrammer method is invoked. This should be overridden
  * (e.g. in a local anonymous class) to create the programmer frame you're
@@ -48,7 +50,7 @@ public class NewLocoSelPane extends jmri.util.swing.JmriPanel {
     }
 
     ProgModeSelector selector;
-    
+
     public void init() {
         JLabel last;
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
@@ -58,6 +60,7 @@ public class NewLocoSelPane extends jmri.util.swing.JmriPanel {
 
         locoBox = new GlobalRosterEntryComboBox();
         locoBox.addActionListener(new ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
                 if (log.isDebugEnabled()) {
                     log.debug("Locomotive selected changed");
@@ -69,9 +72,10 @@ public class NewLocoSelPane extends jmri.util.swing.JmriPanel {
 
         JPanel pane1a = new JPanel();
         pane1a.setLayout(new BoxLayout(pane1a, BoxLayout.X_AXIS));
-        pane1a.add(new JLabel(java.util.ResourceBundle.getBundle("jmri/jmrit/symbolicprog/SymbolicProgBundle").getString("DecoderInstalled")));
+        pane1a.add(new JLabel(java.util.ResourceBundle.getBundle("jmri/jmrit/symbolicprog/SymbolicProgBundle").getString("LabelDecoderInstalled")));
         JButton iddecoder = new JButton(java.util.ResourceBundle.getBundle("jmri/jmrit/symbolicprog/SymbolicProgBundle").getString("IdentifyDecoder"));
         iddecoder.addActionListener(new ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
                 if (log.isDebugEnabled()) {
                     log.debug("identify decoder pressed");
@@ -83,12 +87,13 @@ public class NewLocoSelPane extends jmri.util.swing.JmriPanel {
         pane1a.setAlignmentX(JLabel.LEFT_ALIGNMENT);
         add(pane1a);
 
-        decoderBox = DecoderIndexFile.instance().matchingComboBox(null, null, null, null, null, null);
+        decoderBox = InstanceManager.getDefault(DecoderIndexFile.class).matchingComboBox(null, null, null, null, null, null);
         add(decoderBox);
 
         // Open programmer button
         JButton go1 = new JButton(java.util.ResourceBundle.getBundle("jmri/jmrit/symbolicprog/SymbolicProgBundle").getString("IdentifyDecoder"));
         go1.addActionListener(new ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
                 if (log.isDebugEnabled()) {
                     log.debug("Open programmer pressed");
@@ -109,22 +114,25 @@ public class NewLocoSelPane extends jmri.util.swing.JmriPanel {
         if (selector != null && selector.isSelected()) p = selector.getProgrammer();
         if (p == null) {
             log.warn("Selector did not provide a programmer, use default");
-            p = jmri.InstanceManager.getDefault(jmri.ProgrammerManager.class).getGlobalProgrammer();
+            p = jmri.InstanceManager.getDefault(GlobalProgrammerManager.class).getGlobalProgrammer();
         }
         IdentifyDecoder id = new IdentifyDecoder(p) {
             private NewLocoSelPane who = me;
 
+            @Override
             protected void done(int mfg, int model, int productID) {
                 // if Done, updated the selected decoder
                 who.selectDecoder(mfg, model, productID);
             }
 
+            @Override
             protected void message(String m) {
                 if (_statusLabel != null) {
                     _statusLabel.setText(m);
                 }
             }
 
+            @Override
             public void error() {
             }
         };
@@ -137,7 +145,7 @@ public class NewLocoSelPane extends jmri.util.swing.JmriPanel {
         // if productID present, try with that
         if (productID != -1) {
             String sz_productID = Integer.toString(productID);
-            temp = DecoderIndexFile.instance().matchingComboBox(null, null, Integer.toString(mfgID), Integer.toString(modelID), sz_productID, null);
+            temp = InstanceManager.getDefault(DecoderIndexFile.class).matchingComboBox(null, null, Integer.toString(mfgID), Integer.toString(modelID), sz_productID, null);
             if (temp.getItemCount() == 0) {
                 log.debug("selectDecoder found no items with product ID " + productID);
                 temp = null;
@@ -148,7 +156,7 @@ public class NewLocoSelPane extends jmri.util.swing.JmriPanel {
 
         // try without product ID if needed
         if (temp == null) {  // i.e. if no match previously
-            temp = DecoderIndexFile.instance().matchingComboBox(null, null, Integer.toString(mfgID), Integer.toString(modelID), null, null);
+            temp = InstanceManager.getDefault(DecoderIndexFile.class).matchingComboBox(null, null, Integer.toString(mfgID), Integer.toString(modelID), null, null);
             if (log.isDebugEnabled()) {
                 log.debug("selectDecoder without productID found " + temp.getItemCount() + " matches");
             }
@@ -167,14 +175,14 @@ public class NewLocoSelPane extends jmri.util.swing.JmriPanel {
         if (((String) locoBox.getSelectedItem()).equals("<none>")) {
             return;
         }
-        RosterEntry r = Roster.instance().entryFromTitle((String) locoBox.getSelectedItem());
+        RosterEntry r = Roster.getDefault().entryFromTitle((String) locoBox.getSelectedItem());
         String decoderModel = r.getDecoderModel();
         String decoderFamily = r.getDecoderFamily();
         if (log.isDebugEnabled()) {
             log.debug("selected loco uses decoder " + decoderFamily + " " + decoderModel);
         }
         // locate a decoder like that.
-        List<DecoderFile> l = DecoderIndexFile.instance().matchingDecoderList(null, decoderFamily, null, null, null, decoderModel);
+        List<DecoderFile> l = InstanceManager.getDefault(DecoderIndexFile.class).matchingDecoderList(null, decoderFamily, null, null, null, decoderModel);
         if (log.isDebugEnabled()) {
             log.debug("found " + l.size() + " matches");
         }
@@ -204,9 +212,9 @@ public class NewLocoSelPane extends jmri.util.swing.JmriPanel {
     protected void openButton() {
 
         // find the decoderFile object
-        DecoderFile decoderFile = DecoderIndexFile.instance().fileFromTitle((String) decoderBox.getSelectedItem());
+        DecoderFile decoderFile = InstanceManager.getDefault(DecoderIndexFile.class).fileFromTitle((String) decoderBox.getSelectedItem());
         if (log.isDebugEnabled()) {
-            log.debug("decoder file: " + decoderFile.getFilename());
+            log.debug("decoder file: " + decoderFile.getFileName());
         }
 
         // create a dummy RosterEntry with the decoder info
@@ -216,7 +224,7 @@ public class NewLocoSelPane extends jmri.util.swing.JmriPanel {
         re.setId(Bundle.getMessage("LabelNewDecoder"));
         // note we're leaving the filename information as null
         // add the new roster entry to the in-memory roster
-        Roster.instance().addEntry(re);
+        Roster.getDefault().addEntry(re);
 
         startProgrammer(decoderFile, re);
     }
@@ -232,6 +240,6 @@ public class NewLocoSelPane extends jmri.util.swing.JmriPanel {
         log.error("startProgrammer method in NewLocoSelPane should have been overridden");
     }
 
-    private final static Logger log = LoggerFactory.getLogger(NewLocoSelPane.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(NewLocoSelPane.class);
 
 }

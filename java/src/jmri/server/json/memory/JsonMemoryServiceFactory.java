@@ -1,19 +1,20 @@
 package jmri.server.json.memory;
 
+import static jmri.server.json.memory.JsonMemory.MEMORIES;
+import static jmri.server.json.memory.JsonMemory.MEMORY;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jmri.server.json.JsonConnection;
-import jmri.server.json.JsonHttpService;
-import jmri.server.json.JsonSocketService;
 import jmri.spi.JsonServiceFactory;
+import org.openide.util.lookup.ServiceProvider;
 
 /**
  *
  * @author Randall Wood
  */
-public class JsonMemoryServiceFactory implements JsonServiceFactory {
+@ServiceProvider(service = JsonServiceFactory.class)
+public class JsonMemoryServiceFactory implements JsonServiceFactory<JsonMemoryHttpService, JsonMemorySocketService> {
 
-    public static final String MEMORY = "memory"; // NOI18N
-    public static final String MEMORIES = "memories"; // NOI18N
 
     @Override
     public String[] getTypes() {
@@ -21,12 +22,12 @@ public class JsonMemoryServiceFactory implements JsonServiceFactory {
     }
 
     @Override
-    public JsonSocketService getSocketService(JsonConnection connection) {
+    public JsonMemorySocketService getSocketService(JsonConnection connection) {
         return new JsonMemorySocketService(connection);
     }
 
     @Override
-    public JsonHttpService getHttpService(ObjectMapper mapper) {
+    public JsonMemoryHttpService getHttpService(ObjectMapper mapper) {
         return new JsonMemoryHttpService(mapper);
     }
 

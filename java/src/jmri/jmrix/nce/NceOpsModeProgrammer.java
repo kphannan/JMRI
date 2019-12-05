@@ -2,23 +2,22 @@ package jmri.jmrix.nce;
 
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nonnull;
+
 import jmri.AddressedProgrammer;
 import jmri.NmraPacket;
 import jmri.ProgListener;
 import jmri.ProgrammerException;
 import jmri.ProgrammingMode;
-import jmri.managers.DefaultProgrammerManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Provide an Ops Mode Programmer via a wrapper what works with the NCE command
  * station object.
- * <P>
+ * <p>
  * Functionally, this just creates packets to send via the command station.
  *
  * @see jmri.Programmer
- * @author	Bob Jacobsen Copyright (C) 2002, 2014
+ * @author Bob Jacobsen Copyright (C) 2002, 2014
  * @author kcameron Copyright (C) 2014
  */
 public class NceOpsModeProgrammer extends NceProgrammer implements AddressedProgrammer {
@@ -31,13 +30,17 @@ public class NceOpsModeProgrammer extends NceProgrammer implements AddressedProg
         log.debug("NCE ops mode programmer " + pAddress + " " + pLongAddr);
         mAddress = pAddress;
         mLongAddr = pLongAddr;
-        setMode(DefaultProgrammerManager.OPSBYTEMODE);
+        setMode(ProgrammingMode.OPSBYTEMODE);
     }
 
-    /**
+    /** 
+     * {@inheritDoc}
+     *
      * Forward a write request to an ops-mode write operation
      */
-    public synchronized void writeCV(int CV, int val, ProgListener p) throws ProgrammerException {
+    @Override
+    public synchronized void writeCV(String CVname, int val, ProgListener p) throws ProgrammerException {
+        final int CV = Integer.parseInt(CVname);
         if (log.isDebugEnabled()) {
             log.debug("write CV=" + CV + " val=" + val);
         }
@@ -61,7 +64,7 @@ public class NceOpsModeProgrammer extends NceProgrammer implements AddressedProg
             if (contents == null) {
                 throw new ProgrammerException();
             }
-            msg = NceMessage.sendPacketMessage(tc, contents, 5);	// retry 5 times
+            msg = NceMessage.sendPacketMessage(tc, contents, 5); // retry 5 times
         }
         // record state. COMMANDSENT is just waiting for a reply...
         useProgrammer(p);
@@ -78,7 +81,12 @@ public class NceOpsModeProgrammer extends NceProgrammer implements AddressedProg
         tc.sendNceMessage(msg, this);
     }
 
-    public synchronized void readCV(int CV, ProgListener p) throws ProgrammerException {
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
+    public synchronized void readCV(String CVname, ProgListener p) throws ProgrammerException {
+        final int CV = Integer.parseInt(CVname);
         if (log.isDebugEnabled()) {
             log.debug("read CV=" + CV);
         }
@@ -86,6 +94,10 @@ public class NceOpsModeProgrammer extends NceProgrammer implements AddressedProg
         throw new ProgrammerException();
     }
 
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
     public synchronized void confirmCV(String CV, int val, ProgListener p) throws ProgrammerException {
         if (log.isDebugEnabled()) {
             log.debug("confirm CV={}", CV);
@@ -94,7 +106,12 @@ public class NceOpsModeProgrammer extends NceProgrammer implements AddressedProg
         throw new ProgrammerException();
     }
 
-    // add 200mSec between commands, so NCE command station queue doesn't get overrun
+    /** 
+     * {@inheritDoc}
+     *
+     *  add 200mSec between commands, so NCE command station queue doesn't get overrun
+     */
+    @Override
     protected void notifyProgListenerEnd(int value, int status) {
         if (log.isDebugEnabled()) {
             log.debug("NceOpsModeProgrammer adds 200mSec delay to response");
@@ -107,17 +124,22 @@ public class NceOpsModeProgrammer extends NceProgrammer implements AddressedProg
         super.notifyProgListenerEnd(value, status);
     }
 
-    /**
+    /** 
+     * {@inheritDoc}
+     *
      * Types implemented here.
      */
     @Override
+    @Nonnull
     public List<ProgrammingMode> getSupportedModes() {
         List<ProgrammingMode> ret = new ArrayList<ProgrammingMode>();
-        ret.add(DefaultProgrammerManager.OPSBYTEMODE);
+        ret.add(ProgrammingMode.OPSBYTEMODE);
         return ret;
     }
 
-    /**
+    /** 
+     * {@inheritDoc}
+     *
      * Can this ops-mode programmer read back values? For now, no, but maybe
      * later.
      *
@@ -128,28 +150,43 @@ public class NceOpsModeProgrammer extends NceProgrammer implements AddressedProg
         return false;
     }
 
-    /**
+    /** 
+     * {@inheritDoc}
+     *
      * Ops-mode programming doesn't put the command station in programming mode,
      * so we don't have to send an exit-programming command at end. Therefore,
      * this routine does nothing except to replace the parent routine that does
      * something.
      */
+    @Override
     void cleanup() {
     }
 
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
     public boolean getLongAddress() {
         return mLongAddr;
     }
 
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
     public int getAddressNumber() {
         return mAddress;
     }
 
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
     public String getAddress() {
         return "" + getAddressNumber() + " " + getLongAddress();
     }
 
     // initialize logging
-    private final static Logger log = LoggerFactory.getLogger(NceOpsModeProgrammer.class.getName());
+    private final static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(NceOpsModeProgrammer.class);
 
 }

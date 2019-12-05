@@ -2,16 +2,15 @@ package jmri.jmrit.operations.rollingstock.cars;
 
 import java.io.IOException;
 import java.util.List;
+import jmri.InstanceManager;
 import jmri.jmrit.operations.OperationsTestCase;
-import jmri.jmrit.operations.rollingstock.RollingStock;
-import org.junit.Assert;
-import junit.framework.Test;
-import junit.framework.TestSuite;
 import org.jdom2.JDOMException;
+import org.junit.Assert;
+import org.junit.Test;
 
 /**
- * Tests for the Operations RollingStock Cars XML class Last manually cross-checked
- * on 20090131
+ * Tests for the Operations RollingStock Cars XML class Last manually
+ * cross-checked on 20090131
  *
  * @author	Bob Coleman Copyright (C) 2008, 2009
  */
@@ -21,25 +20,26 @@ public class XmlTest extends OperationsTestCase {
      * Test Xml create and read support. Originally written as two separate
      * tests, now combined into one as of 8/29/2013.
      *
-     * @throws JDOMException
-     * @throws IOException
+     * @throws JDOMException exception
+     * @throws IOException exception
      */
+    @Test
     public void testXMLCreate() throws JDOMException, IOException {
 
         // confirm that file name has been modified for testing
-        Assert.assertEquals("OperationsJUnitTestCarRoster.xml", CarManagerXml.instance().getOperationsFileName());
-        
-        // confirm proper defaults
-        Assert.assertEquals("Default car empty", "E", CarLoads.instance().getDefaultEmptyName());
-        Assert.assertEquals("Default car load", "L", CarLoads.instance().getDefaultLoadName());
+        Assert.assertEquals("OperationsJUnitTestCarRoster.xml", InstanceManager.getDefault(CarManagerXml.class).getOperationsFileName());
 
-        CarManager manager = CarManager.instance();
-        List<RollingStock> tempcarList = manager.getByIdList();
+        // confirm proper defaults
+        Assert.assertEquals("Default car empty", "E", InstanceManager.getDefault(CarLoads.class).getDefaultEmptyName());
+        Assert.assertEquals("Default car load", "L", InstanceManager.getDefault(CarLoads.class).getDefaultLoadName());
+
+        CarManager manager = InstanceManager.getDefault(CarManager.class);
+        List<Car> tempcarList = manager.getByIdList();
 
         Assert.assertEquals("Starting Number of Cars", 0, tempcarList.size());
-        Car c1 = manager.newCar("CP", "Test Number 1");
-        Car c2 = manager.newCar("ACL", "Test Number 2");
-        Car c3 = manager.newCar("CP", "Test Number 3");
+        Car c1 = manager.newRS("CP", "Test Number 1");
+        Car c2 = manager.newRS("ACL", "Test Number 2");
+        Car c3 = manager.newRS("CP", "Test Number 3");
 
         // modify car attributes
         c1.setBuilt("5619");
@@ -102,13 +102,13 @@ public class XmlTest extends OperationsTestCase {
         tempcarList = manager.getByIdList();
         Assert.assertEquals("New Number of Cars", 3, tempcarList.size());
 
-        CarManagerXml.instance().writeOperationsFile();
+        InstanceManager.getDefault(CarManagerXml.class).writeOperationsFile();
 
         // Add some more cars and write file again
         // so we can test the backup facility
-        Car c4 = manager.newCar("PC", "Test Number 4");
-        Car c5 = manager.newCar("BM", "Test Number 5");
-        Car c6 = manager.newCar("SP", "Test Number 6");
+        Car c4 = manager.newRS("PC", "Test Number 4");
+        Car c5 = manager.newRS("BM", "Test Number 5");
+        Car c6 = manager.newRS("SP", "Test Number 6");
 
         Assert.assertNotNull("car c4 exists", c4);
         Assert.assertNotNull("car c5 exists", c5);
@@ -156,7 +156,7 @@ public class XmlTest extends OperationsTestCase {
         tempcarList = manager.getByIdList();
         Assert.assertEquals("New Number of Cars", 6, tempcarList.size());
 
-        CarManagerXml.instance().writeOperationsFile();
+        InstanceManager.getDefault(CarManagerXml.class).writeOperationsFile();
 //	}
 //
 //	/**
@@ -165,23 +165,24 @@ public class XmlTest extends OperationsTestCase {
 //	 * @throws IOException
 //	 */
 //	public void testXMLRead() throws JDOMException, IOException{
-//		CarManager manager = CarManager.instance();
+//		CarManager manager = InstanceManager.getDefault(CarManager.class);
         manager.dispose();
-        manager = CarManager.instance();
+        manager = InstanceManager.getDefault(CarManager.class);
         tempcarList = manager.getByIdList();
         Assert.assertEquals("Starting Number of Cars", 0, tempcarList.size());
 
-        CarManagerXml.instance().readFile(CarManagerXml.instance().getDefaultOperationsFilename());
+        InstanceManager.getDefault(CarManagerXml.class).readFile(InstanceManager.getDefault(CarManagerXml.class).getDefaultOperationsFilename());
 
         tempcarList = manager.getByIdList();
         Assert.assertEquals("Number of Cars", 6, tempcarList.size());
 
-        c1 = manager.getByRoadAndNumber("CP", "Test Number 1"); // must find car by original id
-        c2 = manager.getByRoadAndNumber("ACL", "Test Number 2"); // must find car by original id
-        c3 = manager.getByRoadAndNumber("CP", "Test Number 3"); // must find car by original id
-        c4 = manager.getByRoadAndNumber("PC", "Test Number 4"); // must find car by original id 
-        c5 = manager.getByRoadAndNumber("BM", "Test Number 5"); // must find car by original id
-        c6 = manager.getByRoadAndNumber("SP", "Test Number 6"); // must find car by original id
+        // verify cars can be gotten with current roads and numbers
+        c1 = manager.getByRoadAndNumber("newRoad", "New Test Number c1");
+        c2 = manager.getByRoadAndNumber("c2 Road", "X Test Number c2");
+        c3 = manager.getByRoadAndNumber("c3 Road", "X Test Number c3");
+        c4 = manager.getByRoadAndNumber("PC", "Test Number 4");
+        c5 = manager.getByRoadAndNumber("c5Road", "New Test Number c5");
+        c6 = manager.getByRoadAndNumber("SP", "Test Number 6");
 
         Assert.assertNotNull("car c1 exists", c1);
         Assert.assertNotNull("car c2 exists", c2);
@@ -293,24 +294,25 @@ public class XmlTest extends OperationsTestCase {
 
         // Now test back up file
         manager.dispose();
-        manager = CarManager.instance();
+        manager = InstanceManager.getDefault(CarManager.class);
         tempcarList = manager.getByIdList();
         Assert.assertEquals("Starting Number of Cars", 0, tempcarList.size());
 
         // change default file name to backup
-        CarManagerXml.instance().setOperationsFileName("OperationsJUnitTestCarRoster.xml.bak");
+        InstanceManager.getDefault(CarManagerXml.class).setOperationsFileName("OperationsJUnitTestCarRoster.xml.bak");
 
-        CarManagerXml.instance().readFile(CarManagerXml.instance().getDefaultOperationsFilename());
+        InstanceManager.getDefault(CarManagerXml.class).readFile(InstanceManager.getDefault(CarManagerXml.class).getDefaultOperationsFilename());
 
         tempcarList = manager.getByIdList();
         Assert.assertEquals("Number of Cars", 3, tempcarList.size());
 
-        c1 = manager.getByRoadAndNumber("CP", "Test Number 1"); // must find car by original id
-        c2 = manager.getByRoadAndNumber("ACL", "Test Number 2"); // must find car by original id
-        c3 = manager.getByRoadAndNumber("CP", "Test Number 3"); // must find car by original id
-        c4 = manager.getByRoadAndNumber("PC", "Test Number 4"); // must find car by original id 
-        c5 = manager.getByRoadAndNumber("BM", "Test Number 5"); // must find car by original id
-        c6 = manager.getByRoadAndNumber("SP", "Test Number 6"); // must find car by original id
+        // verify cars can be gotten with current roads and numbers
+        c1 = manager.getByRoadAndNumber("OLDRoad", "X Test Number c1");
+        c2 = manager.getByRoadAndNumber("c2 Road", "X Test Number c2");
+        c3 = manager.getByRoadAndNumber("c3 Road", "X Test Number c3");
+        c4 = manager.getByRoadAndNumber("PC", "Test Number 4");
+        c5 = manager.getByRoadAndNumber("c5Road", "New Test Number c5");
+        c6 = manager.getByRoadAndNumber("SP", "Test Number 6");
 
         Assert.assertNotNull("car c1 exists", c1);
         Assert.assertNotNull("car c2 exists", c2);
@@ -370,7 +372,7 @@ public class XmlTest extends OperationsTestCase {
         Assert.assertEquals("car c3 weight tons", "1798", c3.getWeightTons());
     }
 
-	// TODO: Add tests for location
+    // TODO: Add tests for location
     // TODO: Add tests for track location
     // TODO: Add tests for destination
     // TODO: Add tests for track destination
@@ -382,30 +384,4 @@ public class XmlTest extends OperationsTestCase {
     // TODO: Add test for import
     // TODO: Add test to create xml file
     // TODO: Add test to read xml file
-
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-    }
-
-    public XmlTest(String s) {
-        super(s);
-    }
-
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading", XmlTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(XmlTest.class);
-        return suite;
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-       super.tearDown();
-    }
 }

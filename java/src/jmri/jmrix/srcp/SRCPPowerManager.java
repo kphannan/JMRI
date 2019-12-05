@@ -2,6 +2,9 @@ package jmri.jmrix.srcp;
 
 import jmri.JmriException;
 import jmri.PowerManager;
+
+import java.beans.PropertyChangeListener;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,13 +18,6 @@ public class SRCPPowerManager implements PowerManager, SRCPListener {
     int _bus = 0;
     SRCPBusConnectionMemo _memo;
 
-    @Deprecated
-    public SRCPPowerManager() {
-        // connect to the TrafficManager
-        tc = SRCPTrafficController.instance();
-        tc.addSRCPListener(this);
-    }
-
     public SRCPPowerManager(SRCPBusConnectionMemo memo, int bus) {
         // connect to the TrafficManager
         _memo = memo;
@@ -30,6 +26,7 @@ public class SRCPPowerManager implements PowerManager, SRCPListener {
         _bus = bus;
     }
 
+    @Override
     public String getUserName() {
         return _memo.getUserName();
     }
@@ -39,6 +36,7 @@ public class SRCPPowerManager implements PowerManager, SRCPListener {
     boolean waiting = false;
     int onReply = UNKNOWN;
 
+    @Override
     public void setPower(int v) throws JmriException {
         power = UNKNOWN; // while waiting for reply
         checkTC();
@@ -61,11 +59,13 @@ public class SRCPPowerManager implements PowerManager, SRCPListener {
         firePropertyChange("Power", null, null);
     }
 
+    @Override
     public int getPower() {
         return power;
     }
 
     // to free resources when no longer used
+    @Override
     public void dispose() throws JmriException {
         tc.removeSRCPListener(this);
         tc = null;
@@ -80,6 +80,7 @@ public class SRCPPowerManager implements PowerManager, SRCPListener {
     // to hear of changes
     java.beans.PropertyChangeSupport pcs = new java.beans.PropertyChangeSupport(this);
 
+    @Override
     public synchronized void addPropertyChangeListener(java.beans.PropertyChangeListener l) {
         pcs.addPropertyChangeListener(l);
     }
@@ -88,13 +89,39 @@ public class SRCPPowerManager implements PowerManager, SRCPListener {
         pcs.firePropertyChange(p, old, n);
     }
 
+    @Override
     public synchronized void removePropertyChangeListener(java.beans.PropertyChangeListener l) {
         pcs.removePropertyChangeListener(l);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void addPropertyChangeListener(String propertyName, PropertyChangeListener listener) {
+        pcs.addPropertyChangeListener(propertyName, listener);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public PropertyChangeListener[] getPropertyChangeListeners() {
+        return pcs.getPropertyChangeListeners();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public PropertyChangeListener[] getPropertyChangeListeners(String propertyName) {
+        return pcs.getPropertyChangeListeners(propertyName);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void removePropertyChangeListener(String propertyName, PropertyChangeListener listener) {
+        pcs.removePropertyChangeListener(propertyName, listener);
     }
 
     SRCPTrafficController tc = null;
 
     // to listen for status changes from SRCP system
+    @Override
     public void reply(SRCPReply m) {
         if (waiting) {
             power = onReply;
@@ -104,6 +131,7 @@ public class SRCPPowerManager implements PowerManager, SRCPListener {
     }
 
     // to listen for status changes from SRCP system
+    @Override
     public void reply(jmri.jmrix.srcp.parser.SimpleNode n) {
         if (log.isDebugEnabled()) {
             log.debug("reply called with simpleNode " + n.jjtGetValue());
@@ -111,6 +139,7 @@ public class SRCPPowerManager implements PowerManager, SRCPListener {
         reply(new SRCPReply(n));
     }
 
+    @Override
     public void message(SRCPMessage m) {
         if (m.isKillMain()) {
             // configure to wait for reply
@@ -123,9 +152,9 @@ public class SRCPPowerManager implements PowerManager, SRCPListener {
         }
     }
 
-    private final static Logger log = LoggerFactory.getLogger(SRCPPowerManager.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(SRCPPowerManager.class);
 
 }
 
 
-/* @(#)SRCPPowerManager.java */
+

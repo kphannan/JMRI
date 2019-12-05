@@ -1,25 +1,23 @@
 package jmri.jmrix.roco.z21;
 
+import jmri.ProgrammingMode;
 import jmri.jmrix.lenz.XNetMessage;
 import jmri.jmrix.lenz.XNetProgrammer;
 import jmri.jmrix.lenz.XNetReply;
 import jmri.jmrix.lenz.XNetTrafficController;
-import jmri.managers.DefaultProgrammerManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * Programmer support for Lenz XpressNet.
- * <P>
+ * Z21 Programmer support for Lenz XpressNet.
+ * <p>
  * The read operation state sequence is:
- * <UL>
- * <LI>Send Register Mode / Paged mode /Direct Mode read request
- * <LI>Wait for Broadcast Service Mode Entry message
- * <LI>Send Request for Service Mode Results request
- * <LI>Wait for results reply, interpret
- * <LI>Send Resume Operations request
- * <LI>Wait for Normal Operations Resumed broadcast
- * </UL>
+ * <ul>
+ * <li>Send Register Mode / Paged mode /Direct Mode read request
+ * <li>Wait for Broadcast Service Mode Entry message
+ * <li>Send Request for Service Mode Results request
+ * <li>Wait for results reply, interpret
+ * <li>Send Resume Operations request
+ * <li>Wait for Normal Operations Resumed broadcast
+ * </ul>
  *
  * @author Paul Bender Copyright (c) 2014
  */
@@ -32,7 +30,9 @@ public class Z21XNetProgrammer extends XNetProgrammer {
                 this);
     }
 
-    /**
+    /** 
+     * {@inheritDoc}
+     *
      * Can we read from a specific CV in the specified mode? Answer may not be
      * correct if the command station type and version sent by the command
      * station mimics one of the known command stations.
@@ -51,14 +51,16 @@ public class Z21XNetProgrammer extends XNetProgrammer {
             return false;
         }
 
-        if (getMode().equals(DefaultProgrammerManager.DIRECTBITMODE) || getMode().equals(DefaultProgrammerManager.DIRECTBYTEMODE)) {
+        if (getMode().equals(ProgrammingMode.DIRECTBITMODE) || getMode().equals(ProgrammingMode.DIRECTBYTEMODE)) {
             return true; // z21 allows us to specify the CV in 16 bits.
         } else {
             return Integer.parseInt(addr) <= 256;
         }
     }
 
-    /**
+    /** 
+     * {@inheritDoc}
+     *
      * Can we write to a specific CV in the specified mode? Answer may not be
      * correct if the command station type and version sent by the command
      * station mimics one of the known command stations.
@@ -67,22 +69,26 @@ public class Z21XNetProgrammer extends XNetProgrammer {
     public boolean getCanWrite(String addr) {
         if (log.isDebugEnabled()) {
             log.debug("check CV " + addr);
+            log.debug("cs Type: " + controller().getCommandStation().getCommandStationType() + " CS Version: " + controller().getCommandStation().getCommandStationSoftwareVersion());
         }
-        log.error("cs Type: " + controller().getCommandStation().getCommandStationType() + " CS Version: " + controller().getCommandStation().getCommandStationSoftwareVersion());
         if (!getCanWrite()) {
             return false; // check basic implementation first
         }
-        if (getMode().equals(DefaultProgrammerManager.DIRECTBITMODE) || getMode().equals(DefaultProgrammerManager.DIRECTBYTEMODE)) {
+        if (getMode().equals(ProgrammingMode.DIRECTBITMODE) || getMode().equals(ProgrammingMode.DIRECTBYTEMODE)) {
             return true; // z21 allows us to specify the CV in 16 bits.
         } else {
             return Integer.parseInt(addr) <= 256;
         }
     }
 
-    // programming interface
-    synchronized public void writeCV(int CV, int val, jmri.ProgListener p) throws jmri.ProgrammerException {
-        if (getMode().equals(DefaultProgrammerManager.DIRECTBITMODE)
-                || getMode().equals(DefaultProgrammerManager.DIRECTBYTEMODE)) {
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
+    synchronized public void writeCV(String CVname, int val, jmri.ProgListener p) throws jmri.ProgrammerException {
+        final int CV = Integer.parseInt(CVname);
+        if (getMode().equals(ProgrammingMode.DIRECTBITMODE)
+                || getMode().equals(ProgrammingMode.DIRECTBYTEMODE)) {
             if (log.isDebugEnabled()) {
                 log.debug("writeCV " + CV + " listens " + p);
             }
@@ -96,16 +102,21 @@ public class Z21XNetProgrammer extends XNetProgrammer {
             // start the error timer
             restartTimer(XNetProgrammerTimeout);
 
-            XNetMessage msg = Z21XNetMessage.getWriteDirectCVMsg(CV, val);
+            XNetMessage msg = Z21XNetMessage.getZ21WriteDirectCVMsg(CV, val);
             controller().sendXNetMessage(msg, this);
         } else {
-            super.writeCV(CV, val, p);
+            super.writeCV(CVname, val, p);
         }
     }
 
-    synchronized public void readCV(int CV, jmri.ProgListener p) throws jmri.ProgrammerException {
-        if (getMode().equals(DefaultProgrammerManager.DIRECTBITMODE)
-                || getMode().equals(DefaultProgrammerManager.DIRECTBYTEMODE)) {
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
+    synchronized public void readCV(String CVname, jmri.ProgListener p) throws jmri.ProgrammerException {
+        final int CV = Integer.parseInt(CVname);
+        if (getMode().equals(ProgrammingMode.DIRECTBITMODE)
+                || getMode().equals(ProgrammingMode.DIRECTBYTEMODE)) {
             if (log.isDebugEnabled()) {
                 log.debug("readCV " + CV + " listens " + p);
             }
@@ -119,14 +130,18 @@ public class Z21XNetProgrammer extends XNetProgrammer {
             restartTimer(XNetProgrammerTimeout);
 
             // format and send message to go to program mode
-            XNetMessage msg = Z21XNetMessage.getReadDirectCVMsg(CV);
+            XNetMessage msg = Z21XNetMessage.getZ21ReadDirectCVMsg(CV);
             controller().sendXNetMessage(msg, this);
         } else {
-            super.readCV(CV, p);
+            super.readCV(CVname, p);
         }
 
     }
 
+    /** 
+     * {@inheritDoc}
+     */
+    @Override
     synchronized public void message(XNetReply m) {
         if (progState == NOTPROGRAMMING) {
             // we get the complete set of replies now, so ignore these
@@ -164,6 +179,6 @@ public class Z21XNetProgrammer extends XNetProgrammer {
         }
     }
 
-    private final static Logger log = LoggerFactory.getLogger(Z21XNetProgrammer.class.getName());
+    private final static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(Z21XNetProgrammer.class);
 
 }

@@ -1,8 +1,10 @@
-// SpeedoSystemConnectionMemo.java
 package jmri.jmrix.bachrus;
 
+import java.util.Comparator;
 import java.util.ResourceBundle;
 import jmri.InstanceManager;
+import jmri.NamedBean;
+import jmri.util.NamedBeanComparator;
 
 /**
  * Lightweight class to denote that a system is active, and provide general
@@ -11,8 +13,7 @@ import jmri.InstanceManager;
  * Objects of specific subtypes are registered in the instance manager to
  * activate their particular system.
  *
- * @author	Bob Jacobsen Copyright (C) 2010
- * @version $Revision$
+ * @author Bob Jacobsen Copyright (C) 2010
  */
 public class SpeedoSystemConnectionMemo extends jmri.jmrix.SystemConnectionMemo {
 
@@ -36,7 +37,7 @@ public class SpeedoSystemConnectionMemo extends jmri.jmrix.SystemConnectionMemo 
     jmri.jmrix.swing.ComponentFactory cf = null;
 
     /**
-     * Provides access to the TrafficController for this particular connection.
+     * Provide access to the TrafficController for this particular connection.
      */
     public SpeedoTrafficController getTrafficController() {
         return tc;
@@ -53,14 +54,21 @@ public class SpeedoSystemConnectionMemo extends jmri.jmrix.SystemConnectionMemo 
      * be referenced from classes that don't inherit.
      */
     public void configureManagers() {
-        //None to configure
+        // None to configure
     }
 
+    @Override
     protected ResourceBundle getActionModelResourceBundle() {
-        //No Actions at start up to return
+        // No Actions at start up to return
         return null;
     }
 
+    @Override
+    public <B extends NamedBean> Comparator<B> getNamedBeanComparator(Class<B> type) {
+        return new NamedBeanComparator<>();
+    }
+
+    @Override
     public void dispose() {
         tc = null;
         InstanceManager.deregister(this, SpeedoSystemConnectionMemo.class);
@@ -69,7 +77,5 @@ public class SpeedoSystemConnectionMemo extends jmri.jmrix.SystemConnectionMemo 
         }
         super.dispose();
     }
+
 }
-
-
-/* @(#)InternalSystemConnectionMemo.java */

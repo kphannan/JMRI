@@ -6,12 +6,11 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Provides load and store functionality for configuring EcosReporterManagers.
- * <P>
+ * <p>
  * Uses the store method from the abstract base class, but provides a load
  * method here.
  *
  * @author Kevin Dickerson Copyright: Copyright (c) 2012
- * @version $Revision: 17977 $
  */
 public class EcosReporterManagerXml extends jmri.managers.configurexml.AbstractReporterManagerConfigXML {
 
@@ -19,10 +18,12 @@ public class EcosReporterManagerXml extends jmri.managers.configurexml.AbstractR
         super();
     }
 
+    @Override
     public void setStoreElementClass(Element reporters) {
         reporters.setAttribute("class", "jmri.jmrix.ecos.configurexml.EcosReporterManagerXml");
     }
 
+    @Override
     public void load(Element element, Object o) {
         log.error("Invalid method called");
     }
@@ -33,6 +34,6 @@ public class EcosReporterManagerXml extends jmri.managers.configurexml.AbstractR
         return loadReporters(shared);
     }
 
-    private final static Logger log = LoggerFactory.getLogger(EcosReporterManagerXml.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(EcosReporterManagerXml.class);
 
 }

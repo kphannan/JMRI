@@ -1,5 +1,6 @@
 package jmri.jmrix.zimo;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import jmri.DccLocoAddress;
 import jmri.LocoAddress;
 import jmri.jmrix.AbstractThrottle;
@@ -8,7 +9,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * An implementation of DccThrottle with code specific to an Mx1 connection.
- * <P>
+ * <p>
  * Based on Glen Oberhauser's original LnThrottleManager implementation
  *
  * @author	Bob Jacobsen Copyright (C) 2001
@@ -19,12 +20,15 @@ public class Mx1Throttle extends AbstractThrottle implements Mx1Listener {
     //private Mx1Interface network;
 
     /**
-     * Constructor.
+     * Create a new throttle.
+     *
+     * @param memo    the system connection the throttle is associated with
+     * @param address the address for the throttle
      */
     public Mx1Throttle(Mx1SystemConnectionMemo memo, DccLocoAddress address) {
         super(memo);
         this.tc = memo.getMx1TrafficController();
-        super.speedStepMode = SpeedStepMode128;
+        super.speedStepMode = jmri.SpeedStepMode.NMRA_DCC_128;
 
         // cache settings. It would be better to read the
         // actual state, but I don't know how to do this
@@ -75,10 +79,12 @@ public class Mx1Throttle extends AbstractThrottle implements Mx1Listener {
     int addressLo = 0x00;
     int addressHi = 0x00;
 
+    @Override
     public LocoAddress getLocoAddress() {
         return address;
     }
 
+    @Override
     protected void sendFunctionGroup1() {
         sendSpeedCmd();
         /*int data = 0x00 |
@@ -89,7 +95,7 @@ public class Mx1Throttle extends AbstractThrottle implements Mx1Listener {
          ( f4 ? 0x08 : 0);
         
          data = data + 0x80;*/
-        /*Mx1Message m = Mx1Message.getSendFunction(1, addressLo, addressHi, data);
+ /*Mx1Message m = Mx1Message.getSendFunction(1, addressLo, addressHi, data);
          if(m!=null)
          tc.sendMx1Message(m);*/
     }
@@ -97,6 +103,7 @@ public class Mx1Throttle extends AbstractThrottle implements Mx1Listener {
     /**
      * Send the message to set the state of functions F5, F6, F7, F8.
      */
+    @Override
     protected void sendFunctionGroup2() {
         sendSpeedCmd();
         // Always need speed command before function group command to reset consist pointer
@@ -143,7 +150,6 @@ public class Mx1Throttle extends AbstractThrottle implements Mx1Listener {
         /*Mx1Message m = Mx1Message.getSendFunction(4, addressLo, addressHi, data);
          if(m!=null)
          tc.sendMx1Message(m);*/
-
 //         data = 0x00
 //                 | (f20 ? 0x08 : 0)
 //                 | (f19 ? 0x04 : 0)
@@ -159,6 +165,7 @@ public class Mx1Throttle extends AbstractThrottle implements Mx1Listener {
     /**
      * Send the message to set the state of functions F21 to F28. MRC Group 6
      */
+    @Override
     protected void sendFunctionGroup5() {
         /* int data = 0x00 |
          (f28 ? 0x80 : 0) |
@@ -170,24 +177,24 @@ public class Mx1Throttle extends AbstractThrottle implements Mx1Listener {
          (f22 ? 0x02 : 0) |
          (f21 ? 0x01 : 0); */
 
-        /*Mx1Message m = Mx1Message.getSendFunction(6, addressLo, addressHi, data);
+ /*Mx1Message m = Mx1Message.getSendFunction(6, addressLo, addressHi, data);
          if(m!=null)
          tc.sendMx1Message(m);   */
     }
 
     /**
      * Set the speed {@literal &} direction.
-     * <P>
      *
      * @param speed Number from 0 to 1; less than zero is emergency stop
      */
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "FE_FLOATING_POINT_EQUALITY") // OK to compare floating point, notify on any change
+    @SuppressFBWarnings(value = "FE_FLOATING_POINT_EQUALITY") // OK to compare floating point, notify on any change
+    @Override
     public void setSpeedSetting(float speed) {
         float oldSpeed = this.speedSetting;
         this.speedSetting = speed;
         sendSpeedCmd();
         if (oldSpeed != this.speedSetting) {
-            notifyPropertyChangeListener("SpeedSetting", oldSpeed, this.speedSetting); //IN18N
+            notifyPropertyChangeListener(SPEEDSETTING, oldSpeed, this.speedSetting); //IN18N
         }
         record(speed);
     }
@@ -197,7 +204,7 @@ public class Mx1Throttle extends AbstractThrottle implements Mx1Listener {
         int value = 0;
         int cData1 = (isForward ? 0x20 : 0x00);
         cData1 = cData1 + (f0 ? 0x10 : 0x00);
-        if (super.speedStepMode == SpeedStepMode128) {
+        if (super.speedStepMode == jmri.SpeedStepMode.NMRA_DCC_128) {
             //m = Mx1Message.getSendSpeed128(addressLo, addressHi, value);
             value = (int) ((127 - 1) * speedSetting);     // -1 for rescale to avoid estop
             if (value > 0) {
@@ -211,7 +218,7 @@ public class Mx1Throttle extends AbstractThrottle implements Mx1Listener {
             }
             value = (value & 0x7F);
             cData1 = cData1 + 0xc;
-        } else if (super.speedStepMode == SpeedStepMode28) {
+        } else if (super.speedStepMode == jmri.SpeedStepMode.NMRA_DCC_28) {
             value = (int) ((28) * speedSetting); // -1 for rescale to avoid estop
             if (value > 0) {
                 value = value + 3; // skip estop
@@ -258,25 +265,28 @@ public class Mx1Throttle extends AbstractThrottle implements Mx1Listener {
         return data;
     }
 
+    @Override
     public void setIsForward(boolean forward) {
         boolean old = isForward;
         isForward = forward;
         setSpeedSetting(speedSetting);  // send the command
         log.debug("setIsForward= {}", forward);
         if (old != isForward) {
-            notifyPropertyChangeListener("IsForward", old, isForward); //IN18N
+            notifyPropertyChangeListener(ISFORWARD, old, isForward); //IN18N
         }
     }
 
+    @Override
     protected void throttleDispose() {
         finishRecord();
     }
 
+    @Override
     public void message(Mx1Message m) {
 
     }
 
     // initialize logging
-    private final static Logger log = LoggerFactory.getLogger(Mx1Throttle.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(Mx1Throttle.class);
 
 }

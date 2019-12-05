@@ -10,7 +10,9 @@ import jmri.util.swing.WindowInterface;
 /**
  *
  * @author rhwood
+ * @deprecated since 4.17.5 use @link{jmri.swing.AboutAction} instead.
  */
+@Deprecated
 public class AboutAction extends JmriAbstractAction {
 
     public AboutAction(String s, WindowInterface wi) {
@@ -35,5 +37,5 @@ public class AboutAction extends JmriAbstractAction {
     public JmriPanel makePanel() {
         throw new IllegalArgumentException("Should not be invoked");
     }
-    //private static final Logger log = LoggerFactory.getLogger(AboutAction.class.getName());
+    //private static final Logger log = LoggerFactory.getLogger(AboutAction.class);
 }

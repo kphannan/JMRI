@@ -1,4 +1,3 @@
-// Transmitter.java
 package jmri.jmrix.rps;
 
 import jmri.DccThrottle;
@@ -6,29 +5,28 @@ import jmri.InstanceManager;
 import jmri.ThrottleListener;
 
 /**
- * Represents a RPS transmitter, generally a locomotive.
+ * Represents an RPS transmitter, generally a locomotive.
  * <p>
  * The "ID" is used to identify this transmitter in RPS. The "rosterName" is the
  * name (ID) of the roster entry this was originally created from.
  *
  * @author	Bob Jacobsen Copyright (C) 2006, 2008
- * @version $Revision$
  */
 public class Transmitter implements ThrottleListener {
 
     Transmitter(String id, boolean polled, int address, boolean longAddress) {
-        setID(id);
+        setId(id);
         setPolled(polled);
         setAddress(address);
         setLongAddress(longAddress);
     }
 
-    public String getID() {
+    public String getId() {
         return id;
     }
     String id;
 
-    public void setID(String id) {
+    public void setId(String id) {
         this.id = id;
     }
 
@@ -94,15 +92,38 @@ public class Transmitter implements ThrottleListener {
             return false;
         }
         // request throttle
-        InstanceManager.throttleManagerInstance().requestThrottle(address, longAddress, this);
+        InstanceManager.throttleManagerInstance().requestThrottle(
+            new jmri.DccLocoAddress(address, longAddress), this, false);
         return false;
     }
 
+    @Override
     public void notifyThrottleFound(DccThrottle t) {
         needReqThrottle = false;
         throttle = t;
     }
 
-    public void notifyFailedThrottleRequest(jmri.DccLocoAddress address, String reason) {
+    @Override
+    public void notifyFailedThrottleRequest(jmri.LocoAddress address, String reason) {
     }
+    
+    /**
+     * {@inheritDoc}
+     * @deprecated since 4.15.7; use #notifyDecisionRequired
+     */
+    @Override
+    @Deprecated
+    public void notifyStealThrottleRequired(jmri.LocoAddress address) {
+        InstanceManager.throttleManagerInstance().responseThrottleDecision(address, this, DecisionType.STEAL );
+    }
+
+    /**
+     * No steal or share decisions made locally
+     * <p>
+     * {@inheritDoc}
+     */
+    @Override
+    public void notifyDecisionRequired(jmri.LocoAddress address, DecisionType question) {
+    }
+
 }

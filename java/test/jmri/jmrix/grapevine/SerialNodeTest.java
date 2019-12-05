@@ -2,10 +2,12 @@ package jmri.jmrix.grapevine;
 
 import jmri.Sensor;
 import jmri.jmrix.AbstractMRMessage;
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import jmri.util.JUnitUtil;
+import org.junit.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Assert;
 
 /**
  * JUnit tests for the SerialNode class
@@ -13,28 +15,35 @@ import junit.framework.TestSuite;
  * @author	Bob Jacobsen Copyright 2003, 2007, 2008
  * @author	Dave Duchamp multi-node extensions 2003
  */
-@SuppressWarnings("null")
-public class SerialNodeTest extends TestCase {
+public class SerialNodeTest {
 
+    private GrapevineSystemConnectionMemo memo = null;
+    private SerialTrafficControlScaffold tcis = null;
+
+    @Test
     public void testConstructor1() {
-        SerialNode b = new SerialNode();
+        SerialNode b = new SerialNode(tcis);
         Assert.assertEquals("check default ctor type", SerialNode.NODE2002V6, b.getNodeType());
         Assert.assertEquals("check default ctor address", 1, b.getNodeAddress());
     }
 
+    @Test
     public void testConstructor2() {
-        SerialNode c = new SerialNode(3, SerialNode.NODE2002V1);
+        SerialNode c = new SerialNode(3, SerialNode.NODE2002V1, tcis);
         Assert.assertEquals("check ctor type", SerialNode.NODE2002V1, c.getNodeType());
         Assert.assertEquals("check ctor address", 3, c.getNodeAddress());
     }
 
+    @Test
     public void testAccessors() {
-        SerialNode n = new SerialNode(2, SerialNode.NODE2002V1);
+        SerialNode n = new SerialNode(2, SerialNode.NODE2002V1, tcis);
         n.setNodeAddress(7);
         Assert.assertEquals("check ctor type", SerialNode.NODE2002V1, n.getNodeType());
         Assert.assertEquals("check address", 7, n.getNodeAddress());
     }
 
+    @Test
+    @Ignore("Disabled in JUnit 3")
     public void testInitialization1() {
         // comment these out, because they cause a later timeout (since
         // the init message is actually queued in the createInitPacket() method)
@@ -43,9 +52,10 @@ public class SerialNodeTest extends TestCase {
         // Assert.assertEquals("initpacket", "81 71 81 0F", m.toString() );
     }
 
+    @Test
     public void testOutputBits1() {
         // mode with several output bits set
-        SerialNode g = new SerialNode(5, SerialNode.NODE2002V6);
+        SerialNode g = new SerialNode(5, SerialNode.NODE2002V6, tcis);
         Assert.assertTrue("must Send", g.mustSend());
         g.resetMustSend();
         Assert.assertTrue("must Send off", !(g.mustSend()));
@@ -66,10 +76,11 @@ public class SerialNodeTest extends TestCase {
         Assert.assertEquals("packet type", 17, m.getElement(1));  // 'T'        
     }
 
+    @Test
     public void testMarkChangesRealData1() {
         // parallel format
 
-        SerialNode b = new SerialNode(98, SerialNode.NODE2002V6);
+        SerialNode b = new SerialNode(98, SerialNode.NODE2002V6, tcis);
 
         jmri.SensorManager sm = jmri.InstanceManager.sensorManagerInstance();
         Sensor s1 = sm.provideSensor("GS98001");
@@ -97,10 +108,11 @@ public class SerialNodeTest extends TestCase {
         Assert.assertEquals("check s3", Sensor.INACTIVE, s3.getKnownState());
     }
 
+    @Test
     public void testMarkChangesRealData1Alt() {
         // parallel format
 
-        SerialNode b = new SerialNode(96, SerialNode.NODE2002V6);
+        SerialNode b = new SerialNode(96, SerialNode.NODE2002V6, tcis);
 
         jmri.SensorManager sm = jmri.InstanceManager.sensorManagerInstance();
         Sensor s1 = sm.provideSensor("GS96p1");
@@ -128,11 +140,12 @@ public class SerialNodeTest extends TestCase {
         Assert.assertEquals("check s3", Sensor.INACTIVE, s3.getKnownState());
     }
 
+    @Test
     public void testMarkChangesSerialSlave1() {
         // advanced serial format, 1st slave card, 
         // sensors 1109 to 1116 adn 1209 to 1216
 
-        SerialNode b = new SerialNode(1, SerialNode.NODE2002V6);
+        SerialNode b = new SerialNode(1, SerialNode.NODE2002V6, tcis);
 
         jmri.SensorManager sm = jmri.InstanceManager.sensorManagerInstance();
         Sensor s1 = sm.provideSensor("GS1109");
@@ -173,10 +186,11 @@ public class SerialNodeTest extends TestCase {
         Assert.assertEquals("check s3", Sensor.UNKNOWN, s3.getKnownState());
     }
 
+    @Test
     public void testMarkChangesNewSerial1() {
         // advanced serial format
 
-        SerialNode b = new SerialNode(1, SerialNode.NODE2002V6);
+        SerialNode b = new SerialNode(1, SerialNode.NODE2002V6, tcis);
 
         jmri.SensorManager sm = jmri.InstanceManager.sensorManagerInstance();
         Sensor s1 = sm.provideSensor("GS1101");
@@ -217,10 +231,11 @@ public class SerialNodeTest extends TestCase {
         Assert.assertEquals("check s3", Sensor.UNKNOWN, s3.getKnownState());
     }
 
+    @Test
     public void testMarkChangesNewSerial1Alt() {
         // advanced serial format
 
-        SerialNode b = new SerialNode(1, SerialNode.NODE2002V6);
+        SerialNode b = new SerialNode(1, SerialNode.NODE2002V6, tcis);
 
         jmri.SensorManager sm = jmri.InstanceManager.sensorManagerInstance();
         Sensor s1 = sm.provideSensor("GS1a1");
@@ -261,10 +276,11 @@ public class SerialNodeTest extends TestCase {
         Assert.assertEquals("check s3", Sensor.UNKNOWN, s3.getKnownState());
     }
 
+    @Test
     public void testMarkChangesOldSerial1() {
         // old serial format
 
-        SerialNode b = new SerialNode(1, SerialNode.NODE2002V6);
+        SerialNode b = new SerialNode(1, SerialNode.NODE2002V6, tcis);
 
         jmri.SensorManager sm = jmri.InstanceManager.sensorManagerInstance();
         Sensor s1 = sm.provideSensor("GS1021");
@@ -330,10 +346,11 @@ public class SerialNodeTest extends TestCase {
         Assert.assertEquals("4 check s8", Sensor.ACTIVE, s8.getKnownState());
     }
 
+    @Test
     public void testMarkChangesOldSerial1Alt() {
         // old serial format
 
-        SerialNode b = new SerialNode(1, SerialNode.NODE2002V6);
+        SerialNode b = new SerialNode(1, SerialNode.NODE2002V6, tcis);
 
         jmri.SensorManager sm = jmri.InstanceManager.sensorManagerInstance();
         Sensor s1 = sm.provideSensor("GS1s1");
@@ -399,9 +416,10 @@ public class SerialNodeTest extends TestCase {
         Assert.assertEquals("4 check s8", Sensor.ACTIVE, s8.getKnownState());
     }
 
+    @Test
     public void testMarkChangesParallelLowBankLowNibble() {
         // test with them not created
-        SerialNode b = new SerialNode(1, SerialNode.NODE2002V6);
+        SerialNode b = new SerialNode(1, SerialNode.NODE2002V6, tcis);
 
         Sensor s1, s2, s3, s4, s5, s6, s7, s8;
         jmri.SensorManager sm = jmri.InstanceManager.sensorManagerInstance();
@@ -416,21 +434,21 @@ public class SerialNodeTest extends TestCase {
 
         // created first four only
         s1 = sm.getSensor("GS1001");
-        Assert.assertTrue("s1 exists", s1 != null);
+        Assert.assertNotNull("s1 exists", s1);
         s2 = sm.getSensor("GS1002");
-        Assert.assertTrue("s2 exists", s2 != null);
+        Assert.assertNotNull("s2 exists", s2);
         s3 = sm.getSensor("GS1003");
-        Assert.assertTrue("s3 exists", s3 != null);
+        Assert.assertNotNull("s3 exists", s3);
         s4 = sm.getSensor("GS1004");
-        Assert.assertTrue("s4 exists", s4 != null);
+        Assert.assertNotNull("s4 exists", s4);
         s5 = sm.getSensor("GS1005");
-        Assert.assertTrue("s5 not exist", s5 == null);
+        Assert.assertNull("s5 not exist", s5);
         s6 = sm.getSensor("GS1006");
-        Assert.assertTrue("s6 not exist", s6 == null);
+        Assert.assertNull("s6 not exist", s6);
         s7 = sm.getSensor("GS1007");
-        Assert.assertTrue("s7 not exist", s7 == null);
+        Assert.assertNull("s7 not exist", s7);
         s8 = sm.getSensor("GS1008");
-        Assert.assertTrue("s8 not exist", s8 == null);
+        Assert.assertNull("s8 not exist", s8);
 
         Assert.assertEquals("2 check s1", Sensor.INACTIVE, s1.getKnownState());
         Assert.assertEquals("2 check s2", Sensor.INACTIVE, s2.getKnownState());
@@ -444,13 +462,13 @@ public class SerialNodeTest extends TestCase {
         b.markChanges(r);
         // create first four only
         s5 = sm.getSensor("GS1005");
-        Assert.assertTrue("s5 not exist", s5 == null);
+        Assert.assertNull("s5 not exist", s5);
         s6 = sm.getSensor("GS1006");
-        Assert.assertTrue("s6 not exist", s6 == null);
+        Assert.assertNull("s6 not exist", s6);
         s7 = sm.getSensor("GS1007");
-        Assert.assertTrue("s7 not exist", s7 == null);
+        Assert.assertNull("s7 not exist", s7);
         s8 = sm.getSensor("GS1008");
-        Assert.assertTrue("s8 not exist", s8 == null);
+        Assert.assertNull("s8 not exist", s8);
 
         Assert.assertEquals("3 check s1", Sensor.ACTIVE, s1.getKnownState());
         Assert.assertEquals("3 check s2", Sensor.ACTIVE, s2.getKnownState());
@@ -465,13 +483,13 @@ public class SerialNodeTest extends TestCase {
 
         // create next four
         s5 = sm.getSensor("GS1005");
-        Assert.assertTrue("s5 exists", s5 != null);
+        Assert.assertNotNull("s5 exists", s5);
         s6 = sm.getSensor("GS1006");
-        Assert.assertTrue("s6 exists", s6 != null);
+        Assert.assertNotNull("s6 exists", s6);
         s7 = sm.getSensor("GS1007");
-        Assert.assertTrue("s7 exists", s7 != null);
+        Assert.assertNotNull("s7 exists", s7);
         s8 = sm.getSensor("GS1008");
-        Assert.assertTrue("s8 exists", s8 != null);
+        Assert.assertNotNull("s8 exists", s8);
 
         Assert.assertEquals("4 check s1", Sensor.ACTIVE, s1.getKnownState());
         Assert.assertEquals("4 check s2", Sensor.ACTIVE, s2.getKnownState());
@@ -483,9 +501,10 @@ public class SerialNodeTest extends TestCase {
         Assert.assertEquals("4 check s8", Sensor.ACTIVE, s8.getKnownState());
     }
 
+    @Test
     public void testMarkChangesParallelLowBankLowNibbleAlt() {
         // test with them not created
-        SerialNode b = new SerialNode(1, SerialNode.NODE2002V6);
+        SerialNode b = new SerialNode(1, SerialNode.NODE2002V6, tcis);
 
         Sensor s1, s2, s3, s4, s5, s6, s7, s8;
         jmri.SensorManager sm = jmri.InstanceManager.sensorManagerInstance();
@@ -499,22 +518,22 @@ public class SerialNodeTest extends TestCase {
         b.markChanges(r);
 
         // created first four only
-        s1 = sm.getSensor("GS1p1");
-        Assert.assertTrue("s1 exists", s1 != null);
-        s2 = sm.getSensor("GS1p2");
-        Assert.assertTrue("s2 exists", s2 != null);
-        s3 = sm.getSensor("GS1p3");
-        Assert.assertTrue("s3 exists", s3 != null);
-        s4 = sm.getSensor("GS1p4");
-        Assert.assertTrue("s4 exists", s4 != null);
-        s5 = sm.getSensor("GS1p5");
-        Assert.assertTrue("s5 not exist", s5 == null);
-        s6 = sm.getSensor("GS1p6");
-        Assert.assertTrue("s6 not exist", s6 == null);
-        s7 = sm.getSensor("GS1p7");
-        Assert.assertTrue("s7 not exist", s7 == null);
-        s8 = sm.getSensor("GS1p8");
-        Assert.assertTrue("s8 not exist", s8 == null);
+        s1 = sm.getSensor("GS1001");
+        Assert.assertNotNull("s1 exists", s1);
+        s2 = sm.getSensor("GS1002");
+        Assert.assertNotNull("s2 exists", s2);
+        s3 = sm.getSensor("GS1003");
+        Assert.assertNotNull("s3 exists", s3);
+        s4 = sm.getSensor("GS1004");
+        Assert.assertNotNull("s4 exists", s4);
+        s5 = sm.getSensor("GS1005");
+        Assert.assertNull("s5 not exist", s5);
+        s6 = sm.getSensor("GS1006");
+        Assert.assertNull("s6 not exist", s6);
+        s7 = sm.getSensor("GS1007");
+        Assert.assertNull("s7 not exist", s7);
+        s8 = sm.getSensor("GS1008");
+        Assert.assertNull("s8 not exist", s8);
 
         Assert.assertEquals("2 check s1", Sensor.INACTIVE, s1.getKnownState());
         Assert.assertEquals("2 check s2", Sensor.INACTIVE, s2.getKnownState());
@@ -527,14 +546,14 @@ public class SerialNodeTest extends TestCase {
         r.setElement(3, 0x50);
         b.markChanges(r);
         // create first four only
-        s5 = sm.getSensor("GS1p5");
-        Assert.assertTrue("s5 not exist", s5 == null);
-        s6 = sm.getSensor("GS1p6");
-        Assert.assertTrue("s6 not exist", s6 == null);
-        s7 = sm.getSensor("GS1p7");
-        Assert.assertTrue("s7 not exist", s7 == null);
-        s8 = sm.getSensor("GS1p8");
-        Assert.assertTrue("s8 not exist", s8 == null);
+        s5 = sm.getSensor("GS1005");
+        Assert.assertNull("s5 not exist", s5);
+        s6 = sm.getSensor("GS1006");
+        Assert.assertNull("s6 not exist", s6);
+        s7 = sm.getSensor("GS1007");
+        Assert.assertNull("s7 not exist", s7);
+        s8 = sm.getSensor("GS1008");
+        Assert.assertNull("s8 not exist", s8);
 
         Assert.assertEquals("3 check s1", Sensor.ACTIVE, s1.getKnownState());
         Assert.assertEquals("3 check s2", Sensor.ACTIVE, s2.getKnownState());
@@ -549,13 +568,13 @@ public class SerialNodeTest extends TestCase {
 
         // create next four
         s5 = sm.getSensor("GS1005");
-        Assert.assertTrue("s5 exists", s5 != null);
+        Assert.assertNotNull("s5 exists", s5);
         s6 = sm.getSensor("GS1006");
-        Assert.assertTrue("s6 exists", s6 != null);
+        Assert.assertNotNull("s6 exists", s6);
         s7 = sm.getSensor("GS1007");
-        Assert.assertTrue("s7 exists", s7 != null);
+        Assert.assertNotNull("s7 exists", s7);
         s8 = sm.getSensor("GS1008");
-        Assert.assertTrue("s8 exists", s8 != null);
+        Assert.assertNotNull("s8 exists", s8);
 
         Assert.assertEquals("4 check s1", Sensor.ACTIVE, s1.getKnownState());
         Assert.assertEquals("4 check s2", Sensor.ACTIVE, s2.getKnownState());
@@ -567,9 +586,10 @@ public class SerialNodeTest extends TestCase {
         Assert.assertEquals("4 check s8", Sensor.ACTIVE, s8.getKnownState());
     }
 
+    @Test
     public void testMarkChangesParallelLowBankHighNibble() {
         // test with them not created
-        SerialNode b = new SerialNode(1, SerialNode.NODE2002V6);
+        SerialNode b = new SerialNode(1, SerialNode.NODE2002V6, tcis);
 
         Sensor s1, s2, s3, s4, s5, s6, s7, s8;
         jmri.SensorManager sm = jmri.InstanceManager.sensorManagerInstance();
@@ -584,21 +604,21 @@ public class SerialNodeTest extends TestCase {
 
         // create correct nibble only
         s1 = sm.getSensor("GS1005");
-        Assert.assertTrue("s1 exists", s1 != null);
+        Assert.assertNotNull("s1 exists", s1);
         s2 = sm.getSensor("GS1006");
-        Assert.assertTrue("s2 exists", s2 != null);
+        Assert.assertNotNull("s2 exists", s2);
         s3 = sm.getSensor("GS1007");
-        Assert.assertTrue("s3 exists", s3 != null);
+        Assert.assertNotNull("s3 exists", s3);
         s4 = sm.getSensor("GS1008");
-        Assert.assertTrue("s4 exists", s4 != null);
+        Assert.assertNotNull("s4 exists", s4);
         s5 = sm.getSensor("GS1001");
-        Assert.assertTrue("s5 not exist", s5 == null);
+        Assert.assertNull("s5 not exist", s5);
         s6 = sm.getSensor("GS1002");
-        Assert.assertTrue("s6 not exist", s6 == null);
+        Assert.assertNull("s6 not exist", s6);
         s7 = sm.getSensor("GS1003");
-        Assert.assertTrue("s7 not exist", s7 == null);
+        Assert.assertNull("s7 not exist", s7);
         s8 = sm.getSensor("GS1004");
-        Assert.assertTrue("s8 not exist", s8 == null);
+        Assert.assertNull("s8 not exist", s8);
 
         Assert.assertEquals("2 check s1", Sensor.INACTIVE, s1.getKnownState());
         Assert.assertEquals("2 check s2", Sensor.INACTIVE, s2.getKnownState());
@@ -613,13 +633,13 @@ public class SerialNodeTest extends TestCase {
 
         // create correct nibble only
         s5 = sm.getSensor("GS1001");
-        Assert.assertTrue("s5 not exist", s5 == null);
+        Assert.assertNull("s5 not exist", s5);
         s6 = sm.getSensor("GS1002");
-        Assert.assertTrue("s6 not exist", s6 == null);
+        Assert.assertNull("s6 not exist", s6);
         s7 = sm.getSensor("GS1003");
-        Assert.assertTrue("s7 not exist", s7 == null);
+        Assert.assertNull("s7 not exist", s7);
         s8 = sm.getSensor("GS1004");
-        Assert.assertTrue("s8 not exist", s8 == null);
+        Assert.assertNull("s8 not exist", s8);
 
         Assert.assertEquals("3 check s1", Sensor.ACTIVE, s1.getKnownState());
         Assert.assertEquals("3 check s2", Sensor.ACTIVE, s2.getKnownState());
@@ -634,13 +654,13 @@ public class SerialNodeTest extends TestCase {
 
         // create other nibble
         s5 = sm.getSensor("GS1001");
-        Assert.assertTrue("s5 exist", s5 != null);
+        Assert.assertNotNull("s5 exist", s5);
         s6 = sm.getSensor("GS1002");
-        Assert.assertTrue("s6 exist", s6 != null);
+        Assert.assertNotNull("s6 exist", s6);
         s7 = sm.getSensor("GS1003");
-        Assert.assertTrue("s7 exist", s7 != null);
+        Assert.assertNotNull("s7 exist", s7);
         s8 = sm.getSensor("GS1004");
-        Assert.assertTrue("s8 exist", s8 != null);
+        Assert.assertNotNull("s8 exist", s8);
 
         Assert.assertEquals("4 check s1", Sensor.ACTIVE, s1.getKnownState());
         Assert.assertEquals("4 check s2", Sensor.ACTIVE, s2.getKnownState());
@@ -652,9 +672,10 @@ public class SerialNodeTest extends TestCase {
         Assert.assertEquals("4 check s8", Sensor.ACTIVE, s8.getKnownState());
     }
 
+    @Test
     public void testMarkChangesParallelHighBankLowNibble() {
         // test with them not created
-        SerialNode b = new SerialNode(1, SerialNode.NODE2002V6);
+        SerialNode b = new SerialNode(1, SerialNode.NODE2002V6, tcis);
 
         Sensor s1, s2, s3, s4, s5, s6, s7, s8;
         jmri.SensorManager sm = jmri.InstanceManager.sensorManagerInstance();
@@ -669,21 +690,21 @@ public class SerialNodeTest extends TestCase {
 
         // created first four only
         s1 = sm.getSensor("GS1009");
-        Assert.assertTrue("s1 exists", s1 != null);
+        Assert.assertNotNull("s1 exists", s1);
         s2 = sm.getSensor("GS1010");
-        Assert.assertTrue("s2 exists", s2 != null);
+        Assert.assertNotNull("s2 exists", s2);
         s3 = sm.getSensor("GS1011");
-        Assert.assertTrue("s3 exists", s3 != null);
+        Assert.assertNotNull("s3 exists", s3);
         s4 = sm.getSensor("GS1012");
-        Assert.assertTrue("s4 exists", s4 != null);
+        Assert.assertNotNull("s4 exists", s4);
         s5 = sm.getSensor("GS1013");
-        Assert.assertTrue("s5 not exist", s5 == null);
+        Assert.assertNull("s5 not exist", s5);
         s6 = sm.getSensor("GS1014");
-        Assert.assertTrue("s6 not exist", s6 == null);
+        Assert.assertNull("s6 not exist", s6);
         s7 = sm.getSensor("GS1015");
-        Assert.assertTrue("s7 not exist", s7 == null);
+        Assert.assertNull("s7 not exist", s7);
         s8 = sm.getSensor("GS1016");
-        Assert.assertTrue("s8 not exist", s8 == null);
+        Assert.assertNull("s8 not exist", s8);
 
         Assert.assertEquals("2 check s1", Sensor.INACTIVE, s1.getKnownState());
         Assert.assertEquals("2 check s2", Sensor.INACTIVE, s2.getKnownState());
@@ -697,13 +718,13 @@ public class SerialNodeTest extends TestCase {
         b.markChanges(r);
         // create first four only
         s5 = sm.getSensor("GS1013");
-        Assert.assertTrue("s5 not exist", s5 == null);
+        Assert.assertNull("s5 not exist", s5);
         s6 = sm.getSensor("GS1014");
-        Assert.assertTrue("s6 not exist", s6 == null);
+        Assert.assertNull("s6 not exist", s6);
         s7 = sm.getSensor("GS1015");
-        Assert.assertTrue("s7 not exist", s7 == null);
+        Assert.assertNull("s7 not exist", s7);
         s8 = sm.getSensor("GS1016");
-        Assert.assertTrue("s8 not exist", s8 == null);
+        Assert.assertNull("s8 not exist", s8);
 
         Assert.assertEquals("3 check s1", Sensor.ACTIVE, s1.getKnownState());
         Assert.assertEquals("3 check s2", Sensor.ACTIVE, s2.getKnownState());
@@ -718,13 +739,13 @@ public class SerialNodeTest extends TestCase {
 
         // create next four
         s5 = sm.getSensor("GS1013");
-        Assert.assertTrue("s5 exist", s5 != null);
+        Assert.assertNotNull("s5 exist", s5);
         s6 = sm.getSensor("GS1014");
-        Assert.assertTrue("s6 exist", s6 != null);
+        Assert.assertNotNull("s6 exist", s6);
         s7 = sm.getSensor("GS1015");
-        Assert.assertTrue("s7 exist", s7 != null);
+        Assert.assertNotNull("s7 exist", s7);
         s8 = sm.getSensor("GS1016");
-        Assert.assertTrue("s8 exist", s8 != null);
+        Assert.assertNotNull("s8 exist", s8);
 
         Assert.assertEquals("4 check s1", Sensor.ACTIVE, s1.getKnownState());
         Assert.assertEquals("4 check s2", Sensor.ACTIVE, s2.getKnownState());
@@ -736,9 +757,10 @@ public class SerialNodeTest extends TestCase {
         Assert.assertEquals("4 check s8", Sensor.ACTIVE, s8.getKnownState());
     }
 
+    @Test
     public void testMarkChangesParallelHighBankHighNibble() {
         // test with them not created
-        SerialNode b = new SerialNode(1, SerialNode.NODE2002V6);
+        SerialNode b = new SerialNode(1, SerialNode.NODE2002V6, tcis);
 
         Sensor s1, s2, s3, s4, s5, s6, s7, s8;
         jmri.SensorManager sm = jmri.InstanceManager.sensorManagerInstance();
@@ -753,21 +775,21 @@ public class SerialNodeTest extends TestCase {
 
         // create correct nibble only
         s1 = sm.getSensor("GS1013");
-        Assert.assertTrue("s1 exists", s1 != null);
+        Assert.assertNotNull("s1 exists", s1);
         s2 = sm.getSensor("GS1014");
-        Assert.assertTrue("s2 exists", s2 != null);
+        Assert.assertNotNull("s2 exists", s2);
         s3 = sm.getSensor("GS1015");
-        Assert.assertTrue("s3 exists", s3 != null);
+        Assert.assertNotNull("s3 exists", s3);
         s4 = sm.getSensor("GS1016");
-        Assert.assertTrue("s4 exists", s4 != null);
+        Assert.assertNotNull("s4 exists", s4);
         s5 = sm.getSensor("GS1009");
-        Assert.assertTrue("s5 not exist", s5 == null);
+        Assert.assertNull("s5 not exist", s5);
         s6 = sm.getSensor("GS1010");
-        Assert.assertTrue("s6 not exist", s6 == null);
+        Assert.assertNull("s6 not exist", s6);
         s7 = sm.getSensor("GS1011");
-        Assert.assertTrue("s7 not exist", s7 == null);
+        Assert.assertNull("s7 not exist", s7);
         s8 = sm.getSensor("GS1012");
-        Assert.assertTrue("s8 not exist", s8 == null);
+        Assert.assertNull("s8 not exist", s8);
 
         Assert.assertEquals("2 check s1", Sensor.INACTIVE, s1.getKnownState());
         Assert.assertEquals("2 check s2", Sensor.INACTIVE, s2.getKnownState());
@@ -782,13 +804,13 @@ public class SerialNodeTest extends TestCase {
 
         // create correct nibble only
         s5 = sm.getSensor("GS1009");
-        Assert.assertTrue("s5 not exist", s5 == null);
+        Assert.assertNull("s5 not exist", s5);
         s6 = sm.getSensor("GS1010");
-        Assert.assertTrue("s6 not exist", s6 == null);
+        Assert.assertNull("s6 not exist", s6);
         s7 = sm.getSensor("GS1011");
-        Assert.assertTrue("s7 not exist", s7 == null);
+        Assert.assertNull("s7 not exist", s7);
         s8 = sm.getSensor("GS1012");
-        Assert.assertTrue("s8 not exist", s8 == null);
+        Assert.assertNull("s8 not exist", s8);
 
         Assert.assertEquals("3 check s1", Sensor.ACTIVE, s1.getKnownState());
         Assert.assertEquals("3 check s2", Sensor.ACTIVE, s2.getKnownState());
@@ -803,13 +825,13 @@ public class SerialNodeTest extends TestCase {
 
         // create other nibble
         s5 = sm.getSensor("GS1009");
-        Assert.assertTrue("s5 exist", s5 != null);
+        Assert.assertNotNull("s5 exist", s5);
         s6 = sm.getSensor("GS1010");
-        Assert.assertTrue("s6 exist", s6 != null);
+        Assert.assertNotNull("s6 exist", s6);
         s7 = sm.getSensor("GS1011");
-        Assert.assertTrue("s7 exist", s7 != null);
+        Assert.assertNotNull("s7 exist", s7);
         s8 = sm.getSensor("GS1012");
-        Assert.assertTrue("s8 exist", s8 != null);
+        Assert.assertNotNull("s8 exist", s8);
 
         Assert.assertEquals("4 check s1", Sensor.ACTIVE, s1.getKnownState());
         Assert.assertEquals("4 check s2", Sensor.ACTIVE, s2.getKnownState());
@@ -821,9 +843,10 @@ public class SerialNodeTest extends TestCase {
         Assert.assertEquals("4 check s8", Sensor.ACTIVE, s8.getKnownState());
     }
 
+    @Test
     public void testMarkChangesParallelCreated() {
         // test the low bank with them already created
-        SerialNode b = new SerialNode(1, SerialNode.NODE2002V6);
+        SerialNode b = new SerialNode(1, SerialNode.NODE2002V6, tcis);
 
         jmri.SensorManager sm = jmri.InstanceManager.sensorManagerInstance();
         Sensor s1 = sm.provideSensor("GS1001");
@@ -889,38 +912,26 @@ public class SerialNodeTest extends TestCase {
         Assert.assertEquals("4 check s8", Sensor.ACTIVE, s8.getKnownState());
     }
 
-    // from here down is testing infrastructure
-    public SerialNodeTest(String s) {
-        super(s);
-    }
-
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading", SerialNodeTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(SerialNodeTest.class);
-        return suite;
-    }
-
-    // The minimal setup for log4J
-    protected void setUp() {
-        apps.tests.Log4JFixture.setUp();
-
-        jmri.util.JUnitUtil.resetInstanceManager();
+    @Before
+    public void setUp() {
+        JUnitUtil.setUp();
 
         // replace the traffic manager
-        SerialTrafficControlScaffold tcis = new SerialTrafficControlScaffold();
+        memo = new GrapevineSystemConnectionMemo();
+        tcis = new SerialTrafficControlScaffold(memo);
+        memo.setTrafficController(tcis);
         // install a grapevine sensor manager
-        jmri.InstanceManager.setSensorManager(new jmri.jmrix.grapevine.SerialSensorManager());
+        jmri.InstanceManager.setSensorManager(new jmri.jmrix.grapevine.SerialSensorManager(memo));
         Assert.assertNotNull("exists", tcis);
     }
 
-    protected void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
+    // reset objects
+    @After
+    public void tearDown() {
+        tcis.terminateThreads();
+        tcis = null;
+        memo = null;
+        JUnitUtil.tearDown();
     }
 
 }

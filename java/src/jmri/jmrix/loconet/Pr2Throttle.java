@@ -1,8 +1,9 @@
 package jmri.jmrix.loconet;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import jmri.DccLocoAddress;
-import jmri.DccThrottle;
 import jmri.LocoAddress;
+import jmri.SpeedStepMode;
 import jmri.jmrix.AbstractThrottle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,30 +11,34 @@ import org.slf4j.LoggerFactory;
 /**
  * An implementation of DccThrottle via AbstractThrottle with code specific to a
  * PR2 connection.
- * <P>
+ * <p>
  * Speed in the Throttle interfaces and AbstractThrottle is a float, but in
  * LocoNet is an int with values from 0 to 127.
- * <P>
+ *
  * @author Bob Jacobsen Copyright (C) 2006
- * @version $Revision$
  */
 public class Pr2Throttle extends AbstractThrottle {
 
-    private int addr;
+    private final int addr;
     DccLocoAddress address;
 
     /**
      * Constructor
+     * @param memo a LocoNetSystemConnectionMemo to associate with this throttle
+     * @param address a DccLocoAddress to associate with this throttle
      */
     public Pr2Throttle(LocoNetSystemConnectionMemo memo, DccLocoAddress address) {
         super(memo);
         this.address = address;
         addr = address.getNumber();
-        this.speedIncrement = 1;  // 128 step mode only
+        setSpeedStepMode(SpeedStepMode.NMRA_DCC_28);
     }
 
     /**
-     * Convert a LocoNet speed integer to a float speed value
+     * Convert a LocoNet speed integer to a float speed value.
+     *
+     * @param lSpeed loconet speed value
+     * @return speed as float 0-&gt;1.0
      */
     protected float floatSpeed(int lSpeed) {
         if (lSpeed == 0) {
@@ -41,13 +46,13 @@ public class Pr2Throttle extends AbstractThrottle {
         } else if (lSpeed == 1) {
             return -1.f;   // estop
         }
-        if (getSpeedStepMode() == DccThrottle.SpeedStepMode28) {
+        if (getSpeedStepMode() == SpeedStepMode.NMRA_DCC_28) {
             if (lSpeed <= 15) //Value less than 15 is in the stop/estop range bracket
             {
                 return 0.f;
             }
             return (((lSpeed - 12) / 4f) / 28.f);
-        } else if (getSpeedStepMode() == DccThrottle.SpeedStepMode14) {
+        } else if (getSpeedStepMode() == SpeedStepMode.NMRA_DCC_14) {
             if (lSpeed <= 15) //Value less than 15 is in the stop/estop range bracket
             {
                 return 0.f;
@@ -58,20 +63,31 @@ public class Pr2Throttle extends AbstractThrottle {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * This implementation does not support 128 speed steps.
+     */
     @Override
+    // This is a specific implementation for the PR2 that seems to 
+    // return different values from the super class.  Not sure whether
+    // that's required by the hardware or not.  If so, please edit this comment
+    // to confirm.  If not, this should use the superclass implementation after
+    // checking for available modes.
     protected int intSpeed(float fSpeed) {
-        int speed = super.intSpeed(fSpeed);
-        if (speed <= 0) {
-            return speed; // return idle and emergency stop
-        }
+        if (fSpeed< 0.) return 1;  // what the parent class does
         switch (this.getSpeedStepMode()) {
-            case DccThrottle.SpeedStepMode28:
-            case DccThrottle.SpeedStepMode28Mot:
+            case NMRA_DCC_28:
+            case MOTOROLA_28:
                 return (int) ((fSpeed * 28) * 4) + 12;
-            case DccThrottle.SpeedStepMode14:
+            case NMRA_DCC_14:
                 return (int) ((fSpeed * 14) * 8) + 8;
+                
+            default:
+                // includes the 128 case
+                log.warn("Unhandled speed step mode: {}", this.getSpeedStepMode());
+                return super.intSpeed(fSpeed);
         }
-        return speed;
     }
 
     public void writeData() {
@@ -136,7 +152,7 @@ public class Pr2Throttle extends AbstractThrottle {
         }
 
         LocoNetMessage l = new LocoNetMessage(21);
-        l.setOpCode(LnConstants.OPC_WR_SL_DATA_EXP);
+        l.setOpCode(LnConstants.OPC_EXP_WR_SL_DATA);
         int i = 1;
         l.setElement(i++, 21);      // length
         l.setElement(i++, 0);       // EXP_MAST
@@ -154,13 +170,13 @@ public class Pr2Throttle extends AbstractThrottle {
         // rest are zero
 
         ((LocoNetSystemConnectionMemo) adapterMemo).getLnTrafficController().sendLocoNetMessage(l);
-        //LnTrafficController.instance().sendLocoNetMessage(l);
     }
 
     /**
      * Send the LocoNet message to set the state of locomotive direction and
      * functions F0, F1, F2, F3, F4. Invoked by AbstractThrottle when needed.
      */
+    @Override
     protected void sendFunctionGroup1() {
         writeData();
     }
@@ -169,22 +185,28 @@ public class Pr2Throttle extends AbstractThrottle {
      * Send the LocoNet message to set the state of functions F5, F6, F7, F8.
      * Invoked by AbstractThrottle when needed.
      */
+    @Override
     protected void sendFunctionGroup2() {
         writeData();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     protected void sendFunctionGroup3() {
         writeData();
     }
 
     /**
      * Set the speed.
-     * <P>
+     * <p>
      * This intentionally skips the emergency stop value of 1.
      *
      * @param speed Number from 0 to 1; less than zero is emergency stop
      */
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "FE_FLOATING_POINT_EQUALITY") // OK to compare floating point, notify on any change
+    @SuppressFBWarnings(value = "FE_FLOATING_POINT_EQUALITY") // OK to compare floating point, notify on any change
+    @Override
     public void setSpeedSetting(float speed) {
         float oldSpeed = this.speedSetting;
         this.speedSetting = speed;
@@ -194,7 +216,7 @@ public class Pr2Throttle extends AbstractThrottle {
 
         writeData();
         if (oldSpeed != this.speedSetting) {
-            notifyPropertyChangeListener("SpeedSetting", oldSpeed, this.speedSetting);
+            notifyPropertyChangeListener(SPEEDSETTING, oldSpeed, this.speedSetting); // NOI18N
         }
         record(speed);
     }
@@ -203,51 +225,41 @@ public class Pr2Throttle extends AbstractThrottle {
      * LocoNet actually puts forward and backward in the same message as the
      * first function group.
      */
+    @Override
     public void setIsForward(boolean forward) {
         boolean old = isForward;
         isForward = forward;
         sendFunctionGroup1();
         if (old != isForward) {
-            notifyPropertyChangeListener("IsForward", old, isForward);
+            notifyPropertyChangeListener(ISFORWARD, old, isForward); // NOI18N
         }
     }
 
     /**
-     * Release the loco from this throttle, then clean up the object.
+     * {@inheritDoc}
      */
-    public void release() {
-        dispose();
-    }
-
-    /**
-     * Dispatch the loco from this throttle, then clean up the object.
-     */
-    public void dispatch() {
-        dispose();
-    }
-
+    @Override
     public String toString() {
         return getLocoAddress().toString();
     }
 
     /**
-     * Dispose when finished with this object. After this, further usage of this
-     * Throttle object will result in a JmriException.
+     * {@inheritDoc}
      */
-    public void dispose() {
-        log.debug("dispose");
-        super.dispose();
-    }
-
+    @Override
     public LocoAddress getLocoAddress() {
         return address;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     protected void throttleDispose() {
         finishRecord();
     }
 
     // initialize logging
-    private final static Logger log = LoggerFactory.getLogger(Pr2Throttle.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(Pr2Throttle.class);
 
 }

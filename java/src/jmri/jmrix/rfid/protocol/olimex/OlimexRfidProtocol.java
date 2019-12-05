@@ -10,15 +10,14 @@ import org.slf4j.LoggerFactory;
  * implementations that use the Olimex protocol.
  * <hr>
  * This file is part of JMRI.
- * <P>
+ * <p>
  * JMRI is free software; you can redistribute it and/or modify it under the
  * terms of version 2 of the GNU General Public License as published by the Free
  * Software Foundation. See the "COPYING" file for a copy of this license.
- * <P>
+ * <p>
  * JMRI is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
  * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- * <P>
  *
  * @author Matthew Harris Copyright (C) 2014
  * @since 3.9.2
@@ -34,7 +33,7 @@ public class OlimexRfidProtocol extends RfidProtocol {
     @Override
     public String initString() {
         // Continuous scanning, single report per seen tag
-        return "mc00";
+        return "mc00"; // NOI18N
     }
 
     @Override
@@ -71,7 +70,7 @@ public class OlimexRfidProtocol extends RfidProtocol {
                 return true;
             }
             if (log.isDebugEnabled()) {
-                log.debug("Not a correctly formed message");
+                log.debug("Not a correctly formed message"); // NOI18N
             }
             return true;
         }
@@ -96,6 +95,6 @@ public class OlimexRfidProtocol extends RfidProtocol {
         }
     }
 
-    private static final Logger log = LoggerFactory.getLogger(OlimexRfidProtocol.class.getName());
+    private static final Logger log = LoggerFactory.getLogger(OlimexRfidProtocol.class);
 
 }

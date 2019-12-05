@@ -3,6 +3,7 @@ package jmri.jmrit;
 import java.awt.Font;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.awt.event.KeyListener;
 import java.util.ResourceBundle;
 import javax.swing.BoxLayout;
 import javax.swing.JComboBox;
@@ -20,7 +21,7 @@ import org.slf4j.LoggerFactory;
  * This is made more complex because we want it to appear easier. Some DCC
  * systems allow addresses like 112 to be either long (extended) or short;
  * others default to one or the other.
- * <P>
+ * <p>
  * When locked (the default), the short/long selection is forced to stay in
  * synch with what's available from the current ThrottleManager. If unlocked,
  * this can differ if it's been explicity specified via the GUI (e.g. you can
@@ -37,7 +38,7 @@ public class DccLocoAddressSelector extends JPanel {
 
     public DccLocoAddressSelector() {
         super();
-        if ((InstanceManager.getOptionalDefault(jmri.ThrottleManager.class) != null)
+        if ((InstanceManager.getNullableDefault(jmri.ThrottleManager.class) != null)
                 && !InstanceManager.throttleManagerInstance().addressTypeUnique()) {
             configureBox(InstanceManager.throttleManagerInstance().getAddressTypes());
         } else {
@@ -77,7 +78,7 @@ public class DccLocoAddressSelector extends JPanel {
 
     /*
      * Get the currently selected DCC address.
-     * <P>
+     * <p>
      * This is the primary output of this class.
      * @return DccLocoAddress object containing GUI choices, or null if no entries in GUI
      */
@@ -89,7 +90,7 @@ public class DccLocoAddressSelector extends JPanel {
 
         // ask the Throttle Manager to handle this!
         LocoAddress.Protocol protocol;
-        if (InstanceManager.getOptionalDefault(jmri.ThrottleManager.class) != null) {
+        if (InstanceManager.getNullableDefault(jmri.ThrottleManager.class) != null) {
             protocol = InstanceManager.throttleManagerInstance().getProtocolFromString((String) box.getSelectedItem());
             return (DccLocoAddress) InstanceManager.throttleManagerInstance().getAddress(text.getText(), protocol);
         }
@@ -109,7 +110,7 @@ public class DccLocoAddressSelector extends JPanel {
                 box.setSelectedItem(jmri.LocoAddress.Protocol.OPENLCB.getPeopleName());
             } else {
                 text.setText("" + a.getNumber());
-                if (InstanceManager.getOptionalDefault(jmri.ThrottleManager.class) != null) {
+                if (InstanceManager.getNullableDefault(jmri.ThrottleManager.class) != null) {
                     box.setSelectedItem(InstanceManager.throttleManagerInstance().getAddressTypeString(a.getProtocol()));
                 } else {
                     box.setSelectedItem(a.getProtocol().getPeopleName());
@@ -132,8 +133,7 @@ public class DccLocoAddressSelector extends JPanel {
     }
 
     /* Get a JPanel containing the combined selector.
-     *
-     * <P>
+     * <p>
      * Because Swing only allows a component to be inserted in one
      * container, this can only be done once
      */
@@ -160,13 +160,14 @@ public class DccLocoAddressSelector extends JPanel {
         p.setLayout(new BoxLayout(p, BoxLayout.X_AXIS));
         p.add(text);
         if (!locked
-                || ((InstanceManager.getOptionalDefault(jmri.ThrottleManager.class) != null)
+                || ((InstanceManager.getNullableDefault(jmri.ThrottleManager.class) != null)
                 && !InstanceManager.throttleManagerInstance().addressTypeUnique())) {
             p.add(box);
         }
 
         p.addComponentListener(
                 new ComponentAdapter() {
+                    @Override
                     public void componentResized(ComponentEvent e) {
                         changeFontSizes();
                     }
@@ -217,6 +218,7 @@ public class DccLocoAddressSelector extends JPanel {
      * Provide a common setEnable call for the GUI components in the
      * selector
      */
+    @Override
     public void setEnabled(boolean e) {
         text.setEditable(e);
         text.setEnabled(e);
@@ -242,7 +244,7 @@ public class DccLocoAddressSelector extends JPanel {
     /*
      * Get the text field for entering the number as a separate
      * component.  
-     * <P>
+     * <p>
      * Because Swing only allows a component to be inserted in one
      * container, this can only be done once
      */
@@ -274,7 +276,17 @@ public class DccLocoAddressSelector extends JPanel {
         return box;
     }
 
+    /*
+     * Override the addKeyListener method in JPanel so that we can set the
+     * text box as the object listening for keystrokes
+     */
+    @Override
+    public void addKeyListener(KeyListener l){
+       super.addKeyListener(l);
+       text.addKeyListener(l);
+    }
+
     final static ResourceBundle rb = ResourceBundle.getBundle("jmri.jmrit.DccLocoAddressSelectorBundle");
 
-    private final static Logger log = LoggerFactory.getLogger(DccLocoAddressSelector.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(DccLocoAddressSelector.class);
 }

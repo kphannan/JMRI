@@ -10,20 +10,19 @@ package jmri.jmrit.vsdecoder;
 /*
  * <hr>
  * This file is part of JMRI.
- * <P>
+ * <p>
  * JMRI is free software; you can redistribute it and/or modify it under 
  * the terms of version 2 of the GNU General Public License as published 
  * by the Free Software Foundation. See the "COPYING" file for a copy
  * of this license.
- * <P>
+ * <p>
  * JMRI is distributed in the hope that it will be useful, but WITHOUT 
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License 
  * for more details.
- * <P>
  *
- * @author			Mark Underwood Copyright (C) 2011
- * @version			$Revision: 21510 $
+ * @author   Mark Underwood Copyright (C) 2011
+ * 
  */
 import jmri.DccLocoAddress;
 import jmri.LocoAddress;
@@ -53,7 +52,7 @@ public class VSDConfig {
         roster = null;
     }
 
-    public String getID() {
+    public String getId() {
         return (my_id);
     }
 
@@ -85,7 +84,7 @@ public class VSDConfig {
         return (roster);
     }
 
-    public void setID(String id) {
+    public void setId(String id) {
         my_id = id;
     }
 
@@ -113,6 +112,7 @@ public class VSDConfig {
         roster = r;
     }
 
+    @Override
     public String toString() {
         return ("Config: ID:" + my_id
                 + " Path:" + vsd_path

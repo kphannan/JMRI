@@ -7,12 +7,13 @@ import jmri.SignalHead;
 import jmri.Turnout;
 import jmri.implementation.QuadOutputSignalHead;
 import org.jdom2.Element;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Handle XML configuration for QuadOutputSignalHead objects.
  *
  * @author Bob Jacobsen Copyright: Copyright (c) 2009
- * @version $Revision$
  */
 public class QuadOutputSignalHeadXml extends TripleTurnoutSignalHeadXml {
 
@@ -20,19 +21,18 @@ public class QuadOutputSignalHeadXml extends TripleTurnoutSignalHeadXml {
     }
 
     /**
-     * Default implementation for storing the contents of a QuadOutputSignalHead
+     * Default implementation for storing the contents of a QuadOutputSignalHead.
      *
      * @param o Object to store, of type TripleTurnoutSignalHead
      * @return Element containing the complete info
      */
+    @Override
     public Element store(Object o) {
         QuadOutputSignalHead p = (QuadOutputSignalHead) o;
 
         Element element = new Element("signalhead");
         element.setAttribute("class", this.getClass().getName());
 
-        // include contents
-        element.setAttribute("systemName", p.getSystemName());
         element.addContent(new Element("systemName").addContent(p.getSystemName()));
 
         storeCommon(p, element);
@@ -68,7 +68,19 @@ public class QuadOutputSignalHeadXml extends TripleTurnoutSignalHeadXml {
 
         loadCommon(h, shared);
 
-        InstanceManager.getDefault(jmri.SignalHeadManager.class).register(h);
+        SignalHead existingBean =
+                InstanceManager.getDefault(jmri.SignalHeadManager.class)
+                        .getBeanBySystemName(sys);
+
+        if ((existingBean != null) && (existingBean != h)) {
+            log.error("systemName is already registered: {}", sys);
+        } else {
+            InstanceManager.getDefault(jmri.SignalHeadManager.class).register(h);
+        }
+
         return true;
     }
+
+    private final static Logger log = LoggerFactory.getLogger(QuadOutputSignalHeadXml.class);
+
 }

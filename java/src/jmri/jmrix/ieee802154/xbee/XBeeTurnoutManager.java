@@ -1,7 +1,8 @@
-// XBeeTurnoutManager.java
 package jmri.jmrix.ieee802154.xbee;
 
+import java.util.Locale;
 import jmri.JmriException;
+import jmri.NamedBean;
 import jmri.Turnout;
 import jmri.managers.AbstractTurnoutManager;
 import org.slf4j.Logger;
@@ -9,32 +10,34 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Implement turnout manager for XBee connections
- * <p>
  *
  * @author Paul Bender Copyright (C) 2014
- * @version $Revision$
  */
 public class XBeeTurnoutManager extends AbstractTurnoutManager {
 
-    protected String prefix = null;
-
     protected XBeeTrafficController tc = null;
 
-    public XBeeTurnoutManager(XBeeTrafficController controller, String prefix) {
-        tc = controller;
-        this.prefix = prefix;
+    public XBeeTurnoutManager(XBeeConnectionMemo memo) {
+        super(memo);
+        tc = (XBeeTrafficController) memo.getTrafficController();
     }
 
-    public String getSystemPrefix() {
-        return prefix;
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public XBeeConnectionMemo getMemo() {
+        return (XBeeConnectionMemo) memo;
     }
 
-    // for now, set this to false. multiple additions currently works 
+    // for now, set this to false. Multiple additions currently works
     // partially, but not for all possible cases.
+    @Override
     public boolean allowMultipleAdditions(String systemName) {
         return false;
     }
 
+    @Override
     public Turnout createNewTurnout(String systemName, String userName) {
         XBeeNode curNode = null;
         String name = addressFromSystemName(systemName);
@@ -71,29 +74,50 @@ public class XBeeTurnoutManager extends AbstractTurnoutManager {
     public String createSystemName(String curAddress, String prefix) throws JmriException {
         return prefix + typeLetter() + curAddress;
     }
-
+    
     /**
-     * Validate system name for the current hardware configuration returns
-     * 'true' if system name has a valid meaning in current configuration, else
-     * returns 'false'
+     * {@inheritDoc}
      */
-    public boolean validSystemNameFormat(String systemName) {
+    @Override
+    public String validateSystemNameFormat(String name, Locale locale) {
+        super.validateSystemNameFormat(name, locale);
+        int pin = pinFromSystemName(name);
+        int pin2 = pin2FromSystemName(name);
+        if (pin < 0 || pin > 7) {
+            throw new NamedBean.BadSystemNameException(
+                    Bundle.getMessage(Locale.ENGLISH, "SystemNameInvalidPin", name),
+                    Bundle.getMessage(locale, "SystemNameInvalidPin", name));
+        }
+        if (pin2 != -1 && (pin2 < 0 || pin2 > 7)) {
+            throw new NamedBean.BadSystemNameException(
+                    Bundle.getMessage(Locale.ENGLISH, "SystemNameInvalidPin", name),
+                    Bundle.getMessage(locale, "SystemNameInvalidPin", name));
+        }
+        return name;
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public NameValidity validSystemNameFormat(String systemName) {
         if (tc.getNodeFromName(addressFromSystemName(systemName)) == null
                 && tc.getNodeFromAddress(addressFromSystemName(systemName)) == null) {
             try {
                 if (tc.getNodeFromAddress(Integer.parseInt(addressFromSystemName(systemName))) == null) {
-                    return false;
+                    return NameValidity.INVALID;
                 } else {
                     return (pinFromSystemName(systemName) >= 0
                             && pinFromSystemName(systemName) <= 7
                             && (pin2FromSystemName(systemName) == -1
                             || (pin2FromSystemName(systemName) >= 0
-                            && pin2FromSystemName(systemName) <= 7)));
+                            && pin2FromSystemName(systemName) <= 7))) ? NameValidity.VALID : NameValidity.INVALID;
                 }
             } catch (java.lang.NumberFormatException nfe) {
                 // if there was a number format exception, we couldn't
                 // find the node.
-                return false;
+                log.error("Unable to convert " + systemName + " into the Xbee node and pin format of nn:xx");
+                return NameValidity.INVALID;
             }
 
         } else {
@@ -101,7 +125,7 @@ public class XBeeTurnoutManager extends AbstractTurnoutManager {
                     && pinFromSystemName(systemName) <= 7
                     && (pin2FromSystemName(systemName) == -1
                     || (pin2FromSystemName(systemName) >= 0
-                    && pin2FromSystemName(systemName) <= 7)));
+                    && pin2FromSystemName(systemName) <= 7))) ? NameValidity.VALID : NameValidity.INVALID;
         }
     }
 
@@ -132,12 +156,12 @@ public class XBeeTurnoutManager extends AbstractTurnoutManager {
             int len = systemName.length();
             try {
                 if ((seperator2 >= 0) && (seperator2 <= len)) {
-                    input = Integer.valueOf(systemName.substring(seperator + 1, seperator2)).intValue();
+                    input = Integer.parseInt(systemName.substring(seperator + 1, seperator2));
                 } else {
-                    input = Integer.valueOf(systemName.substring(seperator + 1, len)).intValue();
+                    input = Integer.parseInt(systemName.substring(seperator + 1, len));
                 }
             } catch (NumberFormatException ex) {
-                log.debug("Unable to convert " + systemName + " into the cab and input format of nn:xx");
+                log.debug("Unable to convert {} into the XBee node and pin format of nn:xx", systemName);
                 return -1;
             }
         } else {
@@ -145,7 +169,7 @@ public class XBeeTurnoutManager extends AbstractTurnoutManager {
                 iName = Integer.parseInt(systemName.substring(getSystemPrefix().length() + 1));
                 input = iName % 10;
             } catch (NumberFormatException ex) {
-                log.debug("Unable to convert " + systemName + " Hardware Address to a number");
+                log.debug("Unable to convert " + systemName + " system name to a number");
                 return -1;
             }
         }
@@ -163,7 +187,7 @@ public class XBeeTurnoutManager extends AbstractTurnoutManager {
             int seperator = systemName.indexOf(":");
             int seperator2 = systemName.indexOf(":", seperator + 1);
             try {
-                input = Integer.valueOf(systemName.substring(seperator2 + 1)).intValue();
+                input = Integer.parseInt(systemName.substring(seperator2 + 1));
             } catch (NumberFormatException ex) {
                 log.debug("Unable to convert " + systemName + " into the cab and input format of nn:xx");
                 return -1;
@@ -179,7 +203,7 @@ public class XBeeTurnoutManager extends AbstractTurnoutManager {
     }
 
     @Override
-    public void deregister(jmri.NamedBean s) {
+    public void deregister(jmri.Turnout s) {
         super.deregister(s);
         // remove the specified turnout from the associated XBee pin.
         String systemName = s.getSystemName();
@@ -191,8 +215,7 @@ public class XBeeTurnoutManager extends AbstractTurnoutManager {
                 try {
                     curNode = (XBeeNode) tc.getNodeFromAddress(Integer.parseInt(name));
                 } catch (java.lang.NumberFormatException nfe) {
-                    // if there was a number format exception, we couldn't
-                    // find the node.
+                    // if there was a number format exception, we couldn't find the node.
                     curNode = null;
                 }
             }
@@ -207,6 +230,14 @@ public class XBeeTurnoutManager extends AbstractTurnoutManager {
 
     }
 
-    private final static Logger log = LoggerFactory.getLogger(XBeeTurnoutManager.class.getName());
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String getEntryToolTip() {
+        return Bundle.getMessage("AddTurnoutEntryToolTip");
+    }
+
+    private final static Logger log = LoggerFactory.getLogger(XBeeTurnoutManager.class);
 
 }

@@ -1,14 +1,16 @@
-// NceConnectionTypeList.java
 package jmri.jmrix.nce;
 
+import jmri.jmrix.ConnectionTypeList;
+import org.openide.util.lookup.ServiceProvider;
+
 /**
- * Returns a list of valid nce Connection Types
- * <P>
+ * Return a list of valid NCE Connection Types.
+ *
  * @author Bob Jacobsen Copyright (C) 2010
  * @author Kevin Dickerson Copyright (C) 2010
- * @version	$Revision$
- *
+  *
  */
+@ServiceProvider(service = ConnectionTypeList.class)
 public class NceConnectionTypeList implements jmri.jmrix.ConnectionTypeList {
 
     public static final String NCE = "NCE";

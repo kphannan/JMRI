@@ -1,7 +1,10 @@
 package jmri.managers.configurexml;
 
 import java.util.List;
+import java.util.SortedSet;
+
 import jmri.InstanceManager;
+import jmri.JmriException;
 import jmri.SignalMast;
 import jmri.configurexml.XmlAdapter;
 import jmri.implementation.SignalMastRepeater;
@@ -23,64 +26,56 @@ public class DefaultSignalMastManagerXml
 
     /**
      * Default implementation for storing the contents of a
-     * DefaultSignalMastManager
+     * DefaultSignalMastManager.
      *
      * @param o Object to store
      * @return Element containing the complete info
      */
+    @Override
     public Element store(Object o) {
-        DefaultSignalMastManager m = (DefaultSignalMastManager) o;
-
-        Element element = new Element("signalmasts");
-        element.setAttribute("class", this.getClass().getName());
-        if (m != null) {
-            // include contents
-            List<String> names = m.getSystemNameList();
-            for (int i = 0; i < names.size(); i++) {
-                //Element e = new Element("signalmast");
-                SignalMast p = m.getSignalMast(names.get(i));
-                try {
-                    Element e = jmri.configurexml.ConfigXmlManager.elementFromObject(p);
-                    if (e != null) {
-                        element.addContent(e);
-                    }
-                } catch (Exception e) {
-                    log.error("Error storing signalmast: " + e);
-                    e.printStackTrace();
-                }
-
+        Element signalmasts = new Element("signalmasts");
+        signalmasts.setAttribute("class", this.getClass().getName());
+        DefaultSignalMastManager smm = (DefaultSignalMastManager) o;
+        if (smm != null) {
+            SortedSet<SignalMast> smList = smm.getNamedBeanSet();
+            // don't return an element if there are no SignalMasts to include
+            if (smList.isEmpty()) {
+                return null;
             }
-            List<SignalMastRepeater> repeaterList = m.getRepeaterList();
-            if (repeaterList.size() > 0) {
-                //Element repeatElem= new Element("signalmastrepeaters");
-                for (SignalMastRepeater smr : repeaterList) {
-                    if (smr.getMasterMast() != null && smr.getSlaveMast() != null) {
-                        Element e = new Element("signalmastrepeater");
-                        e.addContent(new Element("masterMast").addContent(smr.getMasterMastName()));
-                        e.addContent(new Element("slaveMast").addContent(smr.getSlaveMastName()));
-                        e.addContent(new Element("enabled").addContent(smr.getEnabled() ? "true" : "false"));
-                        switch (smr.getDirection()) {
-                            case 1:
-                                e.addContent(new Element("update").addContent("MasterToSlave"));
-                                break;
-                            case 2:
-                                e.addContent(new Element("update").addContent("SlaveToMaster"));
-                                break;
-                            default:
-                                e.addContent(new Element("update").addContent("BothWay"));
-                                break;
-                        }
-                        element.addContent(e);
-                    }
+            // include contents
+            for (SignalMast sm : smList) {
+                Element e = jmri.configurexml.ConfigXmlManager.elementFromObject(sm);
+                if (e != null) {
+                    signalmasts.addContent(e);
                 }
-                //element.add(repeatElem);
+            }
+            List<SignalMastRepeater> repeaterList = smm.getRepeaterList();
+            if (repeaterList.size() > 0) {
+                for (SignalMastRepeater smr : repeaterList) {
+                    Element e = new Element("signalmastrepeater");
+                    e.addContent(new Element("masterMast").addContent(smr.getMasterMastName()));
+                    e.addContent(new Element("slaveMast").addContent(smr.getSlaveMastName()));
+                    e.addContent(new Element("enabled").addContent(smr.getEnabled() ? "true" : "false"));
+                    switch (smr.getDirection()) {
+                        case 1:
+                            e.addContent(new Element("update").addContent("MasterToSlave"));
+                            break;
+                        case 2:
+                            e.addContent(new Element("update").addContent("SlaveToMaster"));
+                            break;
+                        default:
+                            e.addContent(new Element("update").addContent("BothWay"));
+                            break;
+                    }
+                    signalmasts.addContent(e);
+                }
             }
         }
-        return element;
+        return signalmasts;
     }
 
     /**
-     * Create a DefaultSignalMastManager
+     * Create a DefaultSignalMastManager.
      *
      * @param shared Top level Element to unpack.
      * @param perNode Top level Element that is per-node.
@@ -89,10 +84,10 @@ public class DefaultSignalMastManagerXml
     @Override
     public boolean load(Element shared, Element perNode) {
         // loop over contained signalmast elements
-        List<Element> list = shared.getChildren("signalmast");
+        List<Element> mastList = shared.getChildren("signalmast");
+        boolean result = true;
 
-        for (int i = 0; i < list.size(); i++) {
-            Element e = list.get(i);
+        for (Element e : mastList) {
             if (e.getAttribute("class") == null) {
                 SignalMast m;
                 String sys = getSystemName(e);
@@ -110,77 +105,52 @@ public class DefaultSignalMastManagerXml
                 }
             } else {
                 String adapterName = e.getAttribute("class").getValue();
-                log.debug("load via " + adapterName);
+                log.debug("load via {}", adapterName);
                 try {
-                    XmlAdapter adapter = (XmlAdapter) Class.forName(adapterName).newInstance();
+                    XmlAdapter adapter = (XmlAdapter) Class.forName(adapterName).getDeclaredConstructor().newInstance();
                     // and do it
                     adapter.load(e, null);
-                } catch (Exception ex) {
-                    log.error("Exception while loading " + e.getName() + ":" + ex);
-                    ex.printStackTrace();
+                } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException 
+                            | IllegalAccessException | java.lang.reflect.InvocationTargetException
+                            | jmri.configurexml.JmriConfigureXmlException ex) {
+                    log.error("Exception while loading {}: {}", e.getName(), ex, ex);
                 }
             }
         }
 
-        list = shared.getChildren("turnoutsignalmast");
-        if (list != null) {
-            for (int i = 0; i < list.size(); i++) {
-                Element e = list.get(i);
-                String adapterName = e.getAttribute("class").getValue();
-                log.debug("load via " + adapterName);
-                try {
-                    XmlAdapter adapter = (XmlAdapter) Class.forName(adapterName).newInstance();
-                    // and do it
-                    adapter.load(e, null);
-                } catch (Exception ex) {
-                    log.error("Exception while loading " + e.getName() + ":" + ex);
-                    ex.printStackTrace();
-                }
-            }
-        }
+        loadSignalMastClass(shared, "turnoutsignalmast");
+        loadSignalMastClass(shared, "virtualsignalmast");
+        loadSignalMastClass(shared, "matrixsignalmast");
+        loadSignalMastClass(shared, "dccsignalmast");
+        loadSignalMastClass(shared, "olcbsignalmast");
 
-        list = shared.getChildren("virtualsignalmast");
-        if (list != null) {
-            for (int i = 0; i < list.size(); i++) {
-                Element e = list.get(i);
-                String adapterName = e.getAttribute("class").getValue();
-                log.debug("load via " + adapterName);
-                try {
-                    XmlAdapter adapter = (XmlAdapter) Class.forName(adapterName).newInstance();
-                    // and do it
-                    adapter.load(e, null);
-                } catch (Exception ex) {
-                    log.error("Exception while loading " + e.getName() + ":" + ex);
-                    ex.printStackTrace();
-                }
-            }
-        }
-
-        list = shared.getChildren("dccsignalmast");
-        if (list != null) {
-            for (int i = 0; i < list.size(); i++) {
-                Element e = list.get(i);
-                String adapterName = e.getAttribute("class").getValue();
-                log.debug("load via " + adapterName);
-                try {
-                    XmlAdapter adapter = (XmlAdapter) Class.forName(adapterName).newInstance();
-                    // and do it
-                    adapter.load(e, null);
-                } catch (Exception ex) {
-                    log.error("Exception while loading " + e.getName() + ":" + ex);
-                    ex.printStackTrace();
-                }
-            }
-        }
-
-        list = shared.getChildren("signalmastrepeater");
-        if (list != null) {
+        mastList = shared.getChildren("signalmastrepeater");
+        if (mastList != null) {
             DefaultSignalMastManager m = (DefaultSignalMastManager) InstanceManager.getDefault(jmri.SignalMastManager.class);
-            for (int i = 0; i < list.size(); i++) {
-                Element e = list.get(i);
+            for (Element e : mastList) {
                 String masterName = e.getChild("masterMast").getText();
                 String slaveName = e.getChild("slaveMast").getText();
-                SignalMastRepeater smr = new SignalMastRepeater(masterName, slaveName);
+                SignalMast masterMast = m.getSignalMast(masterName);
+                if (masterMast == null) {
+                    log.error("Unable to add mast repeater {}: {}. Master mast must exist.", masterName, slaveName);
+                    result = false;
+                    continue;
+                }
+                SignalMast slaveMast = m.getSignalMast(slaveName);
+                if (slaveMast == null) {
+                    log.error("Unable to add mast repeater {}: {}. Slave mast must exist.", masterName, slaveName);
+                    result = false;
+                    continue;
+                }
+
+                SignalMastRepeater smr = null;
+                try {
+                    smr = m.provideRepeater(masterMast, slaveMast);
+                } catch (JmriException e1) {
+                    log.error("Unable to add mast repeater {}: {}. {}", masterName, slaveName, e1);
+                    result = false;
+                    continue;
+                }
                 if (e.getChild("enabled") != null && e.getChild("enabled").getText().equals("false")) {
                     smr.setEnabled(false);
                 }
@@ -191,24 +161,32 @@ public class DefaultSignalMastManagerXml
                         smr.setDirection(SignalMastRepeater.SLAVETOMASTER);
                     }
                 }
-                try {
-                    m.addRepeater(smr);
-                } catch (jmri.JmriException ex) {
-                    log.error("Unable to add mast repeater " + masterName + " : " + slaveName);
-                }
             }
             m.initialiseRepeaters();
         }
-        return true;
+        return result;
     }
 
+    private void loadSignalMastClass(Element shared, String signalMastClass) {
+        List<Element> mastClassList = shared.getChildren(signalMastClass);
+        log.debug("Found {} signal masts", mastClassList.size());
+        // load the contents
+        boolean result = loadInAdapter(mastClassList, null);
+        if (!result) {
+            log.warn("error loading signalmasts");
+        }
+    }
+
+    @Override
     public void load(Element element, Object o) {
         log.error("Invalid method called");
     }
 
+    @Override
     public int loadOrder() {
         return InstanceManager.getDefault(jmri.SignalMastManager.class).getXMLOrder();
     }
 
-    private final static Logger log = LoggerFactory.getLogger(DefaultSignalMastManagerXml.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(DefaultSignalMastManagerXml.class);
+
 }

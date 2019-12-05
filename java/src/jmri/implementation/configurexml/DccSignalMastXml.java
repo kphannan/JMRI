@@ -2,6 +2,7 @@ package jmri.implementation.configurexml;
 
 import java.util.List;
 import jmri.InstanceManager;
+import jmri.JmriException;
 import jmri.SignalAppearanceMap;
 import jmri.implementation.DccSignalMast;
 import org.jdom2.Element;
@@ -9,10 +10,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Handle XML configuration for a DefaultSignalMastManager objects.
+ * Handle XML configuration for DefaultSignalMastManager objects.
  *
  * @author Bob Jacobsen Copyright: Copyright (c) 2009
- * @version $Revision: 18102 $
+ * 
  */
 public class DccSignalMastXml
         extends jmri.managers.configurexml.AbstractNamedBeanManagerConfigXML {
@@ -27,6 +28,7 @@ public class DccSignalMastXml
      * @param o Object to store, of type TripleDccSignalHead
      * @return Element containing the complete info
      */
+    @Override
     public Element store(Object o) {
         DccSignalMast p = (DccSignalMast) o;
         Element e = new Element("dccsignalmast");
@@ -42,6 +44,9 @@ public class DccSignalMastXml
             unlit.setAttribute("allowed", "no");
         }
         e.addContent(unlit);
+
+        e.addContent(new Element("packetsendcount").addContent(Integer.toString(p.getDccSignalMastPacketSendCount())));
+
         SignalAppearanceMap appMap = p.getAppearanceMap();
         if (appMap != null) {
             java.util.Enumeration<String> aspects = appMap.getAspects();
@@ -72,10 +77,20 @@ public class DccSignalMastXml
     public boolean load(Element shared, Element perNode) {
         DccSignalMast m;
         String sys = getSystemName(shared);
-        m = new jmri.implementation.DccSignalMast(sys);
+        try {
+            m = (DccSignalMast) InstanceManager.getDefault(jmri.SignalMastManager.class)
+                    .provideCustomSignalMast(sys, DccSignalMast.class);
+        } catch (JmriException e) {
+            log.error("Failed to load DccSignalMast {}: {}", sys, e);
+            return false;
+        }
 
         if (getUserName(shared) != null) {
             m.setUserName(getUserName(shared));
+        }
+
+        if (shared.getChild("packetsendcount") != null) {
+            m.setDccSignalMastPacketSendCount(Integer.parseInt(shared.getChild("packetsendcount").getValue()));
         }
 
         return loadCommonDCCMast(m, shared);
@@ -116,15 +131,13 @@ public class DccSignalMastXml
             }
         }
 
-        InstanceManager.getDefault(jmri.SignalMastManager.class)
-                .register(m);
         return true;
-
     }
 
+    @Override
     public void load(Element element, Object o) {
         log.error("Invalid method called");
     }
 
-    private final static Logger log = LoggerFactory.getLogger(DccSignalMastXml.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(DccSignalMastXml.class);
 }

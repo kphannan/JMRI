@@ -3,28 +3,25 @@ package jmri.jmrit.vsdecoder;
 /*
  * <hr>
  * This file is part of JMRI.
- * <P>
- * JMRI is free software; you can redistribute it and/or modify it under 
- * the terms of version 2 of the GNU General Public License as published 
+ * <p>
+ * JMRI is free software; you can redistribute it and/or modify it under
+ * the terms of version 2 of the GNU General Public License as published
  * by the Free Software Foundation. See the "COPYING" file for a copy
  * of this license.
- * <P>
- * JMRI is distributed in the hope that it will be useful, but WITHOUT 
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License 
+ * <p>
+ * JMRI is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
  * for more details.
- * <P>
  *
- * @author			Mark Underwood Copyright (C) 2011
- * @version			$Revision: 18245 $
+ * @author   Mark Underwood Copyright (C) 2011
  */
 import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import org.jdom2.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-class ThrottleTrigger extends Trigger implements PropertyChangeListener {
+class ThrottleTrigger extends Trigger {
 
     int current_notch, prev_notch;
 
@@ -33,6 +30,7 @@ class ThrottleTrigger extends Trigger implements PropertyChangeListener {
         this.setTriggerType(Trigger.TriggerType.THROTTLE);
     }
 
+    @Override
     public void propertyChange(PropertyChangeEvent event) {
 
         // Validate
@@ -73,12 +71,8 @@ class ThrottleTrigger extends Trigger implements PropertyChangeListener {
     public void setXml(Element e) {
         //Get common stuff
         super.setXml(e);
-        // Only do this if type Notch
-        if (e.getAttributeValue("type").equals("THROTTLE")) {
-            // Nothing unique to do...
-        }
     }
 
-    private static final Logger log = LoggerFactory.getLogger(ThrottleTrigger.class.getName());
+    private static final Logger log = LoggerFactory.getLogger(ThrottleTrigger.class);
 
 }

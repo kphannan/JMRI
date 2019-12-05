@@ -2,26 +2,27 @@ package jmri.jmrit.decoderdefn;
 
 import javax.swing.JLabel;
 import jmri.jmrit.symbolicprog.CvTableModel;
-import jmri.jmrit.symbolicprog.IndexedCvTableModel;
 import jmri.jmrit.symbolicprog.VariableTableModel;
 import jmri.progdebugger.ProgDebugger;
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import jmri.util.JUnitUtil;
 import org.jdom2.DocType;
 import org.jdom2.Document;
 import org.jdom2.Element;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * DecoderFileTest.java
  *
  * @author	Bob Jacobsen, Copyright (C) 2001, 2002
  */
-public class DecoderFileTest extends TestCase {
+public class DecoderFileTest {
 
     ProgDebugger p = new ProgDebugger();
 
+    @Test
     public void testSingleVersionNumber() {
         DecoderFile d = new DecoderFile("mfg", "mfgID", "model", "23", "24",
                 "family", "filename", 16, 3, null);
@@ -30,6 +31,7 @@ public class DecoderFileTest extends TestCase {
         Assert.assertEquals("single 19 not OK", false, d.isVersion(19));
     }
 
+    @Test
     public void testRangeVersionNumber() {
         DecoderFile d = new DecoderFile("mfg", "mfgID", "model", "24", "25",
                 "family", "filename", 16, 3, null);
@@ -43,6 +45,7 @@ public class DecoderFileTest extends TestCase {
         Assert.assertEquals("single 23 not OK", false, d.isVersion(23));
     }
 
+    @Test
     public void testCtorRange() {
         DecoderFile d = new DecoderFile("mfg", "mfgID", "model", "18", "22",
                 "family", "filename", 16, 3, null);
@@ -55,6 +58,7 @@ public class DecoderFileTest extends TestCase {
         Assert.assertEquals("single 23 not OK", false, d.isVersion(23));
     }
 
+    @Test
     public void testCtorLow() {
         DecoderFile d = new DecoderFile("mfg", "mfgID", "model", "18", null,
                 "family", "filename", 16, 3, null);
@@ -63,6 +67,7 @@ public class DecoderFileTest extends TestCase {
         Assert.assertEquals("single 19 not OK", false, d.isVersion(19));
     }
 
+    @Test
     public void testCtorHigh() {
         DecoderFile d = new DecoderFile("mfg", "mfgID", "model", null, "18",
                 "family", "filename", 16, 3, null);
@@ -71,6 +76,7 @@ public class DecoderFileTest extends TestCase {
         Assert.assertEquals("single 19 not OK", false, d.isVersion(19));
     }
 
+    @Test
     public void testSeveralSingleVersionNumber() {
         DecoderFile d = new DecoderFile("mfg", "mfgID", "model", "23", "24",
                 "family", "filename", 16, 3, null);
@@ -84,21 +90,21 @@ public class DecoderFileTest extends TestCase {
         Assert.assertEquals("single 21 OK", true, d.isVersion(21));
     }
 
+    @Test
     public void testMfgName() {
         setupDecoder();
         Assert.assertEquals("mfg name ", "Digitrax", DecoderFile.getMfgName(decoder));
     }
 
+    @Test
     public void testLoadTable() {
         setupDecoder();
 
         // this test should probably be done in terms of a test class instead of the real one...
         JLabel progStatus = new JLabel(" OK ");
         CvTableModel cvModel = new CvTableModel(progStatus, p);
-        IndexedCvTableModel icvModel = new IndexedCvTableModel(new JLabel(), p);
         VariableTableModel variableModel = new VariableTableModel(progStatus,
-                new String[]{"Name", "Value"},
-                cvModel, icvModel);
+                new String[]{"Name", "Value"}, cvModel);
         DecoderFile d = new DecoderFile("mfg", "mfgID", "model", "23", "24",
                 "family", "filename", 16, 16, null);
 
@@ -108,6 +114,7 @@ public class DecoderFileTest extends TestCase {
         Assert.assertEquals("third row name ", "Normal direction of motion", variableModel.getLabel(2));
     }
 
+    @Test
     public void testIncludeCheck() {
         Element e;
         // test some examples
@@ -137,6 +144,7 @@ public class DecoderFileTest extends TestCase {
         Assert.assertTrue("827108", DecoderFile.isIncluded(e, "827108", "model", "family", "", ""));
     }
 
+    @Test
     public void testIncludeCheckRippleDown() {
         Element e;
 
@@ -174,6 +182,7 @@ public class DecoderFileTest extends TestCase {
         Assert.assertTrue("827108", DecoderFile.isIncluded(e, "827108", "model", "family", "827004,827008,827104,827108,827106,828043,828045,828047", ""));
     }
 
+    @Test
     public void testIncludeCheckModel() {
         Element e;
 
@@ -190,6 +199,7 @@ public class DecoderFileTest extends TestCase {
         Assert.assertTrue("3 in 1,2", !DecoderFile.isIncluded(e, "3", "model", "family", "1,2", ""));
     }
 
+    @Test
     public void testExcludeCheck() {
         Element e;
         // test some examples
@@ -219,6 +229,7 @@ public class DecoderFileTest extends TestCase {
         Assert.assertTrue("827108", !DecoderFile.isIncluded(e, "827108", "model", "family", "", ""));
     }
 
+    @Test
     public void testExcludeCheckRippleDown() {
         Element e;
 
@@ -238,6 +249,7 @@ public class DecoderFileTest extends TestCase {
         Assert.assertTrue("105 in 105,205", !DecoderFile.isIncluded(e, "105", "model", "family", "", "105,205"));
     }
 
+    @Test
     public void testExcludeCheckModel() {
         Element e;
 
@@ -252,16 +264,15 @@ public class DecoderFileTest extends TestCase {
         Assert.assertTrue("3 in 1,2", DecoderFile.isIncluded(e, "3", "model", "family", "", "1,2"));
     }
 
+    @Test
     public void testMinOut() {
         setupDecoder();
 
         // this test should probably be done in terms of a test class instead of the real one...
         JLabel progStatus = new JLabel(" OK ");
         CvTableModel cvModel = new CvTableModel(progStatus, p);
-        IndexedCvTableModel icvModel = new IndexedCvTableModel(new JLabel(), p);
         VariableTableModel variableModel = new VariableTableModel(progStatus,
-                new String[]{"Name", "Value"},
-                cvModel, icvModel);
+                new String[]{"Name", "Value"}, cvModel);
         DecoderFile d = new DecoderFile("mfg", "mfgID", "model", "23", "24",
                 "family", "filename", 16, 3, null);
 
@@ -269,16 +280,15 @@ public class DecoderFileTest extends TestCase {
         Assert.assertEquals("read rows ", 2, variableModel.getRowCount());
     }
 
+    @Test
     public void testMinFn() {
         setupDecoder();
 
         // this test should probably be done in terms of a test class instead of the real one...
         JLabel progStatus = new JLabel(" OK ");
         CvTableModel cvModel = new CvTableModel(progStatus, p);
-        IndexedCvTableModel icvModel = new IndexedCvTableModel(new JLabel(), p);
         VariableTableModel variableModel = new VariableTableModel(progStatus,
-                new String[]{"Name", "Value"},
-                cvModel, icvModel);
+                new String[]{"Name", "Value"}, cvModel);
         DecoderFile d = new DecoderFile("mfg", "mfgID", "model", "23", "24",
                 "family", "filename", 3, 16, null);
 
@@ -355,31 +365,15 @@ public class DecoderFileTest extends TestCase {
         return;
     }
 
-    // from here down is testing infrastructure
-    public DecoderFileTest(String s) {
-        super(s);
+    @Before
+    public void setUp() {
+        JUnitUtil.setUp();
     }
 
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {"-noloading", DecoderFileTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
+    @After
+    public void tearDown() {
+        JUnitUtil.tearDown();
     }
 
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(DecoderFileTest.class);
-        return suite;
-    }
-
-    // The minimal setup for log4J
-    protected void setUp() {
-        apps.tests.Log4JFixture.setUp();
-    }
-
-    protected void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
-    }
-
-    // static Logger log = LoggerFactory.getLogger(DecoderFileTest.class.getName());
+    // private final static Logger log = LoggerFactory.getLogger(DecoderFileTest.class);
 }

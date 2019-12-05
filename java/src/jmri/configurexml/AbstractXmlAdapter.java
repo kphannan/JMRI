@@ -1,6 +1,11 @@
 package jmri.configurexml;
 
+import jmri.managers.configurexml.AbstractNamedBeanManagerConfigXML;
 import org.jdom2.Element;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 /**
  * Abstract class to provide basic error handling for XmlAdapter
@@ -10,44 +15,36 @@ import org.jdom2.Element;
  */
 public abstract class AbstractXmlAdapter implements XmlAdapter {
 
-    /**
-     * Provide common handling of errors that happen during the "load" process.
-     *
-     * Simple implementation just sends message to standard logging; needs to be
-     * given a plug-in structure for e.g. posting a Swing dialog, etc.
-     *
-     * @param description description of error encountered
-     * @param systemName  System name of bean being handled, may be null
-     * @param userName    used name of the bean being handled, may be null
-     * @param exception   Any exception being handled in the processing, may be
-     *                    null
-     * @throws JmriConfigureXmlException in place for later expansion; should be
-     *                                   propagated upward to higher-level error
-     *                                   handling
-     */
-    public void creationErrorEncountered(
+    private ErrorHandler errorHandler = XmlAdapter.getDefaultExceptionHandler();
+
+    /** {@inheritDoc} */
+    @Override
+    public void handleException(
             String description,
+            String operation,
             String systemName,
             String userName,
-            Throwable exception) throws JmriConfigureXmlException {
-        ConfigXmlManager.creationErrorEncountered(
-                null, null,
-                description, systemName, userName, exception
-        );
+            Exception exception) {
+        if (errorHandler != null) {
+            this.errorHandler.handle(new ErrorMemo(this, operation, description, systemName, userName, exception));
+        }
     }
 
+    /** {@inheritDoc} */
     @Override
-    public boolean load(Element e) throws Exception {
-        throw new UnsupportedOperationException("Either load(one of the other load methods must be implemented.");
+    public boolean load(Element e) throws JmriConfigureXmlException {
+        throw new UnsupportedOperationException("One of the other load methods must be implemented.");
     }
 
+    /** {@inheritDoc} */
     @Override
-    public boolean load(Element shared, Element perNode) throws Exception {
+    public boolean load(Element shared, Element perNode) throws JmriConfigureXmlException { // may not need exception
         return this.load(shared);
     }
 
+    /** {@inheritDoc} */
     @Override
-    public void load(Element shared, Element perNode, Object o) throws Exception {
+    public void load(Element shared, Element perNode, Object o) throws JmriConfigureXmlException { // may not need exception
         this.load(shared, o);
     }
 
@@ -55,7 +52,7 @@ public abstract class AbstractXmlAdapter implements XmlAdapter {
      * Determine if this set of configured objects should be loaded after basic
      * GUI construction is completed.
      * <p>
-     * Default behaviour is to load when requested. Classes that should wait
+     * Default behavior is to load when requested. Classes that should wait
      * until basic GUI is constructed should override this method and return
      * true
      *
@@ -63,17 +60,18 @@ public abstract class AbstractXmlAdapter implements XmlAdapter {
      * @see jmri.configurexml.XmlAdapter#loadDeferred()
      * @since 2.11.2
      */
+    @Override
     public boolean loadDeferred() {
         return false;
     }
 
-    /**
-     * Used for determining which order to load items from XML files in.
-     */
+    /** {@inheritDoc} */
+    @Override
     public int loadOrder() {
         return 50;
     }
 
+    /** {@inheritDoc} */
     @Override
     public Element store(Object o, boolean shared) {
         if (shared) {
@@ -81,4 +79,17 @@ public abstract class AbstractXmlAdapter implements XmlAdapter {
         }
         return null;
     }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setExceptionHandler(ErrorHandler errorHandler) {
+        this.errorHandler = errorHandler;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public ErrorHandler getExceptionHandler() {
+        return this.errorHandler;
+    }
+
 }

@@ -31,18 +31,11 @@ public class ZeroConfServiceEvent extends EventObject {
     }
 
     /**
-     * @return the JmDNS server
-     */
-    public JmDNS getDNS() {
-        return this.dns;
-    }
-
-    /**
      * @return the address or null if there is an IO exception.
      */
     public InetAddress getAddress() {
         try {
-            return this.dns.getInterface();
+            return this.dns.getInetAddress();
         } catch (IOException ex) {
             log.error("Unable to get interface address.", ex);
             return null;

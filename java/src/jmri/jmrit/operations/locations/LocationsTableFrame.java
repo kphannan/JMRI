@@ -1,4 +1,3 @@
-// LocationsTableFrame.java
 package jmri.jmrit.operations.locations;
 
 import java.awt.Dimension;
@@ -11,18 +10,28 @@ import javax.swing.JMenuBar;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
+import jmri.InstanceManager;
 import jmri.jmrit.operations.OperationsFrame;
+import jmri.jmrit.operations.locations.schedules.SchedulesTableAction;
+import jmri.jmrit.operations.locations.tools.ExportLocationsRosterAction;
+import jmri.jmrit.operations.locations.tools.LocationCopyAction;
+import jmri.jmrit.operations.locations.tools.ModifyLocationsAction;
+import jmri.jmrit.operations.locations.tools.ModifyLocationsCarLoadsAction;
+import jmri.jmrit.operations.locations.tools.PrintLocationsAction;
+import jmri.jmrit.operations.locations.tools.SetPhysicalLocationAction;
+import jmri.jmrit.operations.locations.tools.ShowCarsByLocationAction;
+import jmri.jmrit.operations.locations.tools.TrackCopyAction;
 import jmri.jmrit.operations.setup.Control;
 import jmri.jmrit.operations.setup.Setup;
+import jmri.swing.JTablePersistenceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Frame for adding and editing the location roster for operations.
  *
- * @author	Bob Jacobsen Copyright (C) 2001
+ * @author Bob Jacobsen Copyright (C) 2001
  * @author Daniel Boudreau Copyright (C) 2008
- * @version $Revision$
  */
 public class LocationsTableFrame extends OperationsFrame {
 
@@ -39,7 +48,7 @@ public class LocationsTableFrame extends OperationsFrame {
     javax.swing.JRadioButton sortById = new javax.swing.JRadioButton(Bundle.getMessage("Id"));
 
     // major buttons
-    JButton addButton = new JButton(Bundle.getMessage("Add"));
+    JButton addButton = new JButton(Bundle.getMessage("ButtonAdd"));
 
     public LocationsTableFrame() {
         super(Bundle.getMessage("TitleLocationsTable"));
@@ -75,23 +84,26 @@ public class LocationsTableFrame extends OperationsFrame {
         addRadioButtonAction(sortByName);
         addRadioButtonAction(sortById);
 
-        //	build menu
+        // build menu
         JMenuBar menuBar = new JMenuBar();
         JMenu toolMenu = new JMenu(Bundle.getMessage("MenuTools"));
         toolMenu.add(new LocationCopyAction());
+        toolMenu.add(new TrackCopyAction());
         toolMenu.add(new SchedulesTableAction(Bundle.getMessage("Schedules")));
         toolMenu.add(new ModifyLocationsAction(Bundle.getMessage("TitleModifyLocations")));
         toolMenu.add(new ModifyLocationsCarLoadsAction());
         toolMenu.add(new ShowCarsByLocationAction(false, null, null));
+        toolMenu.add(new ExportLocationsRosterAction(Bundle.getMessage("TitleExportLocations")));
         if (Setup.isVsdPhysicalLocationEnabled()) {
             toolMenu.add(new SetPhysicalLocationAction(Bundle.getMessage("MenuSetPhysicalLocation"), null));
         }
+        toolMenu.addSeparator();
         toolMenu.add(new PrintLocationsAction(Bundle.getMessage("MenuItemPrint"), false));
         toolMenu.add(new PrintLocationsAction(Bundle.getMessage("MenuItemPreview"), true));
         menuBar.add(toolMenu);
         menuBar.add(new jmri.jmrit.operations.OperationsMenu());
         setJMenuBar(menuBar);
-        addHelpMenu("package.jmri.jmrit.operations.Operations_Locations", true);	// NOI18N
+        addHelpMenu("package.jmri.jmrit.operations.Operations_Locations", true); // NOI18N
 
         initMinimumSize();
         // make panel a bit wider than minimum if the very first time opened
@@ -106,6 +118,8 @@ public class LocationsTableFrame extends OperationsFrame {
     @Override
     public void radioButtonActionPerformed(java.awt.event.ActionEvent ae) {
         log.debug("radio button activated");
+        // clear any sorts by column
+        clearTableSort(locationsTable);
         if (ae.getSource() == sortByName) {
             sortByName.setSelected(true);
             sortById.setSelected(false);
@@ -121,7 +135,7 @@ public class LocationsTableFrame extends OperationsFrame {
     // add button
     @Override
     public void buttonActionPerformed(java.awt.event.ActionEvent ae) {
-//		log.debug("location button activated");
+//  log.debug("location button activated");
         if (ae.getSource() == addButton) {
             LocationEditFrame f = new LocationEditFrame(null);
             f.setTitle(Bundle.getMessage("TitleLocationAdd"));
@@ -130,10 +144,12 @@ public class LocationsTableFrame extends OperationsFrame {
     
     @Override
     public void dispose() {
-        saveTableDetails(locationsTable);
+        InstanceManager.getOptionalDefault(JTablePersistenceManager.class).ifPresent(tpm -> {
+            tpm.stopPersisting(locationsTable);
+        });
         locationsModel.dispose();
         super.dispose();
     }
 
-    private final static Logger log = LoggerFactory.getLogger(LocationsTableFrame.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(LocationsTableFrame.class);
 }

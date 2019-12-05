@@ -8,33 +8,34 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Extend jmri.AbstractSensor for RPS systems
- * <P>
+ * Extend jmri.AbstractSensor for RPS systems.
+ * <p>
  * System names are "RSpppp", where ppp is a representation of the region, for
  * example "RS(0,0,0);(1,0,0);(1,1,0);(0,1,0)".
- * <P>
+ *
  * @author	Bob Jacobsen Copyright (C) 2007
  */
 public class RpsSensor extends AbstractSensor
         implements MeasurementListener {
 
-    public RpsSensor(String systemName) {
+    public RpsSensor(String systemName, String prefix) {
         super(systemName);
         // create Region from all but prefix
-        region = new Region(systemName.substring(2, systemName.length()));
+        region = new Region(systemName.substring(prefix.length() + 1)); // multichar prefix from memo
         Model.instance().addRegion(region);
     }
 
-    public RpsSensor(String systemName, String userName) {
+    public RpsSensor(String systemName, String userName, String prefix) {
         super(systemName, userName);
         // create Region from all but prefix
-        region = new Region(systemName.substring(2, systemName.length()));
+        region = new Region(systemName.substring(prefix.length() + 1)); // multichar prefix from memo
         Model.instance().addRegion(region);
     }
 
+    @Override
     public void notify(Measurement r) {
         Point3d p = new Point3d(r.getX(), r.getY(), r.getZ());
-        Integer id = Integer.valueOf(r.getReading().getID());
+        Integer id = Integer.valueOf(r.getReading().getId());
 
         // ignore if code not OK
         if (!r.isOkPoint()) {
@@ -46,9 +47,7 @@ public class RpsSensor extends AbstractSensor
             return;
         }
 
-        if (log.isDebugEnabled()) {
-            log.debug("starting " + getSystemName());
-        }
+        log.debug("starting {}", getSystemName());
         if (region.isInside(p)) {
             notifyInRegion(id);
         } else {
@@ -62,6 +61,7 @@ public class RpsSensor extends AbstractSensor
     }
 
     // if somebody outside sets state to INACTIVE, clear list
+    @Override
     public void setOwnState(int state) {
         if (state == Sensor.INACTIVE) {
             if (contents.size() > 0) {
@@ -114,15 +114,15 @@ public class RpsSensor extends AbstractSensor
         firePropertyChange("Arriving", null, id);
     }
 
+    @Override
     public void dispose() {
         Model.instance().removeRegion(region);
     }
 
+    @Override
     public void requestUpdateFromLayout() {
     }
 
-    private final static Logger log = LoggerFactory.getLogger(RpsSensor.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(RpsSensor.class);
 
 }
-
-/* @(#)RpsSensor.java */

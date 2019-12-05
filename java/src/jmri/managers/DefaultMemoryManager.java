@@ -1,7 +1,9 @@
 package jmri.managers;
 
+import jmri.InstanceManager;
 import jmri.Memory;
 import jmri.implementation.DefaultMemory;
+import jmri.jmrix.internal.InternalSystemConnectionMemo;
 
 /**
  * Provide the concrete implementation for the Internal Memory Manager.
@@ -10,17 +12,14 @@ import jmri.implementation.DefaultMemory;
  */
 public class DefaultMemoryManager extends AbstractMemoryManager {
 
-    public String getSystemPrefix() {
-        return "I";
+    public DefaultMemoryManager(InternalSystemConnectionMemo memo) {
+        super(memo);
     }
 
+    @Override
     protected Memory createNewMemory(String systemName, String userName) {
-        // we've decided to enforce that memory system
-        // names start with IM by prepending if not present
-        if (!systemName.startsWith("IM")) {
-            systemName = "IM" + systemName;
-        }
-        return new DefaultMemory(systemName, userName);
+        // makeSystemName validates that systemName is correct
+        return new DefaultMemory(makeSystemName(systemName), userName);
     }
 
 }

@@ -1,19 +1,19 @@
-/**
- * XNetPowerManager.java
- *
- * Description:	PowerManager implementation for controlling layout power
- *
- * @author	Bob Jacobsen Copyright (C) 2001
- * @author	Paul Bender Copyright (C) 2003-2010
- * @version	$Revision$
- */
 package jmri.jmrix.lenz;
 
 import jmri.JmriException;
 import jmri.PowerManager;
+
+import java.beans.PropertyChangeListener;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * PowerManager implementation for controlling layout power.
+ *
+ * @author Bob Jacobsen Copyright (C) 2001
+ * @author Paul Bender Copyright (C) 2003-2010
+ */
 public class XNetPowerManager implements PowerManager, XNetListener {
 
     public XNetPowerManager(XNetSystemConnectionMemo memo) {
@@ -25,14 +25,22 @@ public class XNetPowerManager implements PowerManager, XNetListener {
         tc.sendXNetMessage(XNetMessage.getCSStatusRequestMessage(), this);
     }
 
+    @Override
     public String getUserName() {
-        return "XPressNet";
+        return userName;
     }
 
-    String userName = "XPressNet";
+    String userName = Bundle.getMessage("MenuXpressNet");
 
     int power = UNKNOWN;
 
+    @Override
+    public boolean implementsIdle() {
+        // XPressNet implements idle via the broadcast emergency stop commands. 
+        return true;
+    }
+
+    @Override
     public void setPower(int v) throws JmriException {
         power = UNKNOWN;
         checkTC();
@@ -42,15 +50,20 @@ public class XNetPowerManager implements PowerManager, XNetListener {
         } else if (v == OFF) {
             // send EMERGENCY_OFF
             tc.sendXNetMessage(XNetMessage.getEmergencyOffMsg(), this);
+        } else if (v == IDLE) {
+            // send EMERGENCY_STOP
+            tc.sendXNetMessage(XNetMessage.getEmergencyStopMsg(), this);
         }
-        firePropertyChange("Power", null, null);
+        firePropertyChange("Power", null, null); // NOI18N
     }
 
+    @Override
     public int getPower() {
         return power;
     }
 
     // to free resources when no longer used
+    @Override
     public void dispose() throws JmriException {
         tc.removeXNetListener(XNetInterface.CS_INFO, this);
         tc = null;
@@ -65,6 +78,7 @@ public class XNetPowerManager implements PowerManager, XNetListener {
     // to hear of changes
     java.beans.PropertyChangeSupport pcs = new java.beans.PropertyChangeSupport(this);
 
+    @Override
     public synchronized void addPropertyChangeListener(java.beans.PropertyChangeListener l) {
         pcs.addPropertyChangeListener(l);
     }
@@ -73,17 +87,43 @@ public class XNetPowerManager implements PowerManager, XNetListener {
         pcs.firePropertyChange(p, old, n);
     }
 
+    @Override
     public synchronized void removePropertyChangeListener(java.beans.PropertyChangeListener l) {
         pcs.removePropertyChangeListener(l);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void addPropertyChangeListener(String propertyName, PropertyChangeListener listener) {
+        pcs.addPropertyChangeListener(propertyName, listener);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public PropertyChangeListener[] getPropertyChangeListeners() {
+        return pcs.getPropertyChangeListeners();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public PropertyChangeListener[] getPropertyChangeListeners(String propertyName) {
+        return pcs.getPropertyChangeListeners(propertyName);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void removePropertyChangeListener(String propertyName, PropertyChangeListener listener) {
+        pcs.removePropertyChangeListener(propertyName, listener);
     }
 
     XNetTrafficController tc = null;
 
     // to listen for Broadcast messages related to track power.
     // There are 5 messages to listen for
+    @Override
     public void message(XNetReply m) {
         if (log.isDebugEnabled()) {
-            log.debug("Message recieved: " + m.toString());
+            log.debug("Message received: " + m.toString());
         }
         // First, we check for a "normal operations resumed message"
         // This indicates the power to the track is ON
@@ -102,7 +142,7 @@ public class XNetPowerManager implements PowerManager, XNetListener {
         // locomotives are stopped
         else if (m.getElement(0) == jmri.jmrix.lenz.XNetConstants.BC_EMERGENCY_STOP
                 && m.getElement(1) == jmri.jmrix.lenz.XNetConstants.BC_EVERYTHING_OFF) {
-            power = OFF;
+            power = IDLE;
             firePropertyChange("Power", null, null);
         } // Next we check for a "Service Mode Entry" message
         // This indicatse track power is off on the mainline.
@@ -121,7 +161,7 @@ public class XNetPowerManager implements PowerManager, XNetListener {
                 firePropertyChange("Power", null, null);
             } else if ((statusByte & 0x02) == 0x02) {
                 // Command station is in Emergency Stop Mode
-                power = OFF;
+                power = IDLE;
                 firePropertyChange("Power", null, null);
             } else if ((statusByte & 0x08) == 0x08) {
                 // Command station is in Service Mode, power to the 
@@ -140,11 +180,17 @@ public class XNetPowerManager implements PowerManager, XNetListener {
 
     }
 
-    // listen for the messages to the LI100/LI101
+    /**
+     * Listen for the messages to the LI100/LI101.
+     */
+    @Override
     public void message(XNetMessage l) {
     }
 
-    // Handle a timeout notification
+    /**
+     * Handle a timeout notification.
+     */
+    @Override
     public void notifyTimeout(XNetMessage msg) {
         if (log.isDebugEnabled()) {
             log.debug("Notified of timeout on message" + msg.toString());
@@ -152,9 +198,6 @@ public class XNetPowerManager implements PowerManager, XNetListener {
     }
 
     // Initialize logging information
-    private final static Logger log = LoggerFactory.getLogger(XNetPowerManager.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(XNetPowerManager.class);
 
 }
-
-
-/* @(#)XNetPowerManager.java */

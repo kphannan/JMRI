@@ -18,24 +18,12 @@ import org.slf4j.LoggerFactory;
 /**
  * Remove a locomotive from the roster.
  *
- * <P>
+ * <p>
  * In case of error, this moves the definition file to a backup. This action
  * posts a dialog box to select the loco to be deleted, and then posts an "are
  * you sure" dialog box before acting.
  *
- *
- * <hr> This file is part of JMRI.
- * <P>
- * JMRI is free software; you can redistribute it and/or modify it under the
- * terms of version 2 of the GNU General Public License as published by the Free
- * Software Foundation. See the "COPYING" file for a copy of this license.
- * <P>
- * JMRI is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- * <P>
- *
- * @author	Bob Jacobsen Copyright (C) 2001, 2002
+ * @author Bob Jacobsen Copyright (C) 2001, 2002
  * @see jmri.jmrit.XmlFile
  */
 public class DeleteRosterItemAction extends JmriAbstractAction {
@@ -62,8 +50,8 @@ public class DeleteRosterItemAction extends JmriAbstractAction {
     @Override
     public void actionPerformed(ActionEvent event) {
 
-        Roster roster = Roster.instance();
-        String rosterGroup = Roster.instance().getDefaultRosterGroup();
+        Roster roster = Roster.getDefault();
+        String rosterGroup = Roster.getDefault().getDefaultRosterGroup();
         RosterEntry[] entries;
         // rosterGroup may legitimately be null
         // but getProperty returns null if the property cannot be found, so
@@ -81,13 +69,13 @@ public class DeleteRosterItemAction extends JmriAbstractAction {
             }
         } else {
             entries = selectRosterEntry(rosterGroup);
-            if (entries != null) {
+            if (entries.length > 0 ) {
                 log.debug("selectRosterEntry(rosterGroup) found {} entries", entries.length);
             } else {
-                log.debug("selectRosterEntry(rosterGroup) left entries null");
+                log.debug("selectRosterEntry(rosterGroup) found no entries");
             }
         }
-        if (entries == null) {
+        if (entries == null || entries.length == 0) {
             return;
         }
         // get parent object if there is one
@@ -97,7 +85,7 @@ public class DeleteRosterItemAction extends JmriAbstractAction {
         // find the file for the selected entry
         for (RosterEntry re : entries) {
             String filename = roster.fileFromTitle(re.titleString());
-            String fullFilename = LocoFile.getFileLocation() + filename;
+            String fullFilename = Roster.getDefault().getRosterFilesLocation() + filename;
             log.debug("resolves to [{}], [{}]", filename, fullFilename);
 
             // prompt for one last chance
@@ -114,17 +102,17 @@ public class DeleteRosterItemAction extends JmriAbstractAction {
                 re.deleteAttribute(group);
                 re.updateFile();
             }
-            Roster.writeRosterFile();
+            Roster.getDefault().writeRoster();
 
             // backup the file & delete it
             if (rosterGroup == null) {
                 try {
                     // ensure preferences will be found
-                    FileUtil.createDirectory(LocoFile.getFileLocation());
+                    FileUtil.createDirectory(Roster.getDefault().getRosterFilesLocation());
 
                     // move original file to backup
                     LocoFile df = new LocoFile();   // need a dummy object to do this operation in next line
-                    df.makeBackupFile(LocoFile.getFileLocation() + filename);
+                    df.makeBackupFile(Roster.getDefault().getRosterFilesLocation() + filename);
 
                 } catch (Exception ex) {
                     log.error("error during locomotive file output: " + ex);
@@ -135,25 +123,25 @@ public class DeleteRosterItemAction extends JmriAbstractAction {
     }
 
     protected RosterEntry[] selectRosterEntry(String rosterGroup) {
+        RosterEntry[] entries = new RosterEntry[1];
         // create a dialog to select the roster entry
         JComboBox<?> selections = new RosterEntryComboBox(rosterGroup);
         int retval = JOptionPane.showOptionDialog(_who,
                 "Select one roster entry", "Delete roster entry",
                 0, JOptionPane.INFORMATION_MESSAGE, null,
-                new Object[]{"Cancel", "OK", selections}, null);
+                new Object[]{Bundle.getMessage("ButtonCancel"), Bundle.getMessage("ButtonOK"), selections}, null);
         log.debug("Dialog value " + retval + " selected " + selections.getSelectedIndex() + ":"
-                + selections.getSelectedItem());
+                + selections.getSelectedItem()); // TODO I18N
         if (retval != 1) {
-            return null;
+            return entries; // empty
         }
-        RosterEntry[] entries = new RosterEntry[1];
         entries[0] = (RosterEntry) selections.getSelectedItem();
         return entries;
     }
 
     /**
      * Can provide some mechanism to prompt for user for one last chance to
-     * change his/her mind
+     * change his/her mind.
      *
      * @return true if user says to continue
      */
@@ -167,7 +155,7 @@ public class DeleteRosterItemAction extends JmriAbstractAction {
                         JOptionPane.YES_NO_OPTION));
     }
     // initialize logging
-    private final static Logger log = LoggerFactory.getLogger(DeleteRosterItemAction.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(DeleteRosterItemAction.class);
 
     // never invoked, because we overrode actionPerformed above
     @Override

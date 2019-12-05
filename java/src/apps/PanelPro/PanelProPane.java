@@ -15,16 +15,16 @@ import javax.swing.JPanel;
  *
  * <hr>
  * This file is part of JMRI.
- * <P>
+ * <p>
  * JMRI is free software; you can redistribute it and/or modify it under the
  * terms of version 2 of the GNU General Public License as published by the Free
  * Software Foundation. See the "COPYING" file for a copy of this license.
- * <P>
+ * <p>
  * JMRI is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
  * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- * <P>
- * @author	Bob Jacobsen Copyright 2003, 2014
+ *
+ * @author Bob Jacobsen Copyright 2003, 2014
  */
 public class PanelProPane extends apps.AppsLaunchPane {
 
@@ -35,23 +35,28 @@ public class PanelProPane extends apps.AppsLaunchPane {
     /**
      * Returns the ID for the window's help, which is application specific
      */
+    @Override
     protected String windowHelpID() {
         return "package.apps.PanelPro.PanelPro";
     }
 
+    @Override
     protected String logo() {
         return "resources/PanelPro.gif";
     }
 
+    @Override
     protected String line1() {
         return MessageFormat.format(Bundle.getMessage("PanelProVersionCredit"),
                 new Object[]{jmri.Version.name()});
     }
 
+    @Override
     protected String line2() {
         return "http://jmri.org/PanelPro ";
     }
 
+    @Override
     protected JPanel statusPanel() {
         JPanel j = new JPanel();
         j.setLayout(new BoxLayout(j, BoxLayout.Y_AXIS));
@@ -59,6 +64,7 @@ public class PanelProPane extends apps.AppsLaunchPane {
 
         // Buttons
         Action quit = new AbstractAction(Bundle.getMessage("MenuItemQuit")) {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 Apps.handleQuit();
             }
@@ -67,7 +73,7 @@ public class PanelProPane extends apps.AppsLaunchPane {
         JPanel p3 = new JPanel();
         p3.setLayout(new java.awt.FlowLayout());
         JButton h1 = new JButton(Bundle.getMessage("ButtonHelp"));
-        jmri.util.HelpUtil.addHelpToComponent(h1, "html.apps.PanelPro.PanelPro");
+        jmri.util.HelpUtil.addHelpToComponent(h1, "html.apps.PanelPro.index");
         h1.setAlignmentX(JLabel.CENTER_ALIGNMENT);
         p3.add(h1);
         JButton q1 = new JButton(Bundle.getMessage("ButtonQuit"));
@@ -78,4 +84,5 @@ public class PanelProPane extends apps.AppsLaunchPane {
 
         return j;
     }
+
 }

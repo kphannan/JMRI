@@ -1,34 +1,39 @@
 package jmri;
 
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import jmri.util.JUnitUtil;
+
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
- * Tests for the BlockManager class
- * <P>
+ * Tests for the BlockManager class.
+ * <p>
  * Based upon a stub by Bob Jacobsen Copyright (C) 2006
- * <P>
+ *
  * @author Bob Coleman Copyright 2012
  * @author Bob Jacobsen Copyright 2014
  */
-public class BlockManagerTest extends TestCase {
+public class BlockManagerTest {
 
+    @Test
     public void testCreate1() {
         // original create with systemname and username
         Block b1 = InstanceManager.getDefault(jmri.BlockManager.class).createNewBlock("SystemName1", "UserName1");
-        Assert.assertEquals("system name", "SYSTEMNAME1", b1.getSystemName());
+        Assert.assertEquals("system name", "SystemName1", b1.getSystemName());
         Assert.assertEquals("user name", "UserName1", b1.getUserName());
     }
 
+    @Test
     public void testCreate2() {
         // original create with systemname and empty username
         Block b1 = InstanceManager.getDefault(jmri.BlockManager.class).createNewBlock("SystemName2", "");
-        Assert.assertEquals("system name", "SYSTEMNAME2", b1.getSystemName());
+        Assert.assertEquals("system name", "SystemName2", b1.getSystemName());
         Assert.assertEquals("user name", "", b1.getUserName());
     }
 
+    @Test
     public void testCreate3() {
         // original create with no systemname and a username
         Block b1 = InstanceManager.getDefault(jmri.BlockManager.class).createNewBlock("UserName3");
@@ -36,6 +41,7 @@ public class BlockManagerTest extends TestCase {
         Assert.assertEquals("user name", "UserName3", b1.getUserName());
     }
 
+    @Test
     public void testCreate4() {
         // original create with no systemname and an empty username
         Block b1 = InstanceManager.getDefault(jmri.BlockManager.class).createNewBlock("");
@@ -43,28 +49,31 @@ public class BlockManagerTest extends TestCase {
         Assert.assertEquals("user name", "", b1.getUserName());
     }
 
+    @Test
     public void testNameIncrement() {
         // original create with no systemname and an empty username
-        Block b1 = InstanceManager.getDefault(jmri.BlockManager.class).createNewBlock("");
+        Block b1 = InstanceManager.getDefault(jmri.BlockManager.class).createNewBlock(null);
         Assert.assertEquals("system name 1", "IB:AUTO:0001", b1.getSystemName());
-        Assert.assertEquals("user name 1", "", b1.getUserName());
+        Assert.assertEquals("user name 1", null, b1.getUserName());
 
-        Block b2 = InstanceManager.getDefault(jmri.BlockManager.class).createNewBlock("");
+        Block b2 = InstanceManager.getDefault(jmri.BlockManager.class).createNewBlock(null);
         Assert.assertEquals("system name 2", "IB:AUTO:0002", b2.getSystemName());
-        Assert.assertEquals("user name 2", "", b2.getUserName());
+        Assert.assertEquals("user name 2", null, b2.getUserName());
 
         // and b1 still OK
         Assert.assertEquals("system name 1", "IB:AUTO:0001", b1.getSystemName());
-        Assert.assertEquals("user name 1", "", b1.getUserName());
+        Assert.assertEquals("user name 1", null, b1.getUserName());
     }
 
+    @Test
     public void testProvideWorksTwice() {
         // original create with no systemname and an empty username
         Block b1 = InstanceManager.getDefault(jmri.BlockManager.class).provideBlock("IB12");
         b1 = InstanceManager.getDefault(jmri.BlockManager.class).provideBlock("!!");
         Assert.assertNotNull(b1);
     }
-    
+
+    @Test
     public void testGet1() {
         // original create with no systemname and a username
         Block b1 = InstanceManager.getDefault(jmri.BlockManager.class).createNewBlock("UserName4");
@@ -80,6 +89,7 @@ public class BlockManagerTest extends TestCase {
         Assert.assertEquals("get user name by system name", "UserName4", bget2.getUserName());
     }
 
+    @Test
     public void testProvide1() {
         // original create with no systemname and a username
         Block b1 = InstanceManager.getDefault(jmri.BlockManager.class).createNewBlock("UserName5");
@@ -95,8 +105,8 @@ public class BlockManagerTest extends TestCase {
         Assert.assertEquals("provide user name by system name", "UserName5", bprovide2.getUserName());
 
         // auto create with prefixed systemname and no username
-        Block bprovide3 = InstanceManager.getDefault(jmri.BlockManager.class).provideBlock("SystemName6");
-        Assert.assertEquals("provide system name by user name", "IBSYSTEMNAME6", bprovide3.getSystemName());
+        Block bprovide3 = InstanceManager.getDefault(jmri.BlockManager.class).provideBlock("IBSystemName6");
+        Assert.assertEquals("provide system name by user name", "IBSystemName6", bprovide3.getSystemName());
         Assert.assertEquals("provide user name by user name", null, bprovide3.getUserName());
 
         // auto create with accepted systemname and no username
@@ -105,6 +115,7 @@ public class BlockManagerTest extends TestCase {
         Assert.assertEquals("provide user name by system name", null, bprovide4.getUserName());
     }
 
+    @Test
     public void testAutoSkip1() {
         Block bautoskip1 = InstanceManager.getDefault(jmri.BlockManager.class).createNewBlock("IB:AUTO:0007", "UserName7");
         Assert.assertEquals("autoskip system name", "IB:AUTO:0007", bautoskip1.getSystemName());
@@ -115,6 +126,7 @@ public class BlockManagerTest extends TestCase {
         Assert.assertEquals("autoskip user name skip", "UserName8", bautoskip2.getUserName());
     }
 
+    @Test
     public void testBlockSpeed1() {
         Block bspeed1 = InstanceManager.getDefault(jmri.BlockManager.class).createNewBlock("UserName9");
         Assert.assertEquals("block speed system name", "IB:AUTO:0001", bspeed1.getSystemName());
@@ -122,6 +134,7 @@ public class BlockManagerTest extends TestCase {
         Assert.assertEquals("block speed", "Use Global Normal", bspeed1.getBlockSpeed());
     }
 
+    @Test
     public void testDefaultSpeed1() {
         Assert.assertEquals("default block speed", "Normal", InstanceManager.getDefault(jmri.BlockManager.class).getDefaultSpeed());
 
@@ -149,33 +162,14 @@ public class BlockManagerTest extends TestCase {
         Assert.assertEquals("block speed back to normal", "Normal", InstanceManager.getDefault(jmri.BlockManager.class).getDefaultSpeed());
     }
 
-    // from here down is testing infrastructure
-    public BlockManagerTest(String s) {
-        super(s);
+    @Before
+    public void setUp() {
+        JUnitUtil.setUp();
     }
 
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {BlockManagerTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
+    @After
+    public void tearDown() {
+        JUnitUtil.tearDown();
     }
 
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(BlockManagerTest.class);
-        return suite;
-    }
-
-    // The minimal setup for log4J
-    @Override
-    protected void setUp() throws Exception {
-        apps.tests.Log4JFixture.setUp();
-        super.setUp();
-        jmri.util.JUnitUtil.resetInstanceManager();
-    }
-
-    @Override
-    protected void tearDown() {
-        apps.tests.Log4JFixture.tearDown();
-    }
 }

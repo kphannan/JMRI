@@ -50,6 +50,43 @@
 ; -------------------------------------------------------------------------
 ; - Version History
 ; -------------------------------------------------------------------------
+; - Version 0.1.25.0
+; - Backup and remove lib folder
+; -------------------------------------------------------------------------
+; - Version 0.1.24.1
+; - Correct the support for Java 11 Registry Keys
+; -------------------------------------------------------------------------
+; - Version 0.1.24.0
+; - Add support for Java 11 Registry Keys
+; -------------------------------------------------------------------------
+; - Version 0.1.22.15
+; - Backup and remove classes folder
+; -------------------------------------------------------------------------
+; - Version 0.1.22.14
+; - Remove insecure Jackson libraries to address CVE-2017-17485
+; -------------------------------------------------------------------------
+; - Version 0.1.22.13
+; - Remove outmoded SLF4J libraries
+; -------------------------------------------------------------------------
+; - Version 0.1.22.12
+; - Remove outmoded Jetty and WebSocket libraries
+; -------------------------------------------------------------------------
+; - Version 0.1.22.11
+; - Remove outmoded lib\ch.ntb.usb.jar
+; -------------------------------------------------------------------------
+; - Version 0.1.22.10
+; - Support Java 9
+; -------------------------------------------------------------------------
+; - Version 0.1.22.9
+; - Remove outmoded lib\jna-4.2.2.jar and install jmri.conf
+; - Remove RXTX and SerialIO files as now replaced by purejavacomm
+; -------------------------------------------------------------------------
+; - Version 0.1.22.8
+; - Remove outmoded jackson files
+; -------------------------------------------------------------------------
+; - Version 0.1.22.7
+; - Remove outmoded jython files
+; -------------------------------------------------------------------------
 ; - Version 0.1.22.6
 ; - Remove outmoded vecmath files
 ; -------------------------------------------------------------------------
@@ -270,7 +307,7 @@
   ; -- usually, this will be determined by the build.xml ant script
   !define JRE_VER   "1.8"                       ; Required JRE version
 !endif
-!define INST_VER  "0.1.22.5"                    ; Installer version
+!define INST_VER  "0.1.25.0"                    ; Installer version
 !define PNAME     "${APP}.${JMRI_VER}"          ; Name of installer.exe
 !define SRCDIR    "."                           ; Path to head of sources
 InstallDir        "$PROGRAMFILES\JMRI"          ; Default install directory
@@ -323,17 +360,21 @@ SetCompressor /SOLID /FINAL lzma
 !define MULTIUSER_INSTALLMODE_DEFAULT_REGISTRY_VALUENAME ""
 
 ; -------------------------------------------------------------------------
-; - Defines for log saving
-; -------------------------------------------------------------------------
-!define LVM_GETITEMCOUNT 0x1004
-!define LVM_GETITEMTEXT 0x102D
-
-; -------------------------------------------------------------------------
 ; - Includes
 ; -------------------------------------------------------------------------
 !include "MultiUser.nsh" ; MultiUser installation
 !include "WordFunc.nsh" ; add header for word manipulation
 !insertmacro VersionCompare ; add function to compare versions
+
+; -------------------------------------------------------------------------
+; - Defines for log saving
+; -------------------------------------------------------------------------
+!ifndef LVM_GETITEMCOUNT
+!define LVM_GETITEMCOUNT 0x1004
+!endif
+!ifndef LVM_GETITEMTEXT
+!define LVM_GETITEMTEXT 0x102D
+!endif
 
 ; -------------------------------------------------------------------------
 ; - Runtime Switches
@@ -413,9 +454,9 @@ InstType "Full"
 ; - actual installation itself should be stored in the first data block -
 ; - this will ensure that the installer starts faster
 ; -------------------------------------------------------------------------
-ReserveFile "${NSISDIR}\Plugins\System.dll"
-ReserveFile "${NSISDIR}\Plugins\NSISdl.dll"
-ReserveFile "${NSISDIR}\Plugins\UserInfo.dll"
+ReserveFile /plugin "System.dll"
+ReserveFile /plugin "NSISdl.dll"
+ReserveFile /plugin "UserInfo.dll"
 
 ; -------------------------------------------------------------------------
 ; - Set version information
@@ -440,64 +481,24 @@ SectionGroup "JMRI Core Files" SEC_CORE
     ; -- Clean up of JMRI folder
     SetOutPath "$INSTDIR"
 
+    ; -- Recursively delete classes folder, which historically contained 
+    ; -- individual .properties and .classes patch files
+    ; -- that might not be consistent with this new version
+    RMDir /R "$OUTDIR\classes"
+
+    ; -- Recursively delete lib folder, which historically contained
+    ; -- individually added JAR files, but which we have been encouraging
+    ; -- users not to modify
+    RMDir /R "$OUTDIR\lib"
+
+    ; -- Delete old USB library files
+    Delete "$OUTDIR\ch.ntb.usb.jar"
+
     ; -- Delete old .jar & support files in destination directory
     Delete "$OUTDIR\jh.1.1.2.jar"
     Delete "$OUTDIR\jh.jar"
     Delete "$OUTDIR\jdom-jdk11.jar"
-
-    ; -- Delete old vecmath.jar files as of JMRI 4.5.1
-    Delete "$OUTDIR\lib\vecmath.jar"
-
-    ; -- Delete older outmoded jetty .jar and outmoded servlet files, as of
-    ;    JMRI 3.11.3 (added for version 0.1.21.5 of Windows installer)
-    Delete "$OUTDIR\lib\jetty-continuation-8.1.0.v20120127.jar"
-    Delete "$OUTDIR\lib\jetty-http-8.1.0.v20120127.jar"
-    Delete "$OUTDIR\lib\jetty-io-8.1.0.v20120127.jar"
-    Delete "$OUTDIR\lib\jetty-security-8.1.0.v20120127.jar"
-    Delete "$OUTDIR\lib\jetty-server-8.1.0.v20120127.jar"
-    Delete "$OUTDIR\lib\jetty-servlet-8.1.0.v20120127.jar"
-    Delete "$OUTDIR\lib\jetty-util-8.1.0.v20120127.jar"
-    Delete "$OUTDIR\lib\jetty-websocket-8.1.0.v20120127.jar"
-    Delete "$OUTDIR\lib\log4j.jar"
-    Delete "$OUTDIR\lib\jspWin.dll"
-
-    ; -- Delete outmoded jetty .jar and outmoded servlet files, as of JMRI 3.11.3
-    Delete "$OUTDIR\lib\jetty-continuation-8.1.11.v20130520.jar"
-    Delete "$OUTDIR\lib\jetty-http-8.1.11.v20130520.jar"
-    Delete "$OUTDIR\lib\jetty-io-8.1.11.v20130520.jar"
-    Delete "$OUTDIR\lib\jetty-security-8.1.11.v20130520.jar"
-    Delete "$OUTDIR\lib\jetty-server-8.1.11.v20130520.jar"
-    Delete "$OUTDIR\lib\jetty-servlet-8.1.11.v20130520.jar"
-    Delete "$OUTDIR\lib\jetty-util-8.1.11.v20130520.jar"
-    Delete "$OUTDIR\lib\jetty-websocket-8.1.11.v20130520.jar"
-    Delete "$OUTDIR\lib\servlet-api-3.0.jar"
-
-    ; -- Delete outmoded jetty .jar and outmoded servlet files, as of JMRI 4.3.1
-    Delete "$OUTDIR\lib\jetty-http-9.2.7.v20150116.jar"
-    Delete "$OUTDIR\lib\jetty-io-9.2.7.v20150116.jar"
-    Delete "$OUTDIR\lib\jetty-security-9.2.7.v20150116.jar"
-    Delete "$OUTDIR\lib\jetty-server-9.2.7.v20150116.jar"
-    Delete "$OUTDIR\lib\jetty-servlet-9.2.7.v20150116.jar"
-    Delete "$OUTDIR\lib\jetty-util-9.2.7.v20150116.jar"
-    Delete "$OUTDIR\lib\websocket-api-9.2.7.v20150116.jar"
-    Delete "$OUTDIR\lib\websocket-client-9.2.7.v20150116.jar"
-    Delete "$OUTDIR\lib\websocket-common-9.2.7.v20150116.jar"
-    Delete "$OUTDIR\lib\websocket-server-9.2.7.v20150116.jar"
-    Delete "$OUTDIR\lib\websocket-servlet-9.2.7.v20150116.jar"
-
-    ; -- Delete outmoded jetty .jar and outmoded servlet files, as of JMRI 4.3.7
-    Delete "$OUTDIR\lib\jetty-http-9.3.6.v20151106.jar"
-    Delete "$OUTDIR\lib\jetty-io-9.3.6.v20151106.jar"
-    Delete "$OUTDIR\lib\jetty-security-9.3.6.v20151106.jar"
-    Delete "$OUTDIR\lib\jetty-server-9.3.6.v20151106.jar"
-    Delete "$OUTDIR\lib\jetty-servlet-9.3.6.v20151106.jar"
-    Delete "$OUTDIR\lib\jetty-util-9.3.6.v20151106.jar"
-    Delete "$OUTDIR\lib\websocket-api-9.3.6.v20151106.jar"
-    Delete "$OUTDIR\lib\websocket-client-9.3.6.v20151106.jar"
-    Delete "$OUTDIR\lib\websocket-common-9.3.6.v20151106.jar"
-    Delete "$OUTDIR\lib\websocket-server-9.3.6.v20151106.jar"
-    Delete "$OUTDIR\lib\websocket-servlet-9.3.6.v20151106.jar"
-
+ 
     ; -- Delete XmlIO-related files, as of JMRI 3.11.3
     Delete "$OUTDIR\help\en\package\jmri\jmrit\inControl\images\2Throttles.png"
     Delete "$OUTDIR\help\en\package\jmri\jmrit\inControl\images\AnalogClock.png"
@@ -546,18 +547,6 @@ SectionGroup "JMRI Core Files" SEC_CORE
     Delete "$OUTDIR\xml\decoders\zimo\CV739-CV744twoSwitchIP.xml"
     Delete "$OUTDIR\xml\decoders\zimo\CV739-CV768.xml"
 
-    ; -- Delete old .jar & support files in lib/ directory
-    Delete "$OUTDIR\lib\activation.jar"
-    Delete "$OUTDIR\lib\crimson.jar"
-    Delete "$OUTDIR\lib\comm.jar"
-    Delete "$OUTDIR\lib\servlet.jar"
-    Delete "$OUTDIR\lib\slf4j-api-1.6.4.jar"
-    Delete "$OUTDIR\lib\slf4j-log4j12-1.6.4.jar"
-    Delete "$OUTDIR\lib\slf4j-api-1.7.2.jar"
-    Delete "$OUTDIR\lib\slf4j-log4j12-1.7.2.jar"
-    Delete "$OUTDIR\lib\slf4j-api-1.7.5.jar"
-    Delete "$OUTDIR\lib\slf4j-log4j12-1.7.5.jar"
-
     ; -- Delete .jar & support files installed using previous layout
     Delete "$OUTDIR\activation.jar"
     Delete "$OUTDIR\ch.ntb.usb.jar"
@@ -593,20 +582,6 @@ SectionGroup "JMRI Core Files" SEC_CORE
 
     ; -- Delete old plug-ins from program folder
     Delete "$OUTDIR\WiThrottle.jar"
-
-    ; -- Delete .dll files from previous x64/x86 layout
-    Delete "$OUTDIR\lib\jinput-raw_64.dll"
-    Delete "$OUTDIR\lib\jinput-dx8_64.dll"
-    Delete "$OUTDIR\lib\rxtxSerial.dll"
-    Delete "$OUTDIR\lib\LibusbJava.dll"
-    Delete "$OUTDIR\lib\gluegen-rt.dll"
-    Delete "$OUTDIR\lib\jinput-dx8.dll"
-    Delete "$OUTDIR\lib\jinput-raw.dll"
-    Delete "$OUTDIR\lib\jinput-wintab.dll"
-    Delete "$OUTDIR\lib\joal_native.dll"
-
-    ; -- Delete old JOAL .dll files
-    Delete "$OUTDIR\lib\x86\joal_native.dll"
 
     ; -- Delete old log files from program folder
     Delete "$OUTDIR\messages.log"
@@ -670,6 +645,7 @@ SectionGroup "JMRI Core Files" SEC_CORE
     ; -- Library & Support Files now moved from here
     File /a "${SRCDIR}\*.jar"
     File /a "${SRCDIR}\COPYING"
+    File /a "${SRCDIR}\jmri.conf"
     File /a "${SRCDIR}\LaunchJMRI.exe"
     File /a "${SRCDIR}\*.bat"
     File /a "${SRCDIR}\default.lcf"
@@ -1112,8 +1088,14 @@ Function CheckJRE
   JRESearch:
     IntOp $JREINSTALLCOUNT $JREINSTALLCOUNT + 1
     ClearErrors
+    ReadRegStr $1 HKLM "SOFTWARE\JavaSoft\JRE" "CurrentVersion"
+    ReadRegStr $0 HKLM "SOFTWARE\JavaSoft\JRE\$1" "JavaHome"
+    IfErrors 0 JRECheck
     ReadRegStr $1 HKLM "SOFTWARE\JavaSoft\Java Runtime Environment" "CurrentVersion"
     ReadRegStr $0 HKLM "SOFTWARE\JavaSoft\Java Runtime Environment\$1" "JavaHome"
+    IfErrors 0 JRECheck
+    ReadRegStr $1 HKLM "SOFTWARE\JavaSoft\JDK" "CurrentVersion"
+    ReadRegStr $0 HKLM "SOFTWARE\JavaSoft\JDK\$1" "JavaHome"
 
     ; -- Not found
     IfErrors 0 JRECheck
@@ -1424,6 +1406,8 @@ Function RemoveOldJMRI
   Rename "$PROFILE\JMRI_backup" "$PROFILE\JMRI_backup_old"
   CreateDirectory "$PROFILE\JMRI_backup"
   CopyFiles "$PROFILE\JMRI\*.*" "$PROFILE\JMRI_backup"
+  CopyFiles "$INSTDIR\classes" "$PROFILE\JMRI_backup"
+  CopyFiles "$INSTDIR\lib" "$PROFILE\JMRI_backup"
 
   ; -- Check if uninstall required
   StrCmp $REMOVEOLDJMRI.BACKUPONLY "1" Done

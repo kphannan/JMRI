@@ -1,23 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?xml-stylesheet type="text/xsl" href="/xml/XSLT/panelfile-2-9-6.xsl"?>
+<?xml-stylesheet href="/xml/XSLT/panelfile-2-9-6.xsl" type="text/xsl"?>
 <layout-config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://jmri.org/xml/schema/layout-2-9-6.xsd">
   <jmriversion>
-    <major>3</major>
-    <minor>9</minor>
-    <test>2</test>
-    <modifier>.2</modifier>
+    <major>4</major>
+    <minor>17</minor>
+    <test>4</test>
+    <modifier>ish</modifier>
   </jmriversion>
   <sensors class="jmri.jmrix.internal.configurexml.InternalSensorManagerXml">
     <defaultInitialState>unknown</defaultInitialState>
-    <sensor systemName="IS1" inverted="false" userName="Sensor No Spaces">
+    <sensor inverted="false">
       <systemName>IS1</systemName>
       <userName>Sensor No Spaces</userName>
     </sensor>
-    <sensor systemName="IS2" inverted="false" userName="Sensor Trailing Space">
+    <sensor inverted="false">
       <systemName>IS2</systemName>
       <userName>Sensor Trailing Space</userName>
     </sensor>
-    <sensor systemName="IS3" inverted="false" userName="Sensor Leading Space">
+    <sensor inverted="false">
       <systemName>IS3</systemName>
       <userName>Sensor Leading Space</userName>
     </sensor>
@@ -30,26 +30,39 @@
     </operations>
     <defaultclosedspeed>Normal</defaultclosedspeed>
     <defaultthrownspeed>Restricted</defaultthrownspeed>
-    <turnout systemName="IT1" userName="Turnout No Spaces" feedback="DIRECT" inverted="false" automate="Default">
+    <turnout feedback="DIRECT" inverted="false" automate="Default">
       <systemName>IT1</systemName>
       <userName>Turnout No Spaces</userName>
     </turnout>
-    <turnout systemName="IT2" userName="Turnout Trailing Space" feedback="DIRECT" inverted="false" automate="Default">
+    <turnout feedback="DIRECT" inverted="false" automate="Default">
       <systemName>IT2</systemName>
       <userName>Turnout Trailing Space</userName>
     </turnout>
-    <turnout systemName="IT3" userName="Turnout Leading Space" feedback="DIRECT" inverted="false" automate="Default">
+    <turnout feedback="DIRECT" inverted="false" automate="Default">
       <systemName>IT3</systemName>
       <userName>Turnout Leading Space</userName>
     </turnout>
   </turnouts>
-  <signalmasts class="jmri.managers.configurexml.DefaultSignalMastManagerXml" />
-  <signalgroups class="jmri.managers.configurexml.DefaultSignalGroupManagerXml" />
-  <oblocks class="jmri.jmrit.logix.configurexml.OBlockManagerXml" />
-  <warrants class="jmri.jmrit.logix.configurexml.WarrantManagerXml" />
   <signalmastlogics class="jmri.managers.configurexml.DefaultSignalMastLogicManagerXml">
     <logicDelay>500</logicDelay>
   </signalmastlogics>
-  <!--Written by JMRI version 20140805-1643-jake on Tue Aug 05 12:46:47 EDT 2014 $Id: XmlFile.java 26366 2014-06-20 03:34:25Z ken_c $-->
+  <filehistory>
+    <operation>
+      <type>app</type>
+      <date>Sun Sep 08 22:31:08 CEST 2019</date>
+      <filename>JMRI program</filename>
+    </operation>
+    <operation>
+      <type>Load OK</type>
+      <date>Sun Sep 08 23:10:13 CEST 2019</date>
+      <filename>/Users/egbertbroerse/Documents/Egbert/Computers/IntelliJ%20local/JMRI/java/test/jmri/configurexml/load/LeadingTrailingSpaceTest.xml</filename>
+      <filehistory />
+    </operation>
+    <operation>
+      <type>Store</type>
+      <date>Sun Sep 08 23:10:27 CEST 2019</date>
+      <filename />
+    </operation>
+  </filehistory>
+  <!--Written by JMRI version 4.17.4ish+egbertbroerse+20190908T2029Z+R59b5cbdf37 on Sun Sep 08 23:10:27 CEST 2019-->
 </layout-config>
-

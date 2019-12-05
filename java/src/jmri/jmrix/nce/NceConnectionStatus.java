@@ -1,4 +1,3 @@
-//NceConnectionStatus.java
 package jmri.jmrix.nce;
 
 import javax.swing.JOptionPane;
@@ -18,7 +17,6 @@ import org.slf4j.LoggerFactory;
  * Also checks for March 2007 EPROM and warns user about Monitoring feedback.
  *
  * @author Daniel Boudreau (C) 2007, 2010, 2012
- * @version $Revision$
  *
  */
 public class NceConnectionStatus implements NceListener {
@@ -84,22 +82,22 @@ public class NceConnectionStatus implements NceListener {
     private static final int VV_USB_V7 = 7; // 2012 revision of USB EPROM VV.MM.mm = 7.3.x
     private static final int MM_USB = 3;
     // V6 flavors
-    private static final int mm_USB_V6_PwrCab = 0;	// PowerCab
-    private static final int mm_USB_V6_SB3 = 1;	// SB3
-    private static final int mm_USB_V6_PH = 2;		// PH-Pro or PH-10
+    private static final int mm_USB_V6_PwrCab = 0; // PowerCab
+    private static final int mm_USB_V6_SB3 = 1; // SB3
+    private static final int mm_USB_V6_PH = 2;  // PH-Pro or PH-10
     // Future releases by NCE (Not used by JMRI yet!)
-    private static final int mm_USB_V6_ALL = 3;		// All systems, not currently used
-    private static final int mm_USB_V6_PC161 = 4;	// Future use, PowerCab 1.61, not currently used
-    private static final int mm_USB_V6_SB161 = 5;	// Future use, SB3 1.61, not currently used
+    private static final int mm_USB_V6_ALL = 3;  // All systems, not currently used
+    private static final int mm_USB_V6_PC161 = 4; // Future use, PowerCab 1.61, not currently used
+    private static final int mm_USB_V6_SB161 = 5; // Future use, SB3 1.61, not currently used
     // V7 flavors
-    private static final int mm_USB_V7_PC_128_A = 0;	// PowerCab with 1.28c
-    private static final int mm_USB_V7_SB5_165_A = 1;	// SB5 with 1.65
-    private static final int mm_USB_V7_SB5_165_B = 2;	// SB5 with 1.65
-    private static final int mm_USB_V7_PC_165 = 3;		// PowerCab with 1.65
-    private static final int mm_USB_V7_PC_128_B = 4;	// PowerCab with 1.28c
-    private static final int mm_USB_V7_SB3 = 5;			// SB3 with 1.28c
-    private static final int mm_USB_V7_PH = 6;			// PowerPro with 3.1.2007
-    private static final int mm_USB_V7_ALL = 7;			// All systems
+    private static final int mm_USB_V7_PC_128_A = 0; // PowerCab with 1.28c
+    private static final int mm_USB_V7_SB5_165_A = 1; // SB5 with 1.65
+    private static final int mm_USB_V7_SB5_165_B = 2; // SB5 with 1.65
+    private static final int mm_USB_V7_PC_165 = 3;  // PowerCab with 1.65
+    private static final int mm_USB_V7_PC_128_B = 4; // PowerCab with 1.28c
+    private static final int mm_USB_V7_SB3 = 5;   // SB3 with 1.28c
+    private static final int mm_USB_V7_PH = 6;   // PowerPro with 3.1.2007
+    private static final int mm_USB_V7_ALL = 7;   // All systems
 
     private NceTrafficController tc = null;
 
@@ -125,13 +123,13 @@ public class NceConnectionStatus implements NceListener {
         }
 
         if (epromState == CHECK_OK) {
-            ConnectionStatus.instance().setConnectionState(tc.getPortName(), ConnectionStatus.CONNECTION_UP);
+            ConnectionStatus.instance().setConnectionState(tc.getUserName(), tc.getPortName(), ConnectionStatus.CONNECTION_UP);
             epromState = NORMAL_STATE;
             return null;
         }
 
         if (epromState != INIT_STATE) {
-            ConnectionStatus.instance().setConnectionState(tc.getPortName(), ConnectionStatus.CONNECTION_DOWN);
+            ConnectionStatus.instance().setConnectionState(tc.getUserName(), tc.getPortName(), ConnectionStatus.CONNECTION_DOWN);
         }
 
         // no response from command station?
@@ -183,7 +181,7 @@ public class NceConnectionStatus implements NceListener {
                         + " contact NCE if you want to use MONITORING feedback ", "Warning",
                         JOptionPane.INFORMATION_MESSAGE);
             }
-            ConnectionStatus.instance().setConnectionState(tc.getPortName(), ConnectionStatus.CONNECTION_UP);
+            ConnectionStatus.instance().setConnectionState(tc.getUserName(), tc.getPortName(), ConnectionStatus.CONNECTION_UP);
             epromState = NORMAL_STATE;
             return null;
         }
@@ -251,12 +249,14 @@ public class NceConnectionStatus implements NceListener {
 
     }
 
+    @Override
     public void message(NceMessage m) {
         if (log.isDebugEnabled()) {
             log.debug("unexpected message");
         }
     }
 
+    @Override
     public void reply(NceReply r) {
         if (r.getNumDataElements() == REPLY_LEN) {
 
@@ -313,7 +313,7 @@ public class NceConnectionStatus implements NceListener {
             }
 
             // Check that layout connection is correct
-            // PowerHouse? 4 cases for PH, 1999, 2004, 2007, & 2012
+            // PowerPro? 4 cases for PH, 1999, 2004, 2007, & 2012
             if (VV == VV_1999 || (VV == VV_2004 && MM == MM_2004) || (VV == VV_2007 && MM == MM_2007)
                     || (VV == VV_2012 && MM == MM_2012)) // make sure system connection is not NCE USB
             {
@@ -334,7 +334,7 @@ public class NceConnectionStatus implements NceListener {
                     log.error("System Connection is incorrect, detected USB connected to a Smart Booster SB3");
                     epromState = ERROR6_STATE;
                 }
-                if (mm == mm_USB_V6_PH && tc.getUsbSystem() != NceTrafficController.USB_SYSTEM_POWERHOUSE) {
+                if (mm == mm_USB_V6_PH && tc.getUsbSystem() != NceTrafficController.USB_SYSTEM_POWERPRO) {
                     log.error("System Connection is incorrect, detected USB connected to a Power Pro");
                     epromState = ERROR7_STATE;
                 }
@@ -350,7 +350,7 @@ public class NceConnectionStatus implements NceListener {
                     log.error("System Connection is incorrect, detected USB connected to a Smart Booster SB3");
                     epromState = ERROR6_STATE;
                 }
-                if (mm == mm_USB_V7_PH && tc.getUsbSystem() != NceTrafficController.USB_SYSTEM_POWERHOUSE) {
+                if (mm == mm_USB_V7_PH && tc.getUsbSystem() != NceTrafficController.USB_SYSTEM_POWERPRO) {
                     log.error("System Connection is incorrect, detected USB connected to a Power Pro");
                     epromState = ERROR7_STATE;
                 }
@@ -373,7 +373,7 @@ public class NceConnectionStatus implements NceListener {
         nceEpromMarch2007 = b;
     }
 
-    private final static Logger log = LoggerFactory.getLogger(NceConnectionStatus.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(NceConnectionStatus.class);
 
 }
-/* @(#)NceConnectionStatus.java */
+

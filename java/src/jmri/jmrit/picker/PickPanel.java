@@ -5,6 +5,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
@@ -19,15 +20,12 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Tabbed Container for holding pick list tables
+ * <p>
+ * Should perhaps be called PickTabbedPanel to distinguish from PickSinglePanel
  *
  * @author Pete Cressman Copyright (c) 2010
  */
 public class PickPanel extends JPanel implements ListSelectionListener, ChangeListener {
-
-    /**
-     *
-     */
-    private static final long serialVersionUID = -5093844168716608126L;
 
     private int ROW_HEIGHT;
 
@@ -40,7 +38,6 @@ public class PickPanel extends JPanel implements ListSelectionListener, ChangeLi
     JTextField _userNametext;
     jmri.jmrit.picker.PickFrame _pickTables; // Opened from LogixTableAction
 
-    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "EI_EXPOSE_REP2")
     public PickPanel(PickListModel[] models) {
         _tabPane = new JTabbedPane();
         _models = new PickListModel[models.length];
@@ -65,12 +62,14 @@ public class PickPanel extends JPanel implements ListSelectionListener, ChangeLi
         _userNametext = new JTextField();
 
         ActionListener cancelListener = new ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent a) {
                 //do nothing as Cancel button is hidden on Pick Lists
             }
         };
 
         ActionListener okListener = new ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent a) {
                 addToTable();
             }
@@ -92,6 +91,7 @@ public class PickPanel extends JPanel implements ListSelectionListener, ChangeLi
         return p;
     }
 
+    @SuppressWarnings("unchecked") // PickList is a parameterized class, but we don't use that here
     void addToTable() {
         String sysname = _sysNametext.getText();
         if (sysname != null && sysname.length() > 1) {
@@ -100,7 +100,15 @@ public class PickPanel extends JPanel implements ListSelectionListener, ChangeLi
             if (uname != null && uname.trim().length() == 0) {
                 uname = null;
             }
-            jmri.NamedBean bean = model.addBean(sysname, uname);
+            jmri.NamedBean bean = null;
+            try {
+                bean = model.addBean(sysname, uname);
+            } catch (IllegalArgumentException ex) {
+                JOptionPane.showMessageDialog(null,
+                    Bundle.getMessage("PickAddFailed", ex.getMessage()),  // NOI18N
+                    Bundle.getMessage("WarningTitle"),  // NOI18N
+                    JOptionPane.WARNING_MESSAGE);
+            }
             if (bean != null) {
                 int setRow = model.getIndexOf(bean);
                 model.getTable().setRowSelectionInterval(setRow, setRow);
@@ -111,6 +119,7 @@ public class PickPanel extends JPanel implements ListSelectionListener, ChangeLi
         }
     }
 
+    @Override
     public void stateChanged(ChangeEvent e) {
         PickListModel model = _models[_tabPane.getSelectedIndex()];
         if (model.canAddBean()) {
@@ -122,6 +131,7 @@ public class PickPanel extends JPanel implements ListSelectionListener, ChangeLi
         }
     }
 
+    @Override
     public void valueChanged(ListSelectionEvent e) {
         if (log.isDebugEnabled()) {
             log.debug("ListSelectionEvent from " + e.getSource().getClass().getName()
@@ -130,5 +140,5 @@ public class PickPanel extends JPanel implements ListSelectionListener, ChangeLi
     }
 
     // initialize logging
-    private final static Logger log = LoggerFactory.getLogger(PickPanel.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(PickPanel.class);
 }

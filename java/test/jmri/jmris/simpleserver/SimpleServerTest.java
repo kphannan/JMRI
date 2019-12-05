@@ -1,71 +1,81 @@
-//SimpleServerTest.java
 package jmri.jmris.simpleserver;
 
-import junit.framework.Assert;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import jmri.util.JUnitUtil;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
 
 /**
- * Tests for the jmri.jmris.simpleserver package
+ * Tests for the jmri.jmris.simpleserver.SimpleServer class 
  *
- * @author Paul Bender
+ * @author Paul Bender Copyright (C) 2012,2016
  */
-public class SimpleServerTest extends TestCase {
+public class SimpleServerTest {
 
+    private SimpleServer ss = null;
+
+    @Test
     public void testCtor() {
-        SimpleServer a = new SimpleServer();
-        Assert.assertNotNull(a);
-        jmri.util.JUnitAppender.suppressErrorMessage("Failed to connect to port 2048");
+        Assert.assertNotNull(ss);
     }
 
+    @Test
     public void testCtorwithParameter() {
         SimpleServer a = new SimpleServer(2048);
         Assert.assertNotNull(a);
         jmri.util.JUnitAppender.suppressErrorMessage("Failed to connect to port 2048");
     }
 
-    // from here down is testing infrastructure
-    public SimpleServerTest(String s) {
-        super(s);
-    }
-
-    // Main entry point
-    static public void main(String[] args) {
-        String[] testCaseName = {SimpleServerTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
-
-    // test suite from all defined tests
-    public static Test suite() {
-        TestSuite suite = new TestSuite(jmri.jmris.simpleserver.SimpleServerTest.class);
-        suite.addTest(jmri.jmris.simpleserver.parser.JmriServerParserTests.suite());
-        suite.addTest(new junit.framework.JUnit4TestAdapter(SimpleTurnoutServerTest.class));
-        suite.addTest(new junit.framework.JUnit4TestAdapter(SimplePowerServerTest.class));
-        suite.addTest(new junit.framework.JUnit4TestAdapter(SimpleReporterServerTest.class));
-        suite.addTest(new junit.framework.JUnit4TestAdapter(SimpleSensorServerTest.class));
-        suite.addTest(new junit.framework.JUnit4TestAdapter(SimpleLightServerTest.class));
-        suite.addTest(new junit.framework.JUnit4TestAdapter(SimpleSignalHeadServerTest.class));
-        suite.addTest(new junit.framework.JUnit4TestAdapter(SimpleOperationsServerTest.class));
-        suite.addTest(jmri.jmris.simpleserver.SimpleServerManagerTest.suite());
-        suite.addTest(BundleTest.suite());
-        if (!System.getProperty("jmri.headlesstest", "false").equals("true")) {
-            // put any tests that require a UI here.
-            suite.addTest(jmri.jmris.simpleserver.SimpleServerFrameTest.suite());
+    @Test
+    // test sending a message.
+    public void testSendMessage() {
+        StringBuilder sb = new StringBuilder();
+        java.io.DataOutputStream output = new java.io.DataOutputStream(
+                new java.io.OutputStream() {
+                    @Override
+                    public void write(int b) throws java.io.IOException {
+                        sb.append((char)b);
+                    }
+                });
+        String code = "LIGHT IL1 OFF\n\r";
+        java.io.InputStream input = new java.io.ByteArrayInputStream(code.getBytes());
+        Thread t = new Thread(() -> { 
+            try{
+               ss.handleClient(new java.io.DataInputStream(input),output); }
+            catch(java.io.IOException ioe){
+               // exception expected at end of input.
+               return;
+            }
+            });
+        t.setName("simpleserver client test thread");
+        t.start();
+        try {
+           t.join();
+        } catch (InterruptedException ie) {
+           // we just want to continue, so do nothing.
         }
-
-        return suite;
     }
 
     // The minimal setup for log4J
-    protected void setUp() throws Exception {
-        apps.tests.Log4JFixture.setUp();
-        super.setUp();
+    @Before
+    public void setUp() {
+        JUnitUtil.setUp();
+        jmri.util.JUnitUtil.resetProfileManager();
+        jmri.util.JUnitUtil.initDebugPowerManager();
+        jmri.util.JUnitUtil.initInternalTurnoutManager();
+        jmri.util.JUnitUtil.initInternalLightManager();
+        jmri.util.JUnitUtil.initInternalSensorManager();
+        jmri.util.JUnitUtil.initDebugThrottleManager();
+        ss = new SimpleServer();
+        jmri.util.JUnitAppender.suppressErrorMessage("Failed to connect to port 2048");
     }
 
-    protected void tearDown() throws Exception {
-        super.tearDown();
-        apps.tests.Log4JFixture.tearDown();
+    @After
+    public void tearDown() {
+        JUnitUtil.tearDown();
+        ss = null;
     }
 
 }

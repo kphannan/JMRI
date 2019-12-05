@@ -15,6 +15,7 @@ import javax.swing.JSeparator;
 import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 import javax.swing.text.DefaultEditorKit;
+import jmri.InstanceManager;
 import jmri.jmrit.DebugMenu;
 import jmri.jmrit.ToolsMenu;
 import jmri.jmrit.decoderdefn.PrintDecoderListAction;
@@ -39,11 +40,11 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Base class for main frame (window) of traditional-style JMRI applications
- * <P>
+ * <p>
  * This is for launching after the system is initialized, so it does none of
  * that.
  *
- * @author	Bob Jacobsen Copyright 2003, 2007, 2008, 2010, 2014
+ * @author Bob Jacobsen Copyright 2003, 2007, 2008, 2010, 2014
  * @author Dennis Miller Copyright 2005
  * @author Giorgio Terdina Copyright 2008
  * @author Matthew Harris Copyright (C) 2011
@@ -70,17 +71,26 @@ public class AppsLaunchFrame extends jmri.util.JmriJFrame {
         // handle window close
         setDefaultCloseOperation(WindowConstants.HIDE_ON_CLOSE);
 
-        // pack and center this frame
+        // pack
         pack();
+        
+        // center as default
         Dimension screen = getToolkit().getScreenSize();
         Dimension size = getSize();
         setLocation((screen.width - size.width) / 2, (screen.height - size.height) / 2);
+        
+        // then try to load location and size from preferences
+        setFrameLocation();
     }
 
     /**
-     * Create default menubar.
-     * <P>
+     * Add menus to a menu bar.
+     * <p>
      * This does not include the development menu.
+     *
+     * @param menuBar the existing menu bar
+     * @param wi      the WindowInterface to associate actions in menus with
+     * @param pane    the JPanel to associate actions in menus with
      */
     protected void createMenus(JMenuBar menuBar, WindowInterface wi, AppsLaunchPane pane) {
         // the debugging statements in the following are
@@ -97,7 +107,6 @@ public class AppsLaunchFrame extends jmri.util.JmriJFrame {
             operationsMenu(menuBar, wi);
         }
         systemsMenu(menuBar, wi);
-        scriptMenu(menuBar, wi);
         debugMenu(menuBar, wi, pane);
         menuBar.add(new WindowMenu(wi)); // * GT 28-AUG-2008 Added window menu
         helpMenu(menuBar, wi, pane);
@@ -117,6 +126,9 @@ public class AppsLaunchFrame extends jmri.util.JmriJFrame {
      * Set the location of the window-specific help for the preferences pane.
      * Made a separate method so if can be overridden for application specific
      * preferences help
+     *
+     * @param f the frame to associate with the java help reference
+     * @param l Java Help reference
      */
     protected void setPrefsFrameHelp(JmriJFrame f, String l) {
         f.addHelpMenu(l, true);
@@ -142,7 +154,7 @@ public class AppsLaunchFrame extends jmri.util.JmriJFrame {
         editMenu.add(a);
 
         // prefs
-        prefsAction = new apps.gui3.TabbedPreferencesAction(Bundle.getMessage("MenuItemPreferences"));
+        prefsAction = new apps.gui3.tabbedpreferences.TabbedPreferencesAction(Bundle.getMessage("MenuItemPreferences"));
         // Put prefs in Apple's prefered area on Mac OS X
         if (SystemType.isMacOSX()) {
             Application.getApplication().setPreferencesHandler(new PreferencesHandler() {
@@ -173,16 +185,15 @@ public class AppsLaunchFrame extends jmri.util.JmriJFrame {
     }
 
     protected void panelMenu(JMenuBar menuBar, WindowInterface wi) {
-        menuBar.add(PanelMenu.instance());
+        menuBar.add(InstanceManager.getDefault(PanelMenu.class));
     }
 
     /**
      * Show only active systems in the menu bar.
-     * <P>
-     * Alternately, you might want to do
-     * <PRE>
-     *    menuBar.add(new jmri.jmrix.SystemsMenu());
-     * </PRE>
+     *
+     * @param menuBar the menu to attach systems menus to
+     * @param wi      ignored, but available for overriding methods to use if
+     *                needed
      */
     protected void systemsMenu(JMenuBar menuBar, WindowInterface wi) {
         ActiveSystemsMenu.addItems(menuBar);
@@ -215,17 +226,29 @@ public class AppsLaunchFrame extends jmri.util.JmriJFrame {
 
         d.add(new JSeparator());
         d.add(new WiThrottleCreationAction());
+        
+        d.add(new JSeparator());
+        d.add(new apps.TrainCrew.InstallFromURL());
+        
+        // add final to menu bar
         menuBar.add(d);
 
     }
 
+    /**
+     * Add a script menu to a window menu bar.
+     * 
+     * @param menuBar the menu bar to add the script menu to
+     * @param wi the window interface containing menuBar
+     * @deprecated since 4.17.5 without direct replacement; appears
+     * to have been empty method since 1.2.3
+     */
+    @Deprecated
     protected void scriptMenu(JMenuBar menuBar, WindowInterface wi) {
         // temporarily remove Scripts menu; note that "Run Script"
         // has been added to the Panels menu
         // JMenu menu = new JMenu("Scripts");
         // menuBar.add(menu);
-        // menu.add(new jmri.jmrit.automat.JythonAutomatonAction("Jython script", this));
-        // menu.add(new jmri.jmrit.automat.JythonSigletAction("Jython siglet", this));
     }
 
     protected void developmentMenu(JMenuBar menuBar, WindowInterface wi) {
@@ -241,21 +264,14 @@ public class AppsLaunchFrame extends jmri.util.JmriJFrame {
     }
 
     protected void helpMenu(JMenuBar menuBar, WindowInterface wi, AppsLaunchPane containedPane) {
-        try {
+        // create menu and standard items
+        JMenu helpMenu = HelpUtil.makeHelpMenu(containedPane.windowHelpID(), true);
 
-            // create menu and standard items
-            JMenu helpMenu = HelpUtil.makeHelpMenu(containedPane.windowHelpID(), true);
+        // tell help to use default browser for external types
+        SwingHelpUtilities.setContentViewerUI("jmri.util.ExternalLinkContentViewerUI");
 
-            // tell help to use default browser for external types
-            SwingHelpUtilities.setContentViewerUI("jmri.util.ExternalLinkContentViewerUI");
-
-            // use as main help menu 
-            menuBar.add(helpMenu);
-
-        } catch (Throwable e3) {
-            log.error("Unexpected error creating help.", e3);
-        }
-
+        // use as main help menu
+        menuBar.add(helpMenu);
     }
 
     /**
@@ -273,5 +289,5 @@ public class AppsLaunchFrame extends jmri.util.JmriJFrame {
     // GUI members
     private JMenuBar menuBar;
 
-    private final static Logger log = LoggerFactory.getLogger(AppsLaunchFrame.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(AppsLaunchFrame.class);
 }

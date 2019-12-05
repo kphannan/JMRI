@@ -2,7 +2,6 @@ package jmri.jmrit;
 
 import jmri.Programmer;
 import jmri.ProgrammingMode;
-import jmri.managers.DefaultProgrammerManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,7 +14,7 @@ import org.slf4j.LoggerFactory;
  * function) to simplify use of {@link jmri.Programmer} callbacks.
  * <p>
  *
- * @author	Bob Jacobsen Copyright (C) 2001, 2015
+ * @author Bob Jacobsen Copyright (C) 2001, 2015
  * @see jmri.jmrit.symbolicprog.CombinedLocoSelPane
  * @see jmri.jmrit.symbolicprog.NewLocoSelPane
  */
@@ -23,23 +22,23 @@ public abstract class AbstractIdentify implements jmri.ProgListener {
 
     static final int RETRY_COUNT = 2;
 
-    abstract public boolean test1();  // no argument to start
+    public abstract boolean test1();  // no argument to start
 
-    abstract public boolean test2(int value);
+    public abstract boolean test2(int value);
 
-    abstract public boolean test3(int value);
+    public abstract boolean test3(int value);
 
-    abstract public boolean test4(int value);
+    public abstract boolean test4(int value);
 
-    abstract public boolean test5(int value);
+    public abstract boolean test5(int value);
 
-    abstract public boolean test6(int value);
+    public abstract boolean test6(int value);
 
-    abstract public boolean test7(int value);
+    public abstract boolean test7(int value);
 
-    abstract public boolean test8(int value);
+    public abstract boolean test8(int value);
 
-    abstract public boolean test9(int value);
+    public abstract boolean test9(int value);
 
     protected AbstractIdentify(Programmer p) {
         this.programmer = p;
@@ -50,8 +49,10 @@ public abstract class AbstractIdentify implements jmri.ProgListener {
     /**
      * Update the status field (if any). Invoked with "Done" when the results
      * are in.
+     *
+     * @param status the new status
      */
-    abstract protected void statusUpdate(String status);
+    protected abstract void statusUpdate(String status);
 
     /**
      * Start the identification state machine.
@@ -72,6 +73,8 @@ public abstract class AbstractIdentify implements jmri.ProgListener {
         // The first test is invoked here; the rest are handled in the programmingOpReply callback
         state = 1;
         retry = 0;
+        lastValue = -1;
+        setOptionalCv(false);
         test1();
     }
 
@@ -92,54 +95,70 @@ public abstract class AbstractIdentify implements jmri.ProgListener {
      * Internal method to handle the programmer callbacks, e.g. when a CV read
      * request terminates. Each will reduce (if possible) the list of consistent
      * decoders, and starts the next step.
+     *
+     * @param value  the value returned
+     * @param status the status reported
      */
+    @Override
     public void programmingOpReply(int value, int status) {
         // we abort if there's no programmer
         //  (doing this now to simplify later)
-        if (programmer == null ) {
+        if (programmer == null) {
             log.warn("No programmer connected");
             statusUpdate("No programmer connected");
-            
+
             state = 0;
             retry = 0;
             error();
             return;
         }
-        
-        // we abort if the status isn't normal
+        log.debug("Entering programmingOpReply, state {}, isOptionalCv {},retry {}, value {}, status {}", state, isOptionalCv(), retry, value, programmer.decodeErrorCode(status));
+
+        // we check if the status isn't normal
         if (status != jmri.ProgListener.OK) {
-            if ( retry < RETRY_COUNT) {
+            if (retry < RETRY_COUNT) {
                 statusUpdate("Programmer error: "
-                    + programmer.decodeErrorCode(status));
+                        + programmer.decodeErrorCode(status));
                 state--;
                 retry++;
-            } else if (programmer.getMode() != DefaultProgrammerManager.PAGEMODE &&
-                        programmer.getSupportedModes().contains(DefaultProgrammerManager.PAGEMODE)) {
-                programmer.setMode(DefaultProgrammerManager.PAGEMODE);
+                value = lastValue;  // Restore the last good value. Needed for retries.
+            } else if (state == 1 && programmer.getMode() != ProgrammingMode.PAGEMODE
+                    && programmer.getSupportedModes().contains(ProgrammingMode.PAGEMODE)) {
+                programmer.setMode(ProgrammingMode.PAGEMODE); // Try paged mode only if test1 (CV8)
                 retry = 0;
                 state--;
-                log.warn(programmer.decodeErrorCode(status) +
-                        ", trying " + programmer.getMode().toString() + " mode");
+                value = lastValue;  // Restore the last good value. Needed for retries.
+                log.warn("{} readng CV {}, trying {} mode", programmer.decodeErrorCode(status),
+                        cvToRead, programmer.getMode().toString());
             } else {
-                log.warn("Stopping due to error: "
-                    + programmer.decodeErrorCode(status));
-                statusUpdate("Stopping due to error: "
-                    + programmer.decodeErrorCode(status));
+                retry = 0;
                 if (programmer.getMode() != savedMode) {  // restore original mode
                     log.warn("Restoring " + savedMode.toString() + " mode");
                     programmer.setMode(savedMode);
                 }
-            state = 0;
-            retry = 0;
-            error();
-            return;
+                if (isOptionalCv()) {
+                    log.warn("CV {} is optional. Will assume not present...", cvToRead);
+                    statusUpdate("CV " + cvToRead + " is optional. Will assume not present...");
+                } else {
+                    log.warn("Stopping due to error: "
+                            + programmer.decodeErrorCode(status));
+                    statusUpdate("Stopping due to error: "
+                            + programmer.decodeErrorCode(status));
+                    state = 0;
+                    error();
+                    return;
+                }
             }
         } else {
             retry = 0;
+            lastValue = value;  // Save the last good value. Needed for retries.
+            setOptionalCv(false); // successful read clears flag
         }
         // continuing for normal operation
         // this should eventually be something smarter, maybe using reflection,
         // but for now...
+        log.debug("Was state {}, switching to state {}, test{}, isOptionalCv {},retry {}, value {}, status {}",
+                state, state + 1, state + 1, isOptionalCv(), retry, value, programmer.decodeErrorCode(status));
         switch (state) {
             case 0:
                 state = 1;
@@ -201,35 +220,44 @@ public abstract class AbstractIdentify implements jmri.ProgListener {
                 // this is an error
                 log.error("unexpected state in normal operation: " + state + " value: " + value + ", ending identification");
                 identifyDone();
-                return;
         }
     }
 
     /**
-     * Abstract routine to notify of errors
+     * Abstract routine to notify of errors.
      */
-    abstract protected void error();
+    protected abstract void error();
 
     /**
-     * To check if running now
+     * To check if running now.
+     *
+     * @return true if running; false otherwise
      */
     public boolean isRunning() {
         return state != 0;
     }
 
     /**
-     * State of the internal sequence
+     * State of the internal sequence.
      */
     int state = 0;
     int retry = 0;
+    int lastValue = 0;
+    boolean optionalCv = false;
+    String cvToRead;
+    String cvToWrite;
 
     /**
-     * Access a single CV for the next step
+     * Read a single CV for the next step.
+     *
+     * @param cv the CV to read
      */
-    protected void readCV(int cv) {
+    protected void readCV(String cv) {
         if (programmer == null) {
             statusUpdate("No programmer connected");
         } else {
+            cvToRead = cv;
+            log.debug("Invoking readCV {}", cvToRead);
             try {
                 programmer.readCV(cv, this);
             } catch (jmri.ProgrammerException ex) {
@@ -238,10 +266,19 @@ public abstract class AbstractIdentify implements jmri.ProgListener {
         }
     }
 
-    protected void writeCV(int cv, int value) {
+    /**
+     * Write a single CV for the next step.
+     *
+     * @param cv    the CV to write
+     * @param value to write to the CV
+     *
+     */
+    protected void writeCV(String cv, int value) {
         if (programmer == null) {
             statusUpdate("No programmer connected");
         } else {
+            cvToWrite = cv;
+            log.debug("Invoking writeCV {}", cvToWrite);
             try {
                 programmer.writeCV(cv, value, this);
             } catch (jmri.ProgrammerException ex) {
@@ -250,7 +287,32 @@ public abstract class AbstractIdentify implements jmri.ProgListener {
         }
     }
 
+    /**
+     * Check the current status of the {@code optionalCv} flag.
+     * <ul>
+     * <li>If {@code true}, prevents the next CV read from aborting the
+     * identification process.</li>
+     * <li>Always {@code false} after a successful read.</li>
+     * </ul>
+     *
+     * @return the current status of the {@code optionalCv} flag
+     */
+    public boolean isOptionalCv() {
+        return optionalCv;
+    }
+
+    /**
+     *
+     * Specify whether the next CV read may legitimately fail in some cases.
+     *
+     * @param flag Set {@code true} to indicate that the next read may fail. A
+     *             successful read will automatically set to {@code false}.
+     */
+    public void setOptionalCv(boolean flag) {
+        this.optionalCv = flag;
+    }
+
     // initialize logging
-    private final static Logger log = LoggerFactory.getLogger(AbstractIdentify.class.getName());
+    private final static Logger log = LoggerFactory.getLogger(AbstractIdentify.class);
 
 }
